@@ -55,6 +55,7 @@
 * **Single Sign-On (SSO):** Out-of-the-box OAuth 2.0 social login support for **MYETV**, **Google**, **Facebook**, and **Microsoft**.
 * **Two-Factor Authentication (2FA):** Time-based One-Time Password (TOTP) authenticator app support.
 * **Anti-Bot Protection:** Native **Cloudflare Turnstile** integration on registration and login endpoints.
+* **Email encryption:** encryption at rest in mysql for subscribers email
 
 ### Administrator Dashboard
 * **User Management:** View all registered accounts, change user roles, assign subscription tiers, or ban/activate accounts.
