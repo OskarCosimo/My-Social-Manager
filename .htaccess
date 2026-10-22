@@ -1,0 +1,13 @@
+# /.htaccess (Root directory)
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect root to public/index.php
+    RewriteRule ^$ public/index.php [L]
+
+    # If the file or directory does not exist, send the request to public/index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php [QSA,L]
+</IfModule>
