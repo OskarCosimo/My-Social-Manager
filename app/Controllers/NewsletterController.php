@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/../Core/Database.php';
 require_once __DIR__ . '/../Core/Mailer.php';
+require_once __DIR__ . '/../Core/Crypto.php';
 
 class NewsletterController {
 
@@ -42,7 +43,6 @@ class NewsletterController {
         $db = Database::getInstance();
 
         // Fetch ALL valid users from the local My Social Manager database
-        // We ensure the email is not empty
         $stmt = $db->query("SELECT email FROM users WHERE email IS NOT NULL AND email != ''");
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -55,9 +55,14 @@ class NewsletterController {
         $successCount = 0;
         $errorCount = 0;
 
-        // Loop through all users and send the email
+        // Loop through all users, decrypt email address and send the newsletter
         foreach ($users as $user) {
-            $to = $user['email'];
+            $to = Crypto::decrypt($user['email']);
+
+            if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+                $errorCount++;
+                continue;
+            }
             
             // Send email using our centralized Mailer class
             if (Mailer::send($to, $subject, $body)) {
