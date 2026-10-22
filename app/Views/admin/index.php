@@ -150,59 +150,57 @@ setTimeout(window.checkAdminHash, 50);
             <div class="tab-pane fade show active" id="users" role="tabpanel" style="display: block;">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th><?= __('table_id') ?></th>
-                                    <th><?= __('table_email') ?></th>
-                                    <th><?= __('table_role') ?></th>
-                                    <th><?= __('table_status') ?></th>
-                                    <th><?= __('table_plan') ?></th>
-                                    <th><?= __('table_action') ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($users as $u): ?>
-                                <tr>
-                                    <td><?= (int)$u['id'] ?></td>
-                                    <td><?= htmlspecialchars($u['email']) ?></td>
-                                    <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'danger' : 'secondary' ?>"><?= strtoupper($u['role']) ?></span></td>
-                                    <td>
-                                        <span class="badge bg-<?= $u['status'] === 'active' ? 'success' : 'dark' ?>">
-                                            <?= strtoupper($u['status']) ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <form action="/admin/user/plan" method="POST" class="d-flex align-items-center mb-0">
-                                            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                                            <select name="plan_id" class="form-select form-select-sm me-2" style="width: auto; min-width: 130px;">
-                                                <?php foreach ($plans as $plan): ?>
-                                                    <option value="<?= (int)$plan['id'] ?>" <?= (isset($u['plan_id']) && $u['plan_id'] == $plan['id']) ? 'selected' : '' ?>>
-                                                        <?= htmlspecialchars($plan['name']) ?> (<?= htmlspecialchars($plan['price']) ?>)
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-primary"><?= __('save') ?></button>
-                                        </form>
-                                    </td>
-                                    <td>
-                                        <?php if ($u['id'] !== $_SESSION['user_id']): ?>
-                                            <form action="/admin/user/toggle" method="POST" class="d-inline">
-                                                <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                                                <?php if ($u['status'] === 'active'): ?>
-                                                    <input type="hidden" name="status" value="banned">
-                                                    <button type="submit" class="btn btn-sm btn-outline-dark"><?= __('ban') ?></button>
-                                                <?php else: ?>
-                                                    <input type="hidden" name="status" value="active">
-                                                    <button type="submit" class="btn btn-sm btn-outline-success"><?= __('activate') ?></button>
-                                                <?php endif; ?>
-                                            </form>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th><?= __('table_id') ?></th>
+                                        <th><?= __('table_email') ?></th>
+                                        <th><?= __('table_role') ?></th>
+                                        <th><?= __('table_status') ?></th>
+                                        <th><?= __('table_plan') ?></th>
+                                        <th class="text-end"><?= __('table_action') ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                        $plansMap = [];
+                                        foreach ($plans as $p) {
+                                            $plansMap[$p['id']] = $p['name'];
+                                        }
+                                    ?>
+                                    <?php foreach ($users as $u): ?>
+                                    <tr>
+                                        <td><?= (int)$u['id'] ?></td>
+                                        <td>
+                                            <span class="fw-semibold"><?= htmlspecialchars($u['email']) ?></span>
+                                            <?php if ((int)($u['email_verified'] ?? 0) === 1): ?>
+                                                <i class="bi bi-patch-check-fill text-success ms-1" title="Email Verified"></i>
+                                            <?php else: ?>
+                                                <i class="bi bi-exclamation-circle text-warning ms-1" title="Email Not Verified"></i>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'danger' : 'secondary' ?>"><?= strtoupper($u['role']) ?></span></td>
+                                        <td>
+                                            <span class="badge bg-<?= $u['status'] === 'active' ? 'success' : 'dark' ?>">
+                                                <?= strtoupper($u['status']) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">
+                                                <?= htmlspecialchars($plansMap[$u['plan_id']] ?? 'Default') ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onclick='openUserManageModal(<?= json_encode($u) ?>, <?= (int)$_SESSION['user_id'] ?>)'>
+                                                <i class="bi bi-gear-fill"></i> <?= __('manage') ?? 'Manage' ?>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -224,8 +222,6 @@ setTimeout(window.checkAdminHash, 50);
                             $displayFavicon = !empty($currentFavicon) ? $currentFavicon : $defaultFavicon;
                         ?>
                         <form action="/admin/settings/branding" method="POST" enctype="multipart/form-data">
-
-                            <!-- Header / Sidebar Logo Card -->
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-image text-primary"></i> <?= __('app_header_logo') ?? 'Application Header Logo' ?>
@@ -258,7 +254,6 @@ setTimeout(window.checkAdminHash, 50);
                                     </div>
                                 <?php endif; ?>
 
-                                <!-- Toggle Sidebar Logo Visibility -->
                                 <div class="form-check form-switch pt-2 border-top">
                                     <input class="form-check-input" type="checkbox" name="hide_sidebar_logo" id="hideSidebarLogo" value="1" <?= ($sysSettings['hide_sidebar_logo'] ?? '0') === '1' ? 'checked' : '' ?>>
                                     <label class="form-check-label fw-bold text-dark small" for="hideSidebarLogo">
@@ -268,7 +263,6 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <!-- Favicon Card -->
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-browser-chrome text-success"></i> <?= __('browser_favicon') ?? 'Browser Favicon (.png / .ico)' ?>
@@ -317,12 +311,7 @@ setTimeout(window.checkAdminHash, 50);
                         <i class="bi bi-shield-check text-primary"></i> <?= __('social_login_security_config') ?>
                     </div>
                     <div class="card-body">
-                        <?php 
-                            require_once __DIR__ . '/../../Models/SystemSetting.php';
-                            $sysSettings = SystemSetting::getAll();
-                        ?>
                         <form action="/admin/settings/auth" method="POST">
-
                             <div class="border rounded p-3 mb-3 bg-light">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" name="enable_social_google" id="enableGoogle" value="1" <?= ($sysSettings['enable_social_google'] ?? '0') === '1' ? 'checked' : '' ?>>
@@ -488,7 +477,6 @@ setTimeout(window.checkAdminHash, 50);
                             </div>
                         </div>
 
-                        <!-- Modal guide for this plugin if implemented -->
                         <?php if ($hasGuide): ?>
                             <div class="modal fade" id="guideModal_<?= htmlspecialchars($plugin->getId()) ?>" tabindex="-1" aria-labelledby="guideModalLabel_<?= htmlspecialchars($plugin->getId()) ?>" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -509,7 +497,6 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
                         <?php endif; ?>
-
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -522,7 +509,6 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                     <div class="card-body">
                         <form action="/admin/settings/payments" method="POST">
-                            
                             <div class="mb-4 p-3 border rounded bg-light">
                                 <h6 class="fw-bold text-primary mb-2"><?= __('platform_commission') ?></h6>
                                 <div class="input-group" style="max-width: 250px;">
@@ -579,8 +565,6 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Translations Tab -->
             <div class="tab-pane fade" id="translations" role="tabpanel" style="display: none;">
-                
-                <!-- 1. Enabled Languages for Selectors Card -->
                 <div class="card shadow-sm border-0 mb-4 bg-white">
                     <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2 border-bottom-0 pt-4 pb-0">
                         <i class="bi bi-eye text-primary"></i> <?= __('enabled_languages_title') ?? 'Visible Languages in Selectors' ?>
@@ -612,7 +596,6 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                 </div>
 
-                <!-- 2. Auto-Translator Card -->
                 <div class="card shadow-sm border-0 mb-4 bg-white">
                     <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2 border-bottom-0 pt-4 pb-0">
                         <i class="bi bi-globe text-secondary"></i> <?= __('auto_translator_title') ?>
@@ -633,7 +616,6 @@ setTimeout(window.checkAdminHash, 50);
                             <?php endif; ?>
                         </div>
                         
-                        <!-- Actions Bar: Select/Deselect All & Batch Translate -->
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                             <div class="btn-group btn-group-sm" role="group">
                                 <button type="button" class="btn btn-outline-secondary" id="btn-select-all-langs">
@@ -649,7 +631,6 @@ setTimeout(window.checkAdminHash, 50);
                             </button>
                         </div>
 
-                        <!-- Progress Bar & Status Display (Hidden by default) -->
                         <div id="translation-progress-box" class="mb-4 p-3 bg-light border rounded d-none">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="small fw-bold text-dark" id="progress-status-text"><?= __('translating') ?></span>
@@ -686,12 +667,9 @@ setTimeout(window.checkAdminHash, 50);
                         ];
                         ?>
 
-                        <!-- Checkboxes Grid -->
                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2">
                             <?php foreach ($supportedLangs as $code => $info): ?>
-                                <?php 
-                                    $alreadyExists = in_array($code, $activeLangList, true); 
-                                ?>
+                                <?php $alreadyExists = in_array($code, $activeLangList, true); ?>
                                 <div class="col">
                                     <div class="form-check p-2 border rounded bg-light h-100 d-flex align-items-center justify-content-between">
                                         <div>
@@ -721,10 +699,7 @@ setTimeout(window.checkAdminHash, 50);
                         <i class="bi bi-robot text-primary"></i> <?= __('ai_and_translation_settings') ?? 'Artificial Intelligence & Machine Translation Settings' ?>
                     </div>
                     <div class="card-body">
-                        <!-- ID aiSettingsForm used by JS to encode URL parameters to bypass ModSecurity CRS false positives -->
                         <form id="aiSettingsForm" action="/admin/settings/ai" method="POST">
-                            
-                            <!-- AI Provider Selector -->
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-sliders text-primary"></i> <?= __('active_ai_provider') ?? 'Active AI Provider' ?>
@@ -740,7 +715,6 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <!-- OpenAI / OpenAI-Compatible Configuration -->
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-cpu text-success"></i> <?= __('openai_compatible_endpoints') ?? 'OpenAI & Compatible Endpoints' ?>
@@ -762,7 +736,6 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <!-- Ollama Native API Configuration -->
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-hdd-network text-warning"></i> <?= __('ollama_native_api') ?? 'Ollama Native API' ?>
@@ -779,7 +752,6 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <!-- Google Gemini API Configuration -->
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-stars text-danger"></i> <?= __('google_gemini_api') ?? 'Google Gemini API' ?>
@@ -790,7 +762,6 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <!-- LibreTranslate Configuration -->
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-translate text-info"></i> <?= __('libretranslate_server_config') ?? 'LibreTranslate Server Configuration' ?>
@@ -818,8 +789,6 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Cron Tab -->
             <div class="tab-pane fade" id="cron" role="tabpanel" style="display: none;">
-                
-                <!-- Internal PHP Cron Toggle (WP-Cron Style) -->
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
                         <span class="d-inline-flex align-items-center gap-2">
@@ -844,7 +813,6 @@ setTimeout(window.checkAdminHash, 50);
 
                         <hr class="my-3">
 
-                        <!-- Registered Internal Workers Status Table -->
                         <h6 class="fw-bold mb-2"><?= __('internal_tasks_status') ?? 'Worker Tasks Status' ?></h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-bordered align-middle mb-0">
@@ -886,7 +854,6 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                 </div>
 
-                <!-- Server Crontab Instructions for all 4 Workers -->
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-terminal text-dark"></i> <?= __('system_crontab_config') ?? 'Server Crontab Configuration' ?>
@@ -898,7 +865,6 @@ setTimeout(window.checkAdminHash, 50);
                             $cronPath = realpath(__DIR__ . '/../../../cron');
                         ?>
                         
-                        <!-- 1. Publisher Worker -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-primary"><i class="bi bi-send me-1"></i> Publisher Worker (Every minute)</span>
@@ -908,7 +874,6 @@ setTimeout(window.checkAdminHash, 50);
                             </div>
                         </div>
 
-                        <!-- 2. RSS Worker -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-info"><i class="bi bi-rss me-1"></i> RSS Feeds Parser (Every 15 minutes)</span>
@@ -918,7 +883,6 @@ setTimeout(window.checkAdminHash, 50);
                             </div>
                         </div>
 
-                        <!-- 3. AI Campaign Worker -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-warning text-dark"><i class="bi bi-robot me-1"></i> AI Campaign Generator (Every minute)</span>
@@ -928,7 +892,6 @@ setTimeout(window.checkAdminHash, 50);
                             </div>
                         </div>
 
-                        <!-- 4. Reset Monthly Usage Worker -->
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-danger"><i class="bi bi-arrow-repeat me-1"></i> Usage & Quota Reset (Daily / Hourly check)</span>
@@ -938,7 +901,6 @@ setTimeout(window.checkAdminHash, 50);
                             </div>
                         </div>
 
-                        <!-- 5. Channel Automations Worker -->
                         <div class="mt-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-success"><i class="bi bi-broadcast-pin me-1"></i> Channel Automations Worker (Every 15 minutes)</span>
@@ -947,11 +909,9 @@ setTimeout(window.checkAdminHash, 50);
                                 */15 * * * * /usr/bin/php <?= $cronPath ?>/channel_worker.php >> <?= $cronPath ?>/channel.log 2>&1
                             </div>
                         </div>
-
                     </div>
                 </div>
 
-                <!-- Upcoming / Queued Jobs Table (Top 100) -->
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
                         <span class="d-inline-flex align-items-center gap-2">
@@ -1007,7 +967,6 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                 </div>
 
-                <!-- Failed Jobs & Explanations Table (Top 100) -->
                 <div class="card shadow-sm border-0 mb-4 border-danger-subtle">
                     <div class="card-header bg-danger-subtle fw-bold d-flex justify-content-between align-items-center">
                         <span class="d-inline-flex align-items-center gap-2 text-danger">
@@ -1065,7 +1024,6 @@ setTimeout(window.checkAdminHash, 50);
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <!-- Email / SMTP Tab -->
@@ -1096,22 +1054,18 @@ setTimeout(window.checkAdminHash, 50);
                                         <label class="form-label small"><?= __('smtp_host') ?></label>
                                         <input type="text" name="smtp_host" class="form-control form-control-sm" placeholder="smtp.example.com" value="<?= htmlspecialchars($sysSettings['smtp_host'] ?? '') ?>">
                                     </div>
-                                    
                                     <div class="col-md-4">
                                         <label class="form-label small"><?= __('smtp_port') ?></label>
                                         <input type="text" name="smtp_port" class="form-control form-control-sm" placeholder="587" value="<?= htmlspecialchars($sysSettings['smtp_port'] ?? '587') ?>">
                                     </div>
-
                                     <div class="col-md-6">
                                         <label class="form-label small"><?= __('smtp_username') ?></label>
                                         <input type="text" name="smtp_user" class="form-control form-control-sm" value="<?= htmlspecialchars($sysSettings['smtp_user'] ?? '') ?>">
                                     </div>
-
                                     <div class="col-md-6">
                                         <label class="form-label small"><?= __('smtp_password') ?></label>
                                         <input type="password" name="smtp_pass" class="form-control form-control-sm" placeholder="<?= __('leave_blank_keep_current') ?>">
                                     </div>
-
                                     <div class="col-md-12 mt-3 border-top pt-3">
                                         <label class="form-label small fw-bold"><?= __('encryption_protocol') ?></label>
                                         <select name="smtp_encryption" class="form-select form-select-sm">
@@ -1120,7 +1074,6 @@ setTimeout(window.checkAdminHash, 50);
                                             <option value="ssl" <?= ($sysSettings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL/TLS (Usually Port 465)</option>
                                         </select>
                                     </div>
-
                                     <div class="mb-4 pb-3 border-bottom">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="require_email_verification" id="requireVerification" value="1" <?= ($sysSettings['require_email_verification'] ?? '0') === '1' ? 'checked' : '' ?>>
@@ -1267,117 +1220,148 @@ setTimeout(window.checkAdminHash, 50);
     </main>
 </div>
 
+<!-- Modal: Manage User -->
+<div class="modal fade" id="manageUserModal" tabindex="-1" aria-labelledby="manageUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold d-inline-flex align-items-center gap-2" id="manageUserModalLabel">
+                    <i class="bi bi-person-gear"></i> <?= __('manage_user') ?? 'Manage User Account' ?>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form action="/admin/user/update" method="POST" id="manageUserForm">
+                <input type="hidden" name="user_id" id="modal_user_id">
+
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold"><?= __('table_email') ?? 'Email Address' ?></label>
+                            <input type="email" id="modal_user_email" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold"><?= __('registered_at') ?? 'Registered On' ?></label>
+                            <input type="text" id="modal_user_created_at" class="form-control bg-light" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold"><?= __('table_role') ?? 'Role' ?></label>
+                            <select name="role" id="modal_user_role" class="form-select">
+                                <option value="user">USER</option>
+                                <option value="admin">ADMIN</option>
+                            </select>
+                            <div class="form-text small text-danger" id="role_protected_hint" style="display:none;">Admin role locked for your own account.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold"><?= __('table_status') ?? 'Status' ?></label>
+                            <select name="status" id="modal_user_status" class="form-select">
+                                <option value="active">ACTIVE</option>
+                                <option value="banned">BANNED</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold"><?= __('table_plan') ?? 'Subscription Plan' ?></label>
+                            <select name="plan_id" id="modal_user_plan_id" class="form-select">
+                                <?php foreach ($plans as $plan): ?>
+                                    <option value="<?= (int)$plan['id'] ?>">
+                                        <?= htmlspecialchars($plan['name']) ?> (€<?= htmlspecialchars($plan['price']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="email_verified" id="modal_user_verified" value="1">
+                            <label class="form-check-label fw-bold small" for="modal_user_verified">
+                                <?= __('email_verified') ?? 'Email Address Verified' ?>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Password Recovery Action Box -->
+                    <div class="p-3 border rounded bg-light d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                                <i class="bi bi-key-fill text-warning"></i> <?= __('password_recovery_title') ?? 'Password Recovery' ?>
+                            </h6>
+                            <p class="text-muted small mb-0">
+                                <?= __('password_recovery_desc') ?? 'Send a secure reset link to the registered email so the user can define a new password.' ?>
+                            </p>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-danger btn-sm fw-bold d-inline-flex align-items-center gap-1" id="btnSendPasswordReset">
+                                <i class="bi bi-envelope-arrow-up"></i> <?= __('send_reset_link') ?? 'Send Reset Link' ?>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal"><?= __('cancel') ?? 'Cancel' ?></button>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                        <i class="bi bi-floppy me-1"></i> <?= __('save_changes') ?? 'Save Changes' ?>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Hidden form used to submit reset email request -->
+            <form action="/admin/user/send-reset" method="POST" id="sendResetPasswordForm" style="display:none;">
+                <input type="hidden" name="user_id" id="reset_user_id">
+            </form>
+        </div>
+    </div>
+</div>
+
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
 
-<!-- Base64 Encoding for WAF/ModSecurity Bypass & Batch Translations Script -->
+<!-- Manage User Modal Script -->
 <script>
+function openUserManageModal(user, currentAdminId) {
+    document.getElementById('modal_user_id').value = user.id;
+    document.getElementById('reset_user_id').value = user.id;
+    document.getElementById('modal_user_email').value = user.email || '';
+    document.getElementById('modal_user_created_at').value = user.created_at || 'N/A';
+    document.getElementById('modal_user_role').value = user.role || 'user';
+    document.getElementById('modal_user_status').value = user.status || 'active';
+    document.getElementById('modal_user_plan_id').value = user.plan_id || 1;
+    document.getElementById('modal_user_verified').checked = parseInt(user.email_verified || 0) === 1;
+
+    var roleSelect = document.getElementById('modal_user_role');
+    var statusSelect = document.getElementById('modal_user_status');
+    var roleHint = document.getElementById('role_protected_hint');
+
+    // Protect current logged-in admin from self-demotion or self-ban
+    if (parseInt(user.id) === parseInt(currentAdminId)) {
+        roleSelect.disabled = true;
+        statusSelect.disabled = true;
+        roleHint.style.display = 'block';
+    } else {
+        roleSelect.disabled = false;
+        statusSelect.disabled = false;
+        roleHint.style.display = 'none';
+    }
+
+    var modal = new bootstrap.Modal(document.getElementById('manageUserModal'));
+    modal.show();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. ModSecurity RFI (931100) and SSRF (934110) bypass for AI settings form
-    var aiForm = document.getElementById('aiSettingsForm');
-    if (aiForm) {
-        aiForm.addEventListener('submit', function(e) {
-            var urlFields = ['openai_endpoint', 'ollama_endpoint', 'libretranslate_url'];
-            urlFields.forEach(function(fieldName) {
-                var input = aiForm.querySelector('input[name="' + fieldName + '"]');
-                if (input && !input.disabled) {
-                    var hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = fieldName + '_b64';
-                    hiddenInput.value = btoa(unescape(encodeURIComponent(input.value)));
-                    aiForm.appendChild(hiddenInput);
-                    input.disabled = true;
-                }
-            });
-        });
-    }
-
-    // 2. Batch translation controls
-    var checkboxes = document.querySelectorAll('.lang-checkbox');
-    var selectedCountSpan = document.getElementById('selected-lang-count');
-    var btnSelectAll = document.getElementById('btn-select-all-langs');
-    var btnDeselectAll = document.getElementById('btn-deselect-all-langs');
-    var btnStartBatch = document.getElementById('btn-start-batch-translate');
-    
-    var progressBox = document.getElementById('translation-progress-box');
-    var progressBar = document.getElementById('translation-progress-bar');
-    var progressStatusText = document.getElementById('progress-status-text');
-    var progressPercentText = document.getElementById('progress-percent-text');
-    var translationLog = document.getElementById('translation-log');
-
-    function updateSelectedCount() {
-        var checkedCount = document.querySelectorAll('.lang-checkbox:checked').length;
-        if (selectedCountSpan) selectedCountSpan.textContent = checkedCount;
-    }
-
-    checkboxes.forEach(function(cb) {
-        cb.addEventListener('change', updateSelectedCount);
-    });
-
-    if (btnSelectAll) {
-        btnSelectAll.addEventListener('click', function() {
-            checkboxes.forEach(function(cb) { cb.checked = true; });
-            updateSelectedCount();
-        });
-    }
-
-    if (btnDeselectAll) {
-        btnDeselectAll.addEventListener('click', function() {
-            checkboxes.forEach(function(cb) { cb.checked = false; });
-            updateSelectedCount();
-        });
-    }
-
-    if (btnStartBatch) {
-        btnStartBatch.addEventListener('click', async function() {
-            var selectedCheckboxes = Array.from(document.querySelectorAll('.lang-checkbox:checked'));
-            if (selectedCheckboxes.length === 0) {
-                alert('<?= addslashes(__("no_languages_selected")) ?>');
-                return;
+    var btnReset = document.getElementById('btnSendPasswordReset');
+    if (btnReset) {
+        btnReset.addEventListener('click', function() {
+            var email = document.getElementById('modal_user_email').value;
+            if (confirm('Send password reset email to: ' + email + '?')) {
+                document.getElementById('sendResetPasswordForm').submit();
             }
-
-            btnStartBatch.disabled = true;
-            progressBox.classList.remove('d-none');
-            translationLog.innerHTML = '';
-            
-            var total = selectedCheckboxes.length;
-            var completed = 0;
-
-            for (var i = 0; i < total; i++) {
-                var langCode = selectedCheckboxes[i].value;
-                var percent = Math.round((i / total) * 100);
-                
-                progressBar.style.width = percent + '%';
-                progressPercentText.textContent = percent + '%';
-                progressStatusText.textContent = 'Translating ' + langCode.toUpperCase() + ' (' + (i + 1) + '/' + total + ')...';
-
-                try {
-                    var response = await fetch('/api/admin/translate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ target_lang: langCode })
-                    });
-
-                    var data = await response.json();
-                    
-                    if (data.success) {
-                        translationLog.innerHTML += '<div class="text-success">✓ [' + langCode.toUpperCase() + '] ' + (data.message || '<?= addslashes(__("translated_and_saved") ?? "Translated and saved.") ?>') + '</div>';
-                    } else {
-                        translationLog.innerHTML += '<div class="text-danger fw-bold">✗ [' + langCode.toUpperCase() + '] Error: ' + data.error + '</div>';
-                    }
-                } catch (err) {
-                    translationLog.innerHTML += '<div class="text-danger fw-bold">✗ [' + langCode.toUpperCase() + '] <?= addslashes(__("conn_timeout_server_error") ?? "Connection timeout or server error.") ?></div>';
-                }
-
-                translationLog.scrollTop = translationLog.scrollHeight;
-                completed++;
-            }
-
-            progressBar.style.width = '100%';
-            progressBar.classList.remove('progress-bar-animated');
-            progressPercentText.textContent = '100%';
-            progressStatusText.textContent = '<?= addslashes(__("translation_completed")) ?>';
-
-            btnStartBatch.disabled = false;
         });
     }
 });
