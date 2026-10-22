@@ -130,6 +130,7 @@ class CronRunner {
                    u.email AS user_email, s.platform_name, s.plugin_id
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
+            LEFT JOIN social_accounts s ON p.social_account_id = s.id
             WHERE p.status = 'scheduled'
             ORDER BY p.scheduled_for ASC
             LIMIT :limit
@@ -157,6 +158,7 @@ class CronRunner {
                    u.email AS user_email, s.platform_name, s.plugin_id
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
+            LEFT JOIN social_accounts s ON p.social_account_id = s.id
             WHERE p.status = 'failed'
             ORDER BY p.id DESC
             LIMIT :limit
