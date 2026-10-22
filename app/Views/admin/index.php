@@ -699,6 +699,7 @@ setTimeout(window.checkAdminHash, 50);
                         <i class="bi bi-robot text-primary"></i> <?= __('ai_and_translation_settings') ?? 'Artificial Intelligence & Machine Translation Settings' ?>
                     </div>
                     <div class="card-body">
+                        <!-- ID aiSettingsForm used by JS to encode URL parameters to bypass ModSecurity CRS false positives -->
                         <form id="aiSettingsForm" action="/admin/settings/ai" method="POST">
                             <div class="border rounded p-3 mb-4 bg-light">
                                 <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
@@ -1323,7 +1324,7 @@ setTimeout(window.checkAdminHash, 50);
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
 
-<!-- Manage User Modal Script -->
+<!-- Manage User Modal & Form Logic -->
 <script>
 function openUserManageModal(user, currentAdminId) {
     document.getElementById('modal_user_id').value = user.id;
@@ -1355,6 +1356,7 @@ function openUserManageModal(user, currentAdminId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 1. Password Reset trigger button
     var btnReset = document.getElementById('btnSendPasswordReset');
     if (btnReset) {
         btnReset.addEventListener('click', function() {
@@ -1362,6 +1364,115 @@ document.addEventListener('DOMContentLoaded', function() {
             if (confirm('Send password reset email to: ' + email + '?')) {
                 document.getElementById('sendResetPasswordForm').submit();
             }
+        });
+    }
+
+    // 2. ModSecurity RFI (931100) and SSRF (934110) bypass for AI settings form
+    var aiForm = document.getElementById('aiSettingsForm');
+    if (aiForm) {
+        aiForm.addEventListener('submit', function(e) {
+            var urlFields = ['openai_endpoint', 'ollama_endpoint', 'libretranslate_url'];
+            urlFields.forEach(function(fieldName) {
+                var input = aiForm.querySelector('input[name="' + fieldName + '"]');
+                if (input && !input.disabled) {
+                    var hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = fieldName + '_b64';
+                    hiddenInput.value = btoa(unescape(encodeURIComponent(input.value)));
+                    aiForm.appendChild(hiddenInput);
+                    input.disabled = true;
+                }
+            });
+        });
+    }
+
+    // 3. Batch translation controls
+    var checkboxes = document.querySelectorAll('.lang-checkbox');
+    var selectedCountSpan = document.getElementById('selected-lang-count');
+    var btnSelectAll = document.getElementById('btn-select-all-langs');
+    var btnDeselectAll = document.getElementById('btn-deselect-all-langs');
+    var btnStartBatch = document.getElementById('btn-start-batch-translate');
+    
+    var progressBox = document.getElementById('translation-progress-box');
+    var progressBar = document.getElementById('translation-progress-bar');
+    var progressStatusText = document.getElementById('progress-status-text');
+    var progressPercentText = document.getElementById('progress-percent-text');
+    var translationLog = document.getElementById('translation-log');
+
+    function updateSelectedCount() {
+        var checkedCount = document.querySelectorAll('.lang-checkbox:checked').length;
+        if (selectedCountSpan) selectedCountSpan.textContent = checkedCount;
+    }
+
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+
+    if (btnSelectAll) {
+        btnSelectAll.addEventListener('click', function() {
+            checkboxes.forEach(function(cb) { cb.checked = true; });
+            updateSelectedCount();
+        });
+    }
+
+    if (btnDeselectAll) {
+        btnDeselectAll.addEventListener('click', function() {
+            checkboxes.forEach(function(cb) { cb.checked = false; });
+            updateSelectedCount();
+        });
+    }
+
+    if (btnStartBatch) {
+        btnStartBatch.addEventListener('click', async function() {
+            var selectedCheckboxes = Array.from(document.querySelectorAll('.lang-checkbox:checked'));
+            if (selectedCheckboxes.length === 0) {
+                alert('<?= addslashes(__("no_languages_selected")) ?>');
+                return;
+            }
+
+            btnStartBatch.disabled = true;
+            progressBox.classList.remove('d-none');
+            translationLog.innerHTML = '';
+            
+            var total = selectedCheckboxes.length;
+            var completed = 0;
+
+            for (var i = 0; i < total; i++) {
+                var langCode = selectedCheckboxes[i].value;
+                var percent = Math.round((i / total) * 100);
+                
+                progressBar.style.width = percent + '%';
+                progressPercentText.textContent = percent + '%';
+                progressStatusText.textContent = 'Translating ' + langCode.toUpperCase() + ' (' + (i + 1) + '/' + total + ')...';
+
+                try {
+                    var response = await fetch('/api/admin/translate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ target_lang: langCode })
+                    });
+
+                    var data = await response.json();
+                    
+                    if (data.success) {
+                        translationLog.innerHTML += '<div class="text-success">✓ [' + langCode.toUpperCase() + '] ' + (data.message || '<?= addslashes(__("translated_and_saved") ?? "Translated and saved.") ?>') + '</div>';
+                    } else {
+                        translationLog.innerHTML += '<div class="text-danger fw-bold">✗ [' + langCode.toUpperCase() + '] Error: ' + data.error + '</div>';
+                    }
+                } catch (err) {
+                    translationLog.innerHTML += '<div class="text-danger fw-bold">✗ [' + langCode.toUpperCase() + '] <?= addslashes(__("conn_timeout_server_error") ?? "Connection timeout or server error.") ?></div>';
+                }
+
+                translationLog.scrollTop = translationLog.scrollHeight;
+                completed++;
+            }
+
+            progressBar.style.width = '100%';
+            progressBar.classList.remove('progress-bar-animated');
+            progressPercentText.textContent = '100%';
+            progressStatusText.textContent = '<?= addslashes(__("translation_completed")) ?>';
+
+            btnStartBatch.disabled = false;
         });
     }
 });
