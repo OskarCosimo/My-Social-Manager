@@ -2,6 +2,7 @@
 // app/Core/CronRunner.php
 
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/Crypto.php';
 require_once __DIR__ . '/../Models/SystemSetting.php';
 
 class CronRunner {
@@ -120,7 +121,7 @@ class CronRunner {
     }
 
     /**
-     * Retrieve the last 100 scheduled or pending queue items
+     * Retrieve the last 100 scheduled or pending queue items with decrypted user email
      */
     public static function getQueuedPosts(int $limit = 100): array {
         $db = Database::getInstance();
@@ -129,18 +130,25 @@ class CronRunner {
                    u.email AS user_email, s.platform_name, s.plugin_id
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            LEFT JOIN social_accounts s ON p.social_account_id = s.id
             WHERE p.status = 'scheduled'
             ORDER BY p.scheduled_for ASC
             LIMIT :limit
         ");
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            if (!empty($row['user_email'])) {
+                $row['user_email'] = Crypto::decrypt($row['user_email']);
+            }
+        }
+
+        return $rows;
     }
 
     /**
-     * Retrieve the last 100 failed jobs with their error details
+     * Retrieve the last 100 failed jobs with decrypted user email and error details
      */
     public static function getFailedPosts(int $limit = 100): array {
         $db = Database::getInstance();
@@ -149,14 +157,21 @@ class CronRunner {
                    u.email AS user_email, s.platform_name, s.plugin_id
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            LEFT JOIN social_accounts s ON p.social_account_id = s.id
             WHERE p.status = 'failed'
             ORDER BY p.id DESC
             LIMIT :limit
         ");
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            if (!empty($row['user_email'])) {
+                $row['user_email'] = Crypto::decrypt($row['user_email']);
+            }
+        }
+
+        return $rows;
     }
 
     /**
