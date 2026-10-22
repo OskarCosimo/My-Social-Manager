@@ -74,7 +74,7 @@ class User {
     public static function getAll(): array {
         $db = Database::getInstance();
         $stmt = $db->query("SELECT * FROM users ORDER BY created_at DESC");
-        return self::transformUsers($stmt->fetchAll());
+        return self::transformUsers($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
     public static function updateStatus(int $id, string $status): bool {
@@ -91,7 +91,7 @@ class User {
 
     public static function updatePassword(int $id, string $newPasswordHash): bool {
         $db = Database::getInstance();
-        $stmt = $db->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE users SET password = ?, reset_token = NULL, reset_expires_at = NULL WHERE id = ?");
         return $stmt->execute([$newPasswordHash, $id]);
     }
 
@@ -142,16 +142,57 @@ class User {
     }
 
     /**
+     * Admin full update of user properties
+     */
+    public static function updateAdminDetails(int $userId, string $role, string $status, int $planId, int $emailVerified): bool {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            UPDATE users 
+            SET role = :role, 
+                status = :status, 
+                plan_id = :plan_id, 
+                email_verified = :email_verified 
+            WHERE id = :id
+        ");
+        return $stmt->execute([
+            ':role'           => $role,
+            ':status'         => $status,
+            ':plan_id'        => $planId,
+            ':email_verified' => $emailVerified,
+            ':id'             => $userId
+        ]);
+    }
+
+    /**
+     * Store password reset token with expiration date
+     */
+    public static function setResetToken(int $userId, string $token, string $expiresAt): bool {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("UPDATE users SET reset_token = ?, reset_expires_at = ? WHERE id = ?");
+        return $stmt->execute([$token, $expiresAt, $userId]);
+    }
+
+    /**
+     * Find user by valid non-expired reset token
+     */
+    public static function findByResetToken(string $token): ?array {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            SELECT * FROM users 
+            WHERE reset_token = ? 
+              AND reset_expires_at > NOW() 
+            LIMIT 1
+        ");
+        $stmt->execute([$token]);
+        return self::transformUser($stmt->fetch(PDO::FETCH_ASSOC) ?: null);
+    }
+
+    /**
      * Update the subscription plan and calculate expiration date based on plan details
-     * 
-     * @param int $userId The ID of the user
-     * @param int $planId The ID of the new plan to assign
-     * @return bool True on success, false on failure
      */
     public static function updatePlan(int $userId, int $planId): bool {
         $db = Database::getInstance();
 
-        // Fetch the plan details to inspect price and billing cycle
         $stmtPlan = $db->prepare("SELECT price, billing_cycle FROM plans WHERE id = ?");
         $stmtPlan->execute([$planId]);
         $plan = $stmtPlan->fetch();
@@ -163,7 +204,6 @@ class User {
         $cycle = strtolower($plan['billing_cycle'] ?? 'monthly');
         $price = (float)($plan['price'] ?? 0.00);
 
-        // Determine expiration date and is_premium flag
         if ($price == 0.00 || $cycle === 'lifetime') {
             $periodEnd = null;
             $isPremium = 0;
