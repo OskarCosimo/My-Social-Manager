@@ -51,7 +51,7 @@ CREATE TABLE `plans` (
 INSERT INTO `plans` (`id`, `name`, `plan_code`, `stripe_price_id`, `price`, `billing_cycle`, `max_accounts`, `max_posts`, `post_period`, `ai_credits_month`, `is_default`, `ai_max_campaign_posts`, `ai_max_daily_posts`, `max_storage_size`, `max_upload_size`, `max_rss_feeds`, `max_rss_posts`, `max_channel_automations`, `max_channel_posts`, `max_emails_per_month`, `max_subscribers_per_list`, `max_mailing_lists`, `is_hidden`)
 VALUES (1, 'Free Plan', 'free', NULL, 0.00, 'monthly', 3, 50, 'monthly', 10, 1, 3, 2, '500MB', '25MB', 3, 30, 2, 20, 100, 50, 1, 0);
 
--- Table: users (with email encrypted at rest and deterministic HMAC blind index)
+-- Table: users (with encrypted email, HMAC blind index, and password reset tokens)
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `email` text COLLATE utf8mb4_bin NOT NULL,
@@ -59,6 +59,8 @@ CREATE TABLE `users` (
   `password` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
   `email_verified` tinyint(1) DEFAULT '0',
   `verification_token` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+  `reset_token` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+  `reset_expires_at` datetime DEFAULT NULL,
   `role` enum('user','admin') COLLATE utf8mb4_bin DEFAULT 'user',
   `status` enum('active','banned') COLLATE utf8mb4_bin DEFAULT 'active',
   `is_premium` tinyint(1) DEFAULT '0',
@@ -87,6 +89,7 @@ CREATE TABLE `users` (
   `channel_posts_used` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_users_email_hash` (`email_hash`),
+  KEY `idx_users_reset_token` (`reset_token`),
   KEY `plan_id` (`plan_id`),
   CONSTRAINT `users_ibfk_1` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
