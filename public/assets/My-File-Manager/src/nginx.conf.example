@@ -1,0 +1,41 @@
+# Config Nginx for /src/
+location /src/ {
+    # Allow ONLY connector.php and download.php
+    location ~ ^/src/(connector|download)\.php$ {
+        # FastCGI configuration (adjust paths as needed)
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+    
+    # Block all other PHP files
+    location ~ \.php$ {
+        return 403;
+    }
+    
+    # Block plugins directory
+    location ~ ^/src/plugins/ {
+        return 403;
+    }
+    
+    # Block public_links directory (important!)
+    location ~ ^/src/public_links/ {
+        return 403;
+    }
+    
+    # Block sensitive files
+    location ~ \.(ini|log|conf|bak|tmp|json)$ {
+        return 403;
+    }
+    
+    # Disable directory listing
+    autoindex off;
+    
+    # Security headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+
+# Rest of your server configuration...

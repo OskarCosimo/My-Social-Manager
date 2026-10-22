@@ -1,0 +1,30 @@
+{
+  "name": "my-file-manager-opensource",
+  "version": "1.2.0",
+  "description": "Modern, secure web-based file manager with end-to-end encryption",
+  "main": "js/myfilemanager.js",
+  "scripts": {
+    "minify:js1": "terser js/myfilemanager.js -o js/myfilemanager.min.js",
+    "minify:js2": "terser js/i18n.js -o js/i18n.min.js",
+    "minify:css": "cleancss -o css/myfilemanager.min.css css/myfilemanager.css",
+    "minify": "npm run minify:js1 && npm run minify:js2 && npm run minify:css"
+  },
+  "keywords": [
+    "file-manager",
+    "file-upload",
+    "php",
+    "javascript",
+    "encryption",
+    "cloud-storage"
+  ],
+  "author": "Oscar Cosimo & MYETV Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OskarCosimo/My-File-Manager-Opensource"
+  },
+  "devDependencies": {
+    "clean-css-cli": "^5.6.3",
+    "terser": "^5.31.0"
+  }
+}

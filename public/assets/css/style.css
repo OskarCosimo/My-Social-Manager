@@ -1,0 +1,77 @@
+/* public/assets/css/style.css */
+
+:root {
+    --primary-color: #007bff;
+    --sidebar-bg: #2c3e50;
+    --bg-color: #f4f6f9;
+    --text-color: #333;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    color: white;
+    padding: 20px;
+}
+
+    .sidebar nav ul {
+        list-style: none;
+        padding: 0;
+    }
+
+        .sidebar nav ul li {
+            margin-bottom: 15px;
+        }
+
+            .sidebar nav ul li a {
+                color: white;
+                text-decoration: none;
+            }
+
+.main-content {
+    flex-grow: 1;
+    padding: 30px;
+}
+
+.composer-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.form-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}

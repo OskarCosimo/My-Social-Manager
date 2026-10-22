@@ -1,0 +1,245 @@
+/**
+ * my_wysiwyg.css
+ * Core styles for My WYSIWYG editor
+ */
+
+:root {
+    --my-wysiwyg-border: #ced4da;
+    --my-wysiwyg-bg: #fff;
+    --my-wysiwyg-toolbar-bg: #f8f9fa;
+    --my-wysiwyg-btn-hover: #e2e6ea;
+    --my-wysiwyg-text: #212529;
+    --my-wysiwyg-radius: 4px;
+}
+
+.my-wysiwyg-container {
+    width: 100%; 
+    box-sizing: border-box;
+    border: 1px solid var(--my-wysiwyg-border);
+    border-radius: var(--my-wysiwyg-radius);
+    background: var(--my-wysiwyg-bg);
+    display: flex;
+    flex-direction: column;
+    font-family: system-ui, -apple-system, sans-serif;
+    position: relative;
+}
+
+/* RESPONSIVE TOOLBAR MAGIC */
+.my-wysiwyg-toolbar {
+    background: var(--my-wysiwyg-toolbar-bg);
+    border-bottom: 1px solid var(--my-wysiwyg-border);
+    border-top-left-radius: var(--my-wysiwyg-radius);
+    border-top-right-radius: var(--my-wysiwyg-radius);
+    display: flex;
+    flex-wrap: wrap;       /* Allows buttons to flow to the next line */
+    padding: 8px 40px 8px 8px; /* Right padding makes room for the absolute expand button */
+    gap: 6px;
+    align-items: center;
+    position: relative;
+    max-height: 48px;      /* Strictly ONE row height by default */
+    overflow: hidden;      /* Hides everything that wraps to the second line */
+    transition: max-height 0.3s ease;
+}
+
+.my-wysiwyg-toolbar.expanded {
+    max-height: 300px;     /* Reveals all wrapped items */
+    overflow: visible;
+}
+
+.my-wysiwyg-divider {
+    width: 1px;
+    height: 24px;
+    background-color: #d1d5db;
+    margin: 0 4px;
+}
+
+/* UI Elements inside Toolbar */
+.my-wysiwyg-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--my-wysiwyg-text);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    min-width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+.my-wysiwyg-btn:hover {
+    background: var(--my-wysiwyg-btn-hover);
+}
+
+.my-wysiwyg-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* Absolute Expand Button */
+.my-wysiwyg-btn.expand-btn {
+    position: absolute;
+    right: 4px;
+    top: 8px;
+    background: var(--my-wysiwyg-toolbar-bg);
+    z-index: 2;
+}
+
+/* Native Color Picker Styling */
+.my-wysiwyg-color-picker {
+    width: 32px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+    flex-shrink: 0;
+}
+.my-wysiwyg-color-picker:hover {
+    background: var(--my-wysiwyg-btn-hover);
+}
+
+/* Select Dropdowns (Fonts & Sizes) */
+.my-wysiwyg-select {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: var(--my-wysiwyg-text);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    max-width: 130px;
+    flex-shrink: 0;
+}
+
+/* Editor Area */
+.my-wysiwyg-editor {
+    min-height: 150px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+    outline: none;
+    line-height: 1.5;
+}
+
+.my-wysiwyg-editor a { color: #007bff; text-decoration: underline; cursor: pointer; }
+.my-wysiwyg-editor pre { background: #2d2d2d; color: #ccc; padding: 10px; border-radius: 4px; overflow-x: auto; font-family: monospace; }
+.my-wysiwyg-editor p { margin: 0 0 10px 0; }
+
+/* Status Bar */
+.my-wysiwyg-statusbar {
+    background: var(--my-wysiwyg-toolbar-bg);
+    border-top: 1px solid var(--my-wysiwyg-border);
+    border-bottom-left-radius: var(--my-wysiwyg-radius);
+    border-bottom-right-radius: var(--my-wysiwyg-radius);
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    justify-content: flex-end;
+}
+.my-wysiwyg-statusbar.limit-reached { color: #dc3545; }
+.my-wysiwyg-hidden { display: none !important; }
+
+/* Popups (Emoji & Tooltips) */
+
+/* Updated Emoji Picker Container */
+.my-wysiwyg-emoji-picker {
+    display: none;
+    position: absolute;
+    width: 280px; /* Expanded width for grid layout */
+    max-height: 320px; /* Restrict height for scrolling */
+    overflow-y: auto; /* Enable vertical scroll */
+    background: var(--my-wysiwyg-bg);
+    border: 1px solid var(--my-wysiwyg-border);
+    border-radius: var(--my-wysiwyg-radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 10px;
+    z-index: 1000;
+}
+
+/* Toggle visibility via block instead of flex for proper flow */
+.my-wysiwyg-emoji-picker.show { 
+    display: block; 
+}
+
+/* Emoji Category Section */
+.my-wysiwyg-emoji-category {
+    margin-bottom: 15px;
+}
+
+.my-wysiwyg-emoji-category:last-child {
+    margin-bottom: 0;
+}
+
+/* Sticky Category Titles */
+.my-wysiwyg-emoji-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: -10px; /* Offset to keep title flush at the top while scrolling */
+    background: var(--my-wysiwyg-bg); /* Match container background to hide items scrolling behind */
+    padding: 5px 0;
+    z-index: 1; 
+}
+
+/* Emoji Grid Layout */
+.my-wysiwyg-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+    gap: 4px;
+}
+
+/* Individual Emoji Button */
+.my-wysiwyg-emoji-btn { 
+    background: transparent; 
+    border: none; 
+    font-size: 18px; /* Optimized size for dense grid */
+    cursor: pointer; 
+    padding: 4px; 
+    border-radius: var(--my-wysiwyg-radius); 
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.my-wysiwyg-emoji-btn:hover { 
+    background: var(--my-wysiwyg-btn-hover); 
+}
+
+/* Link Tooltip */
+.my-wysiwyg-link-tooltip {
+    position: absolute; display: none; background: #212529; color: #fff;
+    padding: 6px 12px; border-radius: 4px; font-size: 13px; z-index: 1001;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); gap: 12px; align-items: center;
+}
+.my-wysiwyg-link-tooltip.show { display: flex; }
+.my-wysiwyg-link-tooltip span { cursor: pointer; color: #adb5bd; transition: color 0.2s; }
+.my-wysiwyg-link-tooltip span:hover { color: #fff; }
+.my-wysiwyg-link-tooltip span.remove-link:hover { color: #ff6b6b; }
+
+/* --- Custom Placeholder --- */
+.my-wysiwyg-editor[data-empty="true"]::before {
+    content: attr(data-placeholder);
+    color: #6c757d; /* Bootstrap-like muted color */
+    pointer-events: none; /* Allows clicking through the text */
+    position: absolute; /* Keeps it in place regardless of line-height issues */
+    font-style: italic;
+}
