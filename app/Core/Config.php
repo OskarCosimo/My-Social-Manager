@@ -3,22 +3,7 @@
 
 class Config {
     // Application version and GitHub repository
-    public const APP_VERSION = '1.0.0';
-    public const GITHUB_REPO = 'OskarCosimo/My-Social-Manager';
-
-    // Database connection details
-    public const DB_HOST = '127.0.0.1';
-    public const DB_PORT = 3306;
-    public const DB_NAME = 'mysocialmanager';
-    public const DB_USER = '';
-    public const DB_PASS = '';
-
-    <?php
-// app/Core/Config.php
-
-class Config {
-    // Application version and GitHub repository
-    public const APP_VERSION = '1.0.1';
+    public const APP_VERSION = '1.0.2';
     public const GITHUB_REPO = 'OskarCosimo/My-Social-Manager';
 
     // Database connection details
