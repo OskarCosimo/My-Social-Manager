@@ -1,8 +1,6 @@
+<?php require_once __DIR__ . '/../partials/header.php';
 // app/Views/auth/login.php
-?>
-<?php require_once __DIR__ . '/../partials/header.php'; ?>
 
-<?php 
 // Check if Turnstile is enabled from the admin panel and keys are available
 $turnstileEnabled = ($settings['enable_turnstile'] ?? '0') === '1';
 $turnstileSiteKey = $settings['turnstile_site_key'] ?? '';
