@@ -545,4 +545,69 @@ class AuthController {
         return $responseData['success'] ?? false;
     }
 
+     /**
+     * Render the reset password form from email token
+     */
+    public function showResetPassword(): void {
+        $token = trim($_GET['token'] ?? '');
+        if (empty($token)) {
+            $_SESSION['error'] = "Invalid or missing password reset token.";
+            header('Location: /login');
+            exit;
+        }
+
+        $user = User::findByResetToken($token);
+        if (!$user) {
+            $_SESSION['error'] = "This reset link is invalid or has expired.";
+            header('Location: /login');
+            exit;
+        }
+
+        require_once __DIR__ . '/../Views/auth/reset-password.php';
+    }
+
+    /**
+     * Process password reset submission
+     */
+    public function resetPassword(): void {
+        $token = trim($_POST['token'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['password_confirmation'] ?? '';
+
+        if (empty($token) || empty($password)) {
+            $_SESSION['error'] = "Please fill in all required fields.";
+            header('Location: /reset-password?token=' . urlencode($token));
+            exit;
+        }
+
+        if ($password !== $confirmPassword) {
+            $_SESSION['error'] = "Passwords do not match.";
+            header('Location: /reset-password?token=' . urlencode($token));
+            exit;
+        }
+
+        if (strlen($password) < 8) {
+            $_SESSION['error'] = "Password must be at least 8 characters long.";
+            header('Location: /reset-password?token=' . urlencode($token));
+            exit;
+        }
+
+        $user = User::findByResetToken($token);
+        if (!$user) {
+            $_SESSION['error'] = "This reset link is invalid or has expired.";
+            header('Location: /login');
+            exit;
+        }
+
+        $newPasswordHash = password_hash($password, PASSWORD_ARGON2ID);
+        if (User::updatePassword((int)$user['id'], $newPasswordHash)) {
+            $_SESSION['success'] = "Password updated successfully. You can now log in.";
+            header('Location: /login');
+        } else {
+            $_SESSION['error'] = "Failed to update password. Please try again.";
+            header('Location: /reset-password?token=' . urlencode($token));
+        }
+        exit;
+    }
+
 }
