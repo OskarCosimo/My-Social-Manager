@@ -9,6 +9,7 @@ require_once __DIR__ . '/../Models/Plan.php';
 require_once __DIR__ . '/../Models/SystemSetting.php';
 require_once __DIR__ . '/../Core/CronRunner.php';
 require_once __DIR__ . '/../Core/Language.php';
+require_once __DIR__ . '/../Core/Mailer.php';
 
 class AdminController {
 
@@ -56,19 +57,99 @@ class AdminController {
     }
 
     /**
+     * Update user details from the Admin Modal
+     */
+    public function updateUser(): void {
+        $userId = (int)($_POST['user_id'] ?? 0);
+        if ($userId <= 0) {
+            $_SESSION['error'] = "Invalid user ID.";
+            header('Location: /admin#users');
+            exit;
+        }
+
+        $user = User::findById($userId);
+        if (!$user) {
+            $_SESSION['error'] = "User not found.";
+            header('Location: /admin#users');
+            exit;
+        }
+
+        $role = trim($_POST['role'] ?? 'user');
+        $status = trim($_POST['status'] ?? 'active');
+        $planId = (int)($_POST['plan_id'] ?? 1);
+        $emailVerified = isset($_POST['email_verified']) ? 1 : 0;
+
+        // Security check: An admin cannot ban or demote themselves
+        if ($userId === (int)$_SESSION['user_id']) {
+            $role = 'admin';
+            $status = 'active';
+        }
+
+        if (User::updateAdminDetails($userId, $role, $status, $planId, $emailVerified)) {
+            $_SESSION['success'] = "User #{$userId} updated successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to update user #{$userId}.";
+        }
+
+        header('Location: /admin#users');
+        exit;
+    }
+
+    /**
+     * Generate password reset token and dispatch email link
+     */
+    public function sendPasswordReset(): void {
+        $userId = (int)($_POST['user_id'] ?? 0);
+        if ($userId <= 0) {
+            $_SESSION['error'] = "Invalid user ID.";
+            header('Location: /admin#users');
+            exit;
+        }
+
+        $user = User::findById($userId);
+        if (!$user || empty($user['email'])) {
+            $_SESSION['error'] = "User not found or email unavailable.";
+            header('Location: /admin#users');
+            exit;
+        }
+
+        // Generate 32-byte secure token valid for 2 hours
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+2 hours'));
+
+        if (User::setResetToken($userId, $token, $expiresAt)) {
+            $resetLink = rtrim(Config::APP_URL, '/') . '/reset-password?token=' . $token;
+            $subject = "Password Reset Request - My Social Manager";
+            $html = "
+                <h2>Password Reset</h2>
+                <p>An administrator has generated a password reset request for your account.</p>
+                <p>Click the link below to set a new password (valid for 2 hours):</p>
+                <p><a href='{$resetLink}' style='display:inline-block; padding:10px 20px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:5px;'>Reset Password</a></p>
+                <p><small>If you did not request this, please contact support immediately.</small></p>
+            ";
+
+            if (Mailer::send($user['email'], $subject, $html)) {
+                $_SESSION['success'] = "Password reset link sent successfully to {$user['email']}.";
+            } else {
+                $_SESSION['error'] = "Token generated, but failed to send email. Check mail server settings.";
+            }
+        } else {
+            $_SESSION['error'] = "Failed to generate password reset token.";
+        }
+
+        header('Location: /admin#users');
+        exit;
+    }
+
+    /**
      * Save Branding Settings (Logo, Favicon, and Sidebar Visibility)
-     * Enforces strict file validation, 2MB size limit, and uploads folder hardening.
      */
     public function saveBrandingSettings(): void {
         $uploadDir = dirname(__DIR__, 2) . '/public/assets/images';
-        
-        // Ensure upload directory exists and is secured
         $this->ensureSecureUploadDirectory($uploadDir);
 
-        // Maximum file size in bytes (2MB)
         $maxSizeBytes = 2 * 1024 * 1024;
 
-        // 1. Process Logo
         if (isset($_POST['reset_logo']) && $_POST['reset_logo'] === '1') {
             SystemSetting::save('app_logo', '');
         } elseif (isset($_FILES['logo_file']) && $_FILES['logo_file']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -83,7 +164,6 @@ class AdminController {
             SystemSetting::save('app_logo', trim((string)$_POST['logo_url']));
         }
 
-        // 2. Process Favicon
         if (isset($_POST['reset_favicon']) && $_POST['reset_favicon'] === '1') {
             SystemSetting::save('app_favicon', '');
         } elseif (isset($_FILES['favicon_file']) && $_FILES['favicon_file']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -98,7 +178,6 @@ class AdminController {
             SystemSetting::save('app_favicon', trim((string)$_POST['favicon_url']));
         }
 
-        // 3. Process Hide Sidebar Logo Option
         $hideSidebarLogo = isset($_POST['hide_sidebar_logo']) ? '1' : '0';
         SystemSetting::save('hide_sidebar_logo', $hideSidebarLogo);
 
@@ -107,9 +186,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Validate and securely store an uploaded image file
-     */
     private function handleSecureUpload(array $file, string $destinationDir, string $prefix, int $maxSizeBytes): ?string {
         if ($file['error'] !== UPLOAD_ERR_OK) {
             $_SESSION['error'] = ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE)
@@ -135,12 +211,8 @@ class AdminController {
         finfo_close($finfo);
 
         $allowedMimes = [
-            'image/png',
-            'image/jpeg',
-            'image/svg+xml',
-            'image/x-icon',
-            'image/vnd.microsoft.icon',
-            'image/webp'
+            'image/png', 'image/jpeg', 'image/svg+xml',
+            'image/x-icon', 'image/vnd.microsoft.icon', 'image/webp'
         ];
 
         if (!in_array($mime, $allowedMimes, true)) {
@@ -159,17 +231,10 @@ class AdminController {
         if ($ext === 'svg' || $mime === 'image/svg+xml') {
             $svgContent = file_get_contents($file['tmp_name']);
             $blacklistedPatterns = [
-                '/<script\b[^>]*>/i',
-                '/<\/script>/i',
-                '/javascript\s*:/i',
-                '/onload\s*=/i',
-                '/onerror\s*=/i',
-                '/onclick\s*=/i',
-                '/onmouseover\s*=/i',
-                '/<iframe\b[^>]*>/i',
-                '/<object\b[^>]*>/i',
-                '/<embed\b[^>]*>/i',
-                '/<\?php/i'
+                '/<script\b[^>]*>/i', '/<\/script>/i', '/javascript\s*:/i',
+                '/onload\s*=/i', '/onerror\s*=/i', '/onclick\s*=/i',
+                '/onmouseover\s*=/i', '/<iframe\b[^>]*>/i', '/<object\b[^>]*>/i',
+                '/<embed\b[^>]*>/i', '/<\?php/i'
             ];
 
             foreach ($blacklistedPatterns as $pattern) {
@@ -191,9 +256,6 @@ class AdminController {
         return '/public/assets/images/' . $safeFilename;
     }
 
-    /**
-     * Create directory and place .htaccess + index.html to prevent execution and directory listing
-     */
     private function ensureSecureUploadDirectory(string $dir): void {
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -216,9 +278,6 @@ class AdminController {
         }
     }
 
-    /**
-     * Toggle or save internal PHP cron settings
-     */
     public function saveCronSettings(): void {
         $enableInternalCron = isset($_POST['enable_internal_cron']) ? '1' : '0';
         SystemSetting::save('enable_internal_cron', $enableInternalCron);
@@ -228,9 +287,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Manually trigger an internal cron worker
-     */
     public function runCronManual(): void {
         $task = $_POST['task_key'] ?? '';
         if (empty($task)) {
@@ -245,9 +301,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Retry a failed post
-     */
     public function retryFailedPost(): void {
         $postId = (int)($_POST['post_id'] ?? 0);
         if ($postId <= 0) {
@@ -266,9 +319,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Admin functionality to manually change user status (active/banned)
-     */
     public function toggleUserStatus(): void {
         if (empty($_POST['user_id']) || empty($_POST['status'])) {
             $_SESSION['error'] = "Invalid data provided.";
@@ -289,9 +339,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Change a user's subscription plan manually
-     */
     public function changeUserPlan(): void {
         if (empty($_POST['user_id']) || empty($_POST['plan_id'])) {
             $_SESSION['error'] = "Invalid data provided.";
@@ -312,9 +359,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Save settings for a specific plugin
-     */
     public function savePluginSettings(): void {
         $pluginId = $_POST['plugin_id'] ?? '';
         if (empty($pluginId)) {
@@ -339,9 +383,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Save Social Login / OAuth Configuration
-     */
     public function saveAuthSettings(): void {
         $fields = [
             'enable_social_google', 'google_client_id', 'google_client_secret',
@@ -361,9 +402,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Save Mailer / SMTP Settings
-     */
     public function saveMailSettings(): void {
         $fields = [
             'mail_method', 'smtp_sender', 'smtp_host', 'smtp_port',
@@ -384,9 +422,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Save Custom Scripts & Ads Injection
-     */
     public function saveScriptsSettings(): void {
         $headerScripts = $_POST['custom_header_script'] ?? '';
         $footerScripts = $_POST['custom_footer_script'] ?? '';
@@ -403,9 +438,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Save AI and LibreTranslate settings by overwriting Config.php constants.
-     */
     public function saveAiSettings(): void {
         $aiProvider = trim((string)($_POST['ai_provider'] ?? 'openai-chat'));
         $allowedProviders = ['openai-chat', 'ollama', 'gemini'];
@@ -446,9 +478,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Helper to safely update constant declarations in app/Core/Config.php
-     */
     private function updateConfigConstants(array $constants): bool {
         $configFile = __DIR__ . '/../Core/Config.php';
 
@@ -472,9 +501,6 @@ class AdminController {
         return file_put_contents($configFile, $content) !== false;
     }
 
-    /**
-     * Save Enabled / Visible Languages for front-end selectors
-     */
     public function saveEnabledLanguages(): void {
         $selected = $_POST['enabled_languages'] ?? [];
         if (!is_array($selected) || empty($selected)) {
@@ -501,9 +527,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Auto-translate language file using LibreTranslate API with batching, placeholder shielding, and rate-limit handling
-     */
     public function autoTranslate(): void {
         @set_time_limit(180);
 
@@ -528,7 +551,7 @@ class AdminController {
         }
 
         $translatedContent = [];
-        $batchSize = 25; // 25 texts per HTTP call to easily bypass the 120 req/min limit
+        $batchSize = 25;
         $batches = array_chunk($englishContent, $batchSize, true);
 
         foreach ($batches as $batch) {
@@ -537,7 +560,6 @@ class AdminController {
             $protectedTexts = [];
             $batchTokenMaps = [];
 
-            // Protect placeholders {name} AND DataTables variables _START_, _TOTAL_, _MENU_, etc. with numeric tokens
             foreach ($texts as $idx => $text) {
                 preg_match_all('/(\{[a-zA-Z0-9_]+\}|_[A-Z0-9]+_)/', $text, $matches);
                 $placeholders = $matches[0] ?? [];
@@ -554,7 +576,6 @@ class AdminController {
                 $batchTokenMaps[$idx] = $tokenMap;
             }
 
-            // Execute batch call to LibreTranslate
             $call = $this->callLibreTranslateBatch($protectedTexts, 'en', $targetLang);
 
             if (!$call['success']) {
@@ -567,7 +588,6 @@ class AdminController {
 
             $results = $call['texts'];
 
-            // Map results back to original keys and restore all protected tokens exactly
             foreach ($keys as $idx => $key) {
                 $translated = $results[$idx] ?? $texts[$idx];
                 $tokenMap = $batchTokenMaps[$idx] ?? [];
@@ -576,7 +596,6 @@ class AdminController {
                     $translated = str_replace($token, $placeholder, $translated);
                 }
 
-                // Clean duplicate stuttered single words
                 $words = preg_split('/\s+/', trim($translated));
                 if (count($words) === 2 && mb_strtolower($words[0]) === mb_strtolower($words[1])) {
                     $translated = $words[0];
@@ -585,8 +604,7 @@ class AdminController {
                 $translatedContent[$key] = $translated;
             }
 
-            // Polite delay between batches
-            usleep(200000); // 0.2 seconds
+            usleep(200000);
         }
 
         $targetFile = __DIR__ . '/../../lang/' . $targetLang . '.json';
@@ -598,9 +616,6 @@ class AdminController {
         exit;
     }
 
-    /**
-     * Internal helper to execute batch cURL POST to LibreTranslate endpoint with automatic rate-limit retry
-     */
     private function callLibreTranslateBatch(array $texts, string $source, string $target, int $retryCount = 0): array {
         $url = rtrim((string)Config::LIBRETRANSLATE_URL, '/');
         if (empty($url)) {
@@ -640,7 +655,6 @@ class AdminController {
             return ['success' => false, 'texts' => [], 'error' => "cURL failed: {$curlError}"];
         }
 
-        // Automatic 4-second wait and retry if hitting rate limiter (HTTP 429)
         if ($httpCode === 429 || str_contains((string)$response, 'Slowdown')) {
             if ($retryCount < 2) {
                 sleep(4);
@@ -667,9 +681,6 @@ class AdminController {
         return ['success' => false, 'texts' => [], 'error' => 'Invalid batch structure returned by LibreTranslate.'];
     }
 
-    /**
-     * Save Global Payment Gateway Settings & Platform Commission
-     */
     public function savePaymentSettings(): void {
         $fields = [
             'stripe_secret_key', 'stripe_public_key', 'stripe_webhook_secret',
