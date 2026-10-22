@@ -18,6 +18,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Load core system components
 require_once __DIR__ . '/../app/Core/Config.php';
+require_once __DIR__ . '/../app/Core/Version.php';
 require_once __DIR__ . '/../app/Core/Database.php';
 require_once __DIR__ . '/../app/Core/Router.php';
 // languages and others helpers
