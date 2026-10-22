@@ -2,14 +2,15 @@
 // app/Services/UpdaterService.php
 
 require_once __DIR__ . '/../Core/Config.php';
+require_once __DIR__ . '/../Core/Version.php';
 
 class UpdaterService {
     private string $currentVersion;
     private string $repo;
 
     public function __construct() {
-        $this->currentVersion = Config::APP_VERSION ?? '1.0.0';
-        $this->repo           = Config::GITHUB_REPO ?? 'OskarCosimo/My-Social-Manager';
+        $this->currentVersion = Version::VERSION;
+        $this->repo           = Version::GITHUB_REPO;
     }
 
     public function getCurrentVersion(): string {
@@ -151,11 +152,17 @@ class UpdaterService {
 
         $sourceDir = $innerFolder ?: $tempExtractDir;
 
-        // 4. Overwrite files preserving Config.php and lock files
+        // 4. Overwrite files: Version.php will be updated, while Config.php and locks are preserved
         $this->copyRecursive($sourceDir, $rootDir);
         $this->deleteDirectory($tempExtractDir);
 
-        // 5. Run database migrations
+        // 5. Invalidate OPcache on Version.php so new version is read immediately
+        $versionFile = $rootDir . '/app/Core/Version.php';
+        if (file_exists($versionFile) && function_exists('opcache_invalidate')) {
+            @opcache_invalidate($versionFile, true);
+        }
+
+        // 6. Run database migrations
         $this->runMigrations();
 
         return true;
