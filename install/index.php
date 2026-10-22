@@ -70,15 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 2) {
         $escapedDbHost = addcslashes($dbHost, "'\\");
         $escapedAppUrl = addcslashes($appUrl, "'\\");
 
-        $configTemplate = <<<PHP
+$configTemplate = <<<PHP
 <?php
 // app/Core/Config.php
 
 class Config {
-    // Application version and GitHub repository
-    public const APP_VERSION = '1.0.0';
-    public const GITHUB_REPO = 'OskarCosimo/My-Social-Manager';
-
     // Database connection details
     public const DB_HOST = '{$escapedDbHost}';
     public const DB_PORT = {$dbPort};
