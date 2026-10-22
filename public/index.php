@@ -36,6 +36,10 @@ $router->get('/register', ['AuthController', 'showRegister']);
 $router->post('/register', ['AuthController', 'register']);
 $router->get('/logout', ['AuthController', 'logout']);
 
+// Password Reset Routes
+$router->get('/reset-password', ['AuthController', 'showResetPassword']);
+$router->post('/reset-password', ['AuthController', 'resetPassword']);
+
 // --- Social Login Routes ---
 $router->get('/auth/social', ['AuthController', 'redirectSocial']);
 $router->get('/auth/social/callback', ['AuthController', 'handleSocialCallback']);
@@ -79,6 +83,8 @@ $router->get('/accounts/manual-setup', ['AccountController', 'manualSetup']);
 
 // --- Admin Area Routes ---
 $router->get('/admin', ['AdminController', 'index']);
+$router->post('/admin/user/update', ['AdminController', 'updateUser']);
+$router->post('/admin/user/send-reset', ['AdminController', 'sendPasswordReset']);
 $router->post('/admin/user/toggle', ['AdminController', 'toggleUserStatus']);
 $router->post('/admin/plugin/save', ['AdminController', 'savePluginSettings']);
 $router->post('/admin/settings/scripts', ['AdminController', 'saveScriptsSettings']);
