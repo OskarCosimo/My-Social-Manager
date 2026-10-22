@@ -2,16 +2,45 @@
 // app/Models/User.php
 
 require_once __DIR__ . '/../Core/Database.php';
+require_once __DIR__ . '/../Core/Crypto.php';
 
 class User {
 
+    /**
+     * Decrypt user record email before exposing to the application
+     */
+    private static function transformUser(?array $user): ?array {
+        if (!$user) {
+            return null;
+        }
+        if (isset($user['email'])) {
+            $user['email'] = Crypto::decrypt($user['email']);
+        }
+        return $user;
+    }
+
+    /**
+     * Decrypt a list of user records
+     */
+    private static function transformUsers(array $users): array {
+        foreach ($users as &$u) {
+            if (isset($u['email'])) {
+                $u['email'] = Crypto::decrypt($u['email']);
+            }
+        }
+        return $users;
+    }
+
     public static function createWithVerification(string $email, string $passwordHash, int $emailVerified, ?string $token): int|false {
         $db = Database::getInstance();
+        $encryptedEmail = Crypto::encrypt(strtolower(trim($email)));
+        $emailHash = Crypto::hashEmail($email);
+
         $stmt = $db->prepare("
-            INSERT INTO users (email, password, email_verified, verification_token, accountsocialmanager) 
-            VALUES (?, ?, ?, ?, 1)
+            INSERT INTO users (email, email_hash, password, email_verified, verification_token, accountsocialmanager) 
+            VALUES (?, ?, ?, ?, ?, 1)
         ");
-        if ($stmt->execute([$email, $passwordHash, $emailVerified, $token])) {
+        if ($stmt->execute([$encryptedEmail, $emailHash, $passwordHash, $emailVerified, $token])) {
             return (int)$db->lastInsertId();
         }
         return false;
@@ -19,29 +48,33 @@ class User {
 
     public static function findByEmail(string $email): ?array {
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
-        $stmt->execute([$email]);
-        return $stmt->fetch() ?: null;
+        $emailHash = Crypto::hashEmail($email);
+        $stmt = $db->prepare("SELECT * FROM users WHERE email_hash = ? LIMIT 1");
+        $stmt->execute([$emailHash]);
+        return self::transformUser($stmt->fetch() ?: null);
     }
 
     public static function findById(int $id): ?array {
         $db = Database::getInstance();
         $stmt = $db->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
-        return $stmt->fetch() ?: null;
+        return self::transformUser($stmt->fetch() ?: null);
     }
 
     public static function create(string $email, string $passwordHash, string $role = 'user'): int {
         $db = Database::getInstance();
-        $stmt = $db->prepare("INSERT INTO users (email, password, role, accountsocialmanager) VALUES (?, ?, ?, 1)");
-        $stmt->execute([$email, $passwordHash, $role]);
+        $encryptedEmail = Crypto::encrypt(strtolower(trim($email)));
+        $emailHash = Crypto::hashEmail($email);
+
+        $stmt = $db->prepare("INSERT INTO users (email, email_hash, password, role, accountsocialmanager) VALUES (?, ?, ?, ?, 1)");
+        $stmt->execute([$encryptedEmail, $emailHash, $passwordHash, $role]);
         return (int)$db->lastInsertId();
     }
 
     public static function getAll(): array {
         $db = Database::getInstance();
         $stmt = $db->query("SELECT * FROM users ORDER BY created_at DESC");
-        return $stmt->fetchAll();
+        return self::transformUsers($stmt->fetchAll());
     }
 
     public static function updateStatus(int $id, string $status): bool {
@@ -72,23 +105,26 @@ class User {
         $db = Database::getInstance();
         $stmt = $db->prepare("SELECT * FROM users WHERE remember_token = ? LIMIT 1");
         $stmt->execute([$token]);
-        return $stmt->fetch() ?: null;
+        return self::transformUser($stmt->fetch() ?: null);
     }
 
     public static function findBySocialId(string $provider, string $socialId): ?array {
         $db = Database::getInstance();
         $stmt = $db->prepare("SELECT * FROM users WHERE social_provider = ? AND social_id = ? LIMIT 1");
         $stmt->execute([$provider, $socialId]);
-        return $stmt->fetch() ?: null;
+        return self::transformUser($stmt->fetch() ?: null);
     }
 
     public static function createFromSocial(string $email, string $provider, string $socialId): int {
         $db = Database::getInstance();
+        $encryptedEmail = Crypto::encrypt(strtolower(trim($email)));
+        $emailHash = Crypto::hashEmail($email);
+
         $stmt = $db->prepare("
-            INSERT INTO users (email, email_verified, social_provider, social_id, role, accountsocialmanager) 
-            VALUES (?, 1, ?, ?, 'user', 1)
+            INSERT INTO users (email, email_hash, email_verified, social_provider, social_id, role, accountsocialmanager) 
+            VALUES (?, ?, 1, ?, ?, 'user', 1)
         ");
-        $stmt->execute([$email, $provider, $socialId]);
+        $stmt->execute([$encryptedEmail, $emailHash, $provider, $socialId]);
         return (int)$db->lastInsertId();
     }
 
