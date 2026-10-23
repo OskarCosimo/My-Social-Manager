@@ -663,5 +663,20 @@
     "max_allowed": "最高\/campaign",
     "limit_short": "制限なし",
     "today_used_label": "今日使用",
-    "remaining_today": "今日の残り"
+    "remaining_today": "今日の残り",
+    "ai_service_active": "人工的なIntellgence",
+    "ai_credits_period": "クレジット期間",
+    "ai_credit_topup_packages": "AIクレジットトップアップパッケージ(ワンタイム購入)",
+    "ai_credit_topup_desc": "ユーザーがStripeまたはPayPalを使用して購入できる利用可能なクレジットパッケージを設定して、アカウント残高を上げます.",
+    "credits_amount": "AIクレジット",
+    "price_eur": "価格 (€)",
+    "add_package": "パッケージを追加",
+    "save_packages": "パッケージを保存",
+    "buy_ai_credits": "AIクレジットの購入",
+    "buy_ai_credits_title": "追加AIクレジットの購入",
+    "buy_ai_credits_desc": "いつでも追加のAIクレジットでアカウントをトップアップします。 購入されたクレジットは期限が切れず、プランの許容が欠落した後にのみ消費されます.",
+    "select_payment_method": "支払方法を選んで下さい:",
+    "pay_with_card": "カード(ストライプ)",
+    "pay_with_paypal": "ペイパル",
+    "top_up_credits": "トップアップクレジット"
 }

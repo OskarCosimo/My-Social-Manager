@@ -663,5 +663,20 @@
     "max_allowed": "max\/kampanj",
     "limit_short": "gränsgräns",
     "today_used_label": "används idag",
-    "remaining_today": "återstående idag"
+    "remaining_today": "återstående idag",
+    "ai_service_active": "Artificiell intelligens",
+    "ai_credits_period": "Credits Period",
+    "ai_credit_topup_packages": "AI Credit Top-Up-paket (One-Time Inköp)",
+    "ai_credit_topup_desc": "Konfigurera tillgängliga kreditpaket som användare kan köpa med Stripe eller PayPal för att toppa upp sitt kontosaldo.",
+    "credits_amount": "AI Credits",
+    "price_eur": "Pris (€)",
+    "add_package": "Lägg till paket",
+    "save_packages": "Spara paket",
+    "buy_ai_credits": "Köp AI Credits",
+    "buy_ai_credits_title": "Köp ytterligare AI-krediter",
+    "buy_ai_credits_desc": "Topp upp ditt konto med extra AI-krediter när som helst. Inköpta krediter upphör aldrig och konsumeras först efter att din planpenning är uttömd.",
+    "select_payment_method": "Välj betalningsmetod:",
+    "pay_with_card": "Kort (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Top Up Credits"
 }

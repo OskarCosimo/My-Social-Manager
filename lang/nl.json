@@ -663,5 +663,20 @@
     "max_allowed": "max\/campagne",
     "limit_short": "limiet",
     "today_used_label": "vandaag gebruikt",
-    "remaining_today": "blijven vandaag"
+    "remaining_today": "blijven vandaag",
+    "ai_service_active": "Artificiële informatie",
+    "ai_credits_period": "Krediettermijn",
+    "ai_credit_topup_packages": "AI Credit Top Up Packages (One-Time Purchases)",
+    "ai_credit_topup_desc": "Configureer beschikbare kredietpakketten die gebruikers kunnen kopen met behulp van Stripe of PayPal om hun rekeningsaldo bij te vullen.",
+    "credits_amount": "AI-kredieten",
+    "price_eur": "Prijs (€)",
+    "add_package": "Pakket toevoegen",
+    "save_packages": "Pakketten opslaan",
+    "buy_ai_credits": "Koop AI-kredieten",
+    "buy_ai_credits_title": "Aanvullende AI-kredieten kopen",
+    "buy_ai_credits_desc": "U kunt uw account altijd bijvullen met extra AI credits. Gekochte credits vervallen nooit en worden alleen verbruikt nadat uw planvergoeding is uitgeput.",
+    "select_payment_method": "Kies Betaalmethode:",
+    "pay_with_card": "Kaart (stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Credits bijvullen"
 }

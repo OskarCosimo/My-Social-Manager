@@ -663,5 +663,20 @@
     "max_allowed": "máx.\/campanha",
     "limit_short": "limite",
     "today_used_label": "usado hoje",
-    "remaining_today": "permanecendo hoje"
+    "remaining_today": "permanecendo hoje",
+    "ai_service_active": "Intelgência Artificial",
+    "ai_credits_period": "Período de Créditos",
+    "ai_credit_topup_packages": "Pacotes de Top-Up de Crédito AI (Compras One-Time)",
+    "ai_credit_topup_desc": "Configure os pacotes de crédito disponíveis que os usuários podem comprar usando Stripe ou PayPal para recarregar seu saldo de conta.",
+    "credits_amount": "Créditos de IA",
+    "price_eur": "Preço (€)",
+    "add_package": "Adicionar pacote",
+    "save_packages": "Salvar pacotes",
+    "buy_ai_credits": "Comprar créditos de IA",
+    "buy_ai_credits_title": "Adquirir créditos adicionais de IA",
+    "buy_ai_credits_desc": "Encha a sua conta com créditos adicionais de IA a qualquer momento. Os créditos adquiridos nunca expiram e são consumidos apenas após o seu subsídio plano é esgotado.",
+    "select_payment_method": "Escolha o método de pagamento:",
+    "pay_with_card": "Carta (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Aumentar os Créditos"
 }

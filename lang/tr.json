@@ -663,5 +663,20 @@
     "max_allowed": "max\/campaign",
     "limit_short": "limit",
     "today_used_label": "bugün kullanılmakta olan bugün kullanılmıştı",
-    "remaining_today": "bugün geriye kalan bugün kaldı"
+    "remaining_today": "bugün geriye kalan bugün kaldı",
+    "ai_service_active": "Yapay Intellgence",
+    "ai_credits_period": "Krediler Dönemi",
+    "ai_credit_topup_packages": "AI Credit Top-Up Paketleri (One-Time Satın Almalar)",
+    "ai_credit_topup_desc": "Mevcut kredi paketlerini yapılandırın, kullanıcıların hesap bakiyelerini üst düzeye çıkarmak için Stripe veya PayPal kullanarak satın alabilecekleri.",
+    "credits_amount": "AI Creditss",
+    "price_eur": "Fiyat ( €)",
+    "add_package": "Ekle Paket Ekle",
+    "save_packages": "Kaydet Paketleri",
+    "buy_ai_credits": "AI Credits satın alın",
+    "buy_ai_credits_title": "Ek AI Credits satın alın",
+    "buy_ai_credits_desc": "Hesapunuzu her zaman ekstra AI kredileriyle üstleyin. Satın alınan krediler asla sona ermez ve sadece plan ödendikten sonra tüketilir.",
+    "select_payment_method": "Ödeme Yöntemi seçin:",
+    "pay_with_card": "Kart (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Top Up Credits"
 }

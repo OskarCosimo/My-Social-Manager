@@ -663,5 +663,20 @@
     "max_allowed": "最大\/ 活动",
     "limit_short": "限制",
     "today_used_label": "今天使用过的",
-    "remaining_today": "现今尚存"
+    "remaining_today": "现今尚存",
+    "ai_service_active": "人工智能",
+    "ai_credits_period": "贷方",
+    "ai_credit_topup_packages": "AI 信用顶级套件(一次性购买)",
+    "ai_credit_topup_desc": "配置用户可用Frede或PayPal购买的可用信用套件,以补足其账户余额.",
+    "credits_amount": "AI 信贷",
+    "price_eur": "价格(欧元)",
+    "add_package": "添加软件包",
+    "save_packages": "保存软件包",
+    "buy_ai_credits": "购买AI 信用",
+    "buy_ai_credits_title": "购买附加AI信贷",
+    "buy_ai_credits_desc": "随时用额外人工智能信用加注 购买的信贷从未到期,只有在计划津贴用完后才能使用.",
+    "select_payment_method": "选择支付方法 :",
+    "pay_with_card": "卡片( 剪辑)",
+    "pay_with_paypal": "付费页",
+    "top_up_credits": "最高信用额"
 }

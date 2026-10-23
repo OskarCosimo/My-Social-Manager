@@ -663,5 +663,20 @@
   "max_allowed": "max/campaign",
   "limit_short": "limit",
   "today_used_label": "used today",
-  "remaining_today": "remaining today"
+  "remaining_today": "remaining today",
+  "ai_service_active": "Artificial Intellgence",
+  "ai_credits_period": "Credits Period",
+  "ai_credit_topup_packages": "AI Credit Top-Up Packages (One-Time Purchases)",
+  "ai_credit_topup_desc": "Configure available credit packages that users can purchase using Stripe or PayPal to top up their account balance.",
+  "credits_amount": "AI Credits",
+  "price_eur": "Price (€)",
+  "add_package": "Add Package",
+  "save_packages": "Save Packages",
+  "buy_ai_credits": "Buy AI Credits",
+  "buy_ai_credits_title": "Purchase Additional AI Credits",
+  "buy_ai_credits_desc": "Top up your account with extra AI credits anytime. Purchased credits never expire and are consumed only after your plan allowance is depleted.",
+  "select_payment_method": "Choose Payment Method:",
+  "pay_with_card": "Card (Stripe)",
+  "pay_with_paypal": "PayPal",
+  "top_up_credits": "Top Up Credits"
 }

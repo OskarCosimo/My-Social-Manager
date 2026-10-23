@@ -663,5 +663,20 @@
     "max_allowed": "max\/campagne",
     "limit_short": "limite",
     "today_used_label": "utilisé aujourd'hui",
-    "remaining_today": "restant aujourd'hui"
+    "remaining_today": "restant aujourd'hui",
+    "ai_service_active": "Intelligence artificielle",
+    "ai_credits_period": "Période de crédits",
+    "ai_credit_topup_packages": "Forfaits supplémentaires de crédit AI (achats uniques)",
+    "ai_credit_topup_desc": "Configurez les paquets de crédit disponibles que les utilisateurs peuvent acheter en utilisant Stripe ou PayPal pour compléter leur solde de compte.",
+    "credits_amount": "Crédits AI",
+    "price_eur": "Prix (€)",
+    "add_package": "Ajouter un paquet",
+    "save_packages": "Enregistrer les paquets",
+    "buy_ai_credits": "Acheter des crédits AI",
+    "buy_ai_credits_title": "Achat de crédits AI supplémentaires",
+    "buy_ai_credits_desc": "Remplissez votre compte avec des crédits d'IA supplémentaires à tout moment. Les crédits achetés n'expirent jamais et ne sont consommés qu'après l'épuisement de votre allocation de régime.",
+    "select_payment_method": "Choisissez la méthode de paiement :",
+    "pay_with_card": "Carte (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Haut des crédits"
 }

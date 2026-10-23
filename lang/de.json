@@ -663,5 +663,20 @@
     "max_allowed": "max",
     "limit_short": "höchstmenge",
     "today_used_label": "heute",
-    "remaining_today": "noch heute"
+    "remaining_today": "noch heute",
+    "ai_service_active": "Künstliche Intellgence",
+    "ai_credits_period": "Kreditlaufzeit",
+    "ai_credit_topup_packages": "KI-Credit Top-Up-Pakete (Einmalige Kauf)",
+    "ai_credit_topup_desc": "Konfigurieren Sie verfügbare Kreditpakete, die Benutzer mit Stripe oder PayPal kaufen können, um den Kontostand zu erhöhen.",
+    "credits_amount": "AI Credits",
+    "price_eur": "Preis (€)",
+    "add_package": "Paket hinzufügen",
+    "save_packages": "Pakete speichern",
+    "buy_ai_credits": "KI Credits kaufen",
+    "buy_ai_credits_title": "Zusätzliche KI Credits kaufen",
+    "buy_ai_credits_desc": "Top up Ihr Konto mit zusätzlichen KI-Gutschriften jederzeit. Gekaufte Kredite verfallen nie und werden erst nach Ablauf Ihrer Planzulage verbraucht.",
+    "select_payment_method": "Wählen Sie Zahlungsmethode:",
+    "pay_with_card": "Karte (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Top Up Credits"
 }

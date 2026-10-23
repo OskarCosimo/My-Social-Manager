@@ -663,5 +663,20 @@
     "max_allowed": "max\/campaign",
     "limit_short": "limită",
     "today_used_label": "utilizat astăzi",
-    "remaining_today": "rămas astăzi"
+    "remaining_today": "rămas astăzi",
+    "ai_service_active": "Inteligență artificială",
+    "ai_credits_period": "Perioada de creditare",
+    "ai_credit_topup_packages": "Pachetul AI Credit Top-Up (Achiziții unice)",
+    "ai_credit_topup_desc": "Configurează pachetele de credit disponibile pe care utilizatorii le pot achiziționa folosind Stripe sau PayPal pentru a-și acoperi soldul contului.",
+    "credits_amount": "Credite AI",
+    "price_eur": "Preț (EUR)",
+    "add_package": "Adaugă ambalaj",
+    "save_packages": "Salvează pachetele",
+    "buy_ai_credits": "Cumpărați credite AI",
+    "buy_ai_credits_title": "Achiziționarea de credite suplimentare AI",
+    "buy_ai_credits_desc": "Sus contul cu credite AI suplimentare oricând. Creditele achiziționate nu expiră niciodată și sunt consumate numai după ce alocația de plan este epuizat.",
+    "select_payment_method": "Alegeți metoda de plată:",
+    "pay_with_card": "Card",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Credite noi"
 }

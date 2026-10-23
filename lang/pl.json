@@ -663,5 +663,20 @@
     "max_allowed": "max \/ kampania",
     "limit_short": "granica",
     "today_used_label": "używane dzisiaj",
-    "remaining_today": "pozostały dziś"
+    "remaining_today": "pozostały dziś",
+    "ai_service_active": "Sztuczna integralność",
+    "ai_credits_period": "Okres kredytowania",
+    "ai_credit_topup_packages": "AI Credit Top- Up Packages (Kupno czasu)",
+    "ai_credit_topup_desc": "Konfiguracja dostępnych pakietów kredytowych, które użytkownicy mogą kupić za pomocą Stripe lub PayPal, aby uzupełnić swoje saldo konta.",
+    "credits_amount": "AI Kredyty",
+    "price_eur": "Cena (EUR)",
+    "add_package": "Dodaj opakowanie",
+    "save_packages": "Zapisz pakiety",
+    "buy_ai_credits": "Kup AI Kredyty",
+    "buy_ai_credits_title": "Zakup dodatkowych kredytów AI",
+    "buy_ai_credits_desc": "Dopełnij konto dodatkowymi kredytami w każdej chwili. Zakupione kredyty nigdy nie wygasają i są spożywane dopiero po wyczerpaniu się limitu planu.",
+    "select_payment_method": "Wybierz metodę płatności:",
+    "pay_with_card": "Karta (pasek)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Kredyty do góry"
 }

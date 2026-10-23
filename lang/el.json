@@ -663,5 +663,20 @@
     "max_allowed": "max\/campaign",
     "limit_short": "όριο",
     "today_used_label": "χρησιμοποιείται σήμερα",
-    "remaining_today": "υπόλοιπο σήμερα"
+    "remaining_today": "υπόλοιπο σήμερα",
+    "ai_service_active": "Τεχνητή Αίσθηση",
+    "ai_credits_period": "Περίοδος πιστώσεων",
+    "ai_credit_topup_packages": "AI Credit Top-Up Πακέτα (One-Time Αγορές)",
+    "ai_credit_topup_desc": "Ρυθμίστε τα διαθέσιμα πακέτα πίστωσης που οι χρήστες μπορούν να αγοράσουν χρησιμοποιώντας Stripe ή PayPal για να συμπληρώσουν το υπόλοιπο του λογαριασμού τους.",
+    "credits_amount": "Πιστώσεις AI",
+    "price_eur": "Τιμή (€)",
+    "add_package": "Προσθήκη πακέτου",
+    "save_packages": "Αποθήκευση πακέτων",
+    "buy_ai_credits": "Αγοράστε Πίστωση AI",
+    "buy_ai_credits_title": "Αγορά πρόσθετων πιστώσεων AI",
+    "buy_ai_credits_desc": "Κλείστε το λογαριασμό σας με επιπλέον AI πιστώσεις ανά πάσα στιγμή. Οι αγορασμένες πιστώσεις δεν λήγουν ποτέ και καταναλώνονται μόνο αφού εξαντληθεί το επίδομα του σχεδίου σας.",
+    "select_payment_method": "Επιλέξτε τη μέθοδο πληρωμής:",
+    "pay_with_card": "Κάρτα (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Κορυφαίες πιστώσεις"
 }

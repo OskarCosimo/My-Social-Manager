@@ -663,5 +663,20 @@
     "max_allowed": "max\/campaign",
     "limit_short": "предел",
     "today_used_label": "используется сегодня",
-    "remaining_today": "остаться сегодня"
+    "remaining_today": "остаться сегодня",
+    "ai_service_active": "Искусственный интеллект",
+    "ai_credits_period": "Период кредитования",
+    "ai_credit_topup_packages": "AI Credit Top-Up Packages (разовые покупки)",
+    "ai_credit_topup_desc": "Настройте доступные кредитные пакеты, которые пользователи могут приобрести с помощью Stripe или PayPal, чтобы пополнить свой баланс счета.",
+    "credits_amount": "Кредиты AI",
+    "price_eur": "Цена (€)",
+    "add_package": "Добавить пакет",
+    "save_packages": "Сохранить пакеты",
+    "buy_ai_credits": "Купить AI Credits",
+    "buy_ai_credits_title": "Покупка дополнительных кредитов AI",
+    "buy_ai_credits_desc": "Заполните свой аккаунт дополнительными кредитами в любое время. Приобретенные кредиты никогда не истекают и потребляются только после того, как ваше пособие по плану исчерпано.",
+    "select_payment_method": "Выберите способ оплаты:",
+    "pay_with_card": "Карта (полоса)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Top Up Кредиты"
 }

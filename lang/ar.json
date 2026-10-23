@@ -663,5 +663,20 @@
     "max_allowed": "الحد الأقصى\/الحمل",
     "limit_short": "الحد الأقصى",
     "today_used_label": "اليوم",
-    "remaining_today": "تبقى اليوم"
+    "remaining_today": "تبقى اليوم",
+    "ai_service_active": "الخبرة الفنية",
+    "ai_credits_period": "فترة الاعتماد",
+    "ai_credit_topup_packages": "AI Credit Top-Up Packages (One-Time Purchases)",
+    "ai_credit_topup_desc": "(أ) أن يشتري المستعملون حزمات ائتمانية متاحة يمكن أن يشتريها باستخدام نظام \" ستري \" أو \" بي بال \" ليرفعوا رصيد حسابهم.",
+    "credits_amount": "AI Credits",
+    "price_eur": "السعر (يورو)",
+    "add_package": "مضافا إليه",
+    "save_packages": "توفير الحزم",
+    "buy_ai_credits": "شراء ائتمانات AI",
+    "buy_ai_credits_title": "الأرصدة الدائنة الإضافية المستحقة القبض",
+    "buy_ai_credits_desc": "ضعي حسابك بحسابات إضافية في أي وقت الائتمانات المطعونة لا تنتهي أبداً ولا تستهلك إلا بعد استنفاد بدل خطتك.",
+    "select_payment_method": "طريقة الاختيار للدفع:",
+    "pay_with_card": "Card (Stripe)",
+    "pay_with_paypal": "الأجر",
+    "top_up_credits": "الائتمانات العليا"
 }

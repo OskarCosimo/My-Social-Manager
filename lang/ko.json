@@ -663,5 +663,20 @@
     "max_allowed": "최대\/campaign",
     "limit_short": "지원하다",
     "today_used_label": "오늘 사용",
-    "remaining_today": "현재 위치"
+    "remaining_today": "현재 위치",
+    "ai_service_active": "인공 지능",
+    "ai_credits_period": "크레딧 기간",
+    "ai_credit_topup_packages": "AI 신용 Top-Up 패키지 (일회 구매)",
+    "ai_credit_topup_desc": "사용자가 Stripe 또는 PayPal을 사용하여 계정 잔액을 상속할 수 있는 신용 패키지를 구성합니다.",
+    "credits_amount": "AI 크레딧",
+    "price_eur": "가격 (€)",
+    "add_package": "패키지 추가",
+    "save_packages": "패키지 저장",
+    "buy_ai_credits": "AI 크레딧 구매",
+    "buy_ai_credits_title": "추가 AI 크레딧 구매",
+    "buy_ai_credits_desc": "언제든지 추가 AI 크레딧으로 계정 위로. 구매된 크레딧은 결코 만료되지 않으며 플랜 허용 후만 소모됩니다.",
+    "select_payment_method": "지불 방법을 선택하십시오:",
+    "pay_with_card": "카드 (스트라이프)",
+    "pay_with_paypal": "페이팔",
+    "top_up_credits": "탑 업 크레딧"
 }

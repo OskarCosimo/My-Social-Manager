@@ -663,5 +663,20 @@
     "max_allowed": "max \/ kampaň",
     "limit_short": "limit",
     "today_used_label": "použitý dnes",
-    "remaining_today": "zbývající"
+    "remaining_today": "zbývající",
+    "ai_service_active": "Umělá integrita",
+    "ai_credits_period": "Období kreditů",
+    "ai_credit_topup_packages": "AI Credit Top- Up balíčky (One- Time Nákupy)",
+    "ai_credit_topup_desc": "Nastavit dostupné kreditní balíčky, které mohou uživatelé zakoupit pomocí Stripe nebo PayPal k doplnění jejich účtu.",
+    "credits_amount": "AI kredity",
+    "price_eur": "Cena (€)",
+    "add_package": "Přidat balíček",
+    "save_packages": "Uložit balíčky",
+    "buy_ai_credits": "Koupit AI kredity",
+    "buy_ai_credits_title": "Nákup dodatečných kreditů AI",
+    "buy_ai_credits_desc": "Doplňte svůj účet extra AI kredity kdykoliv. Zakoupené kredity nikdy nevyprší a jsou spotřebovány až po vyčerpání příspěvku na plán.",
+    "select_payment_method": "Zvolte způsob platby:",
+    "pay_with_card": "Karta (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Vylepšit kredity"
 }

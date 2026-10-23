@@ -663,5 +663,20 @@
     "max_allowed": "max. \/ kampány",
     "limit_short": "határérték",
     "today_used_label": "ma használt",
-    "remaining_today": "fennmaradó"
+    "remaining_today": "fennmaradó",
+    "ai_service_active": "Mesterséges intellencia",
+    "ai_credits_period": "Hitelezési időszak",
+    "ai_credit_topup_packages": "AI-hitel Top- Up csomagok (One- Time vásárlások)",
+    "ai_credit_topup_desc": "Beállítja a rendelkezésre álló hitelcsomagokat, amelyeket a felhasználók a Stripe vagy a PayPal használatával vásárolhatnak meg a számlaegyenlegük feltöltéséhez.",
+    "credits_amount": "AI Kreditek",
+    "price_eur": "Ár (EUR)",
+    "add_package": "A csomag hozzáadása",
+    "save_packages": "Csomagok mentése",
+    "buy_ai_credits": "Megvásárolható AI kreditek",
+    "buy_ai_credits_title": "További AI-hitelek vásárlása",
+    "buy_ai_credits_desc": "Felső a számlát extra AI kredit bármikor. Vásárolt kreditek soha nem jár le, és fogyasztják csak azután, hogy a terv támogatás kimerült.",
+    "select_payment_method": "A fizetési mód kiválasztása:",
+    "pay_with_card": "Kártya (Stripe)",
+    "pay_with_paypal": "PayPal",
+    "top_up_credits": "Top Up Credits"
 }
