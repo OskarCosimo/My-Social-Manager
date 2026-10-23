@@ -5,10 +5,9 @@ if (!isset($_SESSION['user_id'])) exit;
 <?php require_once __DIR__ . '/../partials/header.php'; ?>
 
 <style>
-    .stat-card { transition: transform 0.2s ease; border-radius: 12px; }
-    .stat-card:hover { transform: translateY(-3px); }
-    .stat-icon-badge { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; }
-    .progress { height: 8px; border-radius: 4px; }
+    .stat-card { border-radius: 12px; }
+    .stat-icon-badge { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; }
+    .progress { height: 10px; border-radius: 5px; }
     .cursor-pointer { cursor: pointer; }
 </style>
 
@@ -53,23 +52,23 @@ if (!isset($_SESSION['user_id'])) exit;
             <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
 
-        <!-- DYNAMIC AI CREDITS & REAL-TIME PLAN LIMITS ROW -->
-        <div class="row g-4 mb-4">
-            
-            <!-- Card 1: AI Credits Balance & Usage -->
-            <div class="col-12 col-md-4">
-                <div class="card stat-card h-100 shadow-sm border-0 bg-white position-relative overflow-hidden">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="text-uppercase fw-bold text-muted mb-0 small"><?= __('ai_credits_title') ?? 'AI Credits' ?></h6>
-                            <div class="stat-icon-badge" style="background-color: rgba(111, 66, 193, 0.12); color: #6f42c1;">
-                                <i class="bi bi-stars fs-4"></i>
+        <!-- TOP BAR: AI CREDITS ONLY -->
+        <div class="card stat-card shadow-sm border-0 bg-white mb-4 position-relative overflow-hidden">
+            <div class="card-body p-4">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon-badge" style="background-color: rgba(111, 66, 193, 0.12); color: #6f42c1;">
+                            <i class="bi bi-stars fs-3"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-uppercase fw-bold text-muted mb-1 small"><?= __('ai_credits_title') ?? 'AI Credits' ?></h6>
+                            <div class="d-flex align-items-baseline">
+                                <h2 class="fw-bold mb-0 text-dark"><?= number_format($aiCreditsUsed) ?></h2>
+                                <span class="text-muted ms-2 fs-6">/ <?= number_format($aiCreditsMonth) ?></span>
                             </div>
                         </div>
-                        <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0 text-dark"><?= number_format($aiCreditsUsed) ?></h2>
-                            <span class="text-muted ms-2 fs-6">/ <?= number_format($aiCreditsMonth) ?></span>
-                        </div>
+                    </div>
+                    <div class="col-md-5">
                         <div class="progress mb-2">
                             <div class="progress-bar" role="progressbar" style="width: <?= $aiPercent ?>%; background-color: #6f42c1;"></div>
                         </div>
@@ -78,62 +77,18 @@ if (!isset($_SESSION['user_id'])) exit;
                             <span class="fw-bold text-success"><?= number_format($aiCreditsBalance) ?> <?= __('remaining') ?? 'remaining' ?></span>
                         </div>
                     </div>
-                    <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #6f42c1;"></div>
-                </div>
-            </div>
-
-            <!-- Card 2: AI Campaign Posts (Created vs Allowed per campaign) -->
-            <div class="col-12 col-md-4">
-                <div class="card stat-card h-100 shadow-sm border-0 bg-white position-relative overflow-hidden">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="text-uppercase fw-bold text-muted mb-0 small"><?= __('max_campaign_posts_title') ?? 'Max Posts Per Campaign' ?></h6>
-                            <div class="stat-icon-badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-collection-play fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0 text-dark"><?= number_format($totalCampaignPosts) ?></h2>
-                            <span class="text-muted ms-2 fs-6">/ <?= (int)$aiLimits['ai_max_campaign_posts'] ?> <?= __('max_allowed') ?? 'max/campaign' ?></span>
-                        </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $campaignPostsPercent ?>%;"></div>
-                        </div>
-                        <div class="d-flex justify-content-between small text-muted">
-                            <span><strong class="text-success"><?= $publishedCampaignPosts ?></strong> <?= __('published') ?? 'published' ?> • <strong class="text-primary"><?= $scheduledCampaignPosts ?></strong> <?= __('scheduled') ?? 'scheduled' ?></span>
-                            <span class="fw-bold text-dark"><?= (int)$aiLimits['ai_max_campaign_posts'] ?> <?= __('limit_short') ?? 'limit' ?></span>
-                        </div>
+                    <div class="col-md-3 text-md-end text-start">
+                        <?php if ($aiCreditsBalance <= 0): ?>
+                            <span class="badge bg-danger p-2 fs-6"><?= __('ai_credits_exhausted') ?? 'Credits Exhausted' ?></span>
+                        <?php else: ?>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle p-2 fs-6">
+                                <i class="bi bi-check-circle me-1"></i><?= __('ai_service_active') ?? 'Active & Ready' ?>
+                            </span>
+                        <?php endif; ?>
                     </div>
-                    <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #0d6efd;"></div>
                 </div>
             </div>
-
-            <!-- Card 3: Daily AI Posts (Today's Posts vs Daily Limit) -->
-            <div class="col-12 col-md-4">
-                <div class="card stat-card h-100 shadow-sm border-0 bg-white position-relative overflow-hidden">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="text-uppercase fw-bold text-muted mb-0 small"><?= __('max_daily_posts_title') ?? 'Max Daily AI Posts' ?></h6>
-                            <div class="stat-icon-badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-calendar-check fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0 text-dark"><?= number_format($todayAiPostsCount) ?></h2>
-                            <span class="text-muted ms-2 fs-6">/ <?= (int)$aiLimits['ai_max_daily_posts'] ?> <?= __('per_day') ?? 'per day' ?></span>
-                        </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: <?= $dailyPercent ?>%;"></div>
-                        </div>
-                        <div class="d-flex justify-content-between small text-muted">
-                            <span><?= $dailyPercent ?>% <?= __('today_used_label') ?? 'used today' ?></span>
-                            <span class="fw-bold text-success"><?= $dailyRemaining ?> <?= __('remaining_today') ?? 'remaining today' ?></span>
-                        </div>
-                    </div>
-                    <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #198754;"></div>
-                </div>
-            </div>
-
+            <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #6f42c1;"></div>
         </div>
 
         <!-- NEW CAMPAIGN FORM -->
@@ -318,10 +273,16 @@ if (!isset($_SESSION['user_id'])) exit;
         <!-- CAMPAIGNS LIST (DATATABLES) -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i class="bi bi-clock-history text-primary"></i>
-                    <?= __('my_ai_campaigns_title') ?? 'Active & Past AI Campaigns' ?>
-                </h5>
+                <div>
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-primary"></i>
+                        <?= __('my_ai_campaigns_title') ?? 'Active & Past AI Campaigns' ?>
+                    </h5>
+                    <!-- Mention plan limits for clarity right above the table -->
+                    <div class="small text-muted mt-1">
+                        <?= __('plan_allows_max_campaign_posts', ['max' => (int)$aiLimits['ai_max_campaign_posts']]) ?> • <?= __('plan_allows_max_daily_posts', ['max' => (int)$aiLimits['ai_max_daily_posts']]) ?>
+                    </div>
+                </div>
                 <span class="badge bg-secondary">
                     <?= count($campaigns ?? []) ?> <?= __('total_campaigns') ?? 'Campaigns' ?>
                 </span>
@@ -512,7 +473,7 @@ if (!isset($_SESSION['user_id'])) exit;
     </div>
 </div>
 
-<!-- MODAL 2: EDIT CAMPAIGN -->
+<!-- MODAL 2: EDIT CAMPAIGN (ENFORCES PLAN LIMITS) -->
 <div class="modal fade" id="editCampaignModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form action="/ai-studio/update" method="POST" id="editCampaignForm">
@@ -545,10 +506,16 @@ if (!isset($_SESSION['user_id'])) exit;
                         <div class="col-md-6">
                             <label class="form-label fw-bold"><?= __('total_posts') ?? 'Total Posts' ?></label>
                             <input type="number" name="total_posts" id="edit_total_posts" class="form-control" min="1" max="<?= (int)$aiLimits['ai_max_campaign_posts'] ?>" required>
+                            <div class="form-text text-primary fw-semibold small mt-1">
+                                <?= __('plan_allows_max_campaign_posts', ['max' => (int)$aiLimits['ai_max_campaign_posts']]) ?>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold"><?= __('max_posts_per_day') ?? 'Posts Per Day' ?></label>
                             <input type="number" name="posts_per_day" id="edit_posts_per_day" class="form-control" min="1" max="<?= (int)$aiLimits['ai_max_daily_posts'] ?>" required>
+                            <div class="form-text text-primary fw-semibold small mt-1">
+                                <?= __('plan_allows_max_daily_posts', ['max' => (int)$aiLimits['ai_max_daily_posts']]) ?>
+                            </div>
                         </div>
                     </div>
 
@@ -713,7 +680,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Attach click listener to view scheduled posts
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.view-campaign-posts-btn');
         if (btn) {
@@ -723,7 +689,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Select all checkboxes in modal
     const selectAllModalPosts = document.getElementById('selectAllModalPosts');
     if (selectAllModalPosts) {
         selectAllModalPosts.addEventListener('change', function() {
@@ -737,14 +702,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Individual checkbox change listener
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('modal-post-chk')) {
             refreshDeleteSelectedState();
         }
     });
 
-    // Delete single post from modal
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.single-delete-modal-post-btn');
         if (btn) {
@@ -769,7 +732,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Delete selected posts from modal
     const deleteSelectedModalBtn = document.getElementById('deleteSelectedModalBtn');
     if (deleteSelectedModalBtn) {
         deleteSelectedModalBtn.addEventListener('click', function() {
@@ -804,7 +766,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Delete ALL scheduled posts for current campaign
     const deleteAllModalBtn = document.getElementById('deleteAllModalBtn');
     if (deleteAllModalBtn) {
         deleteAllModalBtn.addEventListener('click', function() {
@@ -828,7 +789,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Refresh page when closing scheduled posts modal to update counters
     if (postsModalEl) {
         postsModalEl.addEventListener('hidden.bs.modal', function () {
             window.location.reload();
