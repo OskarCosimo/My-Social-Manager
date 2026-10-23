@@ -24,55 +24,17 @@ class AiStudioController {
         $accounts = SocialAccount::getUserAccounts($userId);
         $aiLimits = UsageManager::getAiLimits($userId);
 
-        // 1. AI Credits Quota
+        // AI Credits Quota for top banner
         $aiCreditsUsed    = (int)($aiLimits['ai_credits_used'] ?? 0);
         $aiCreditsMonth   = (int)($aiLimits['ai_credits_month'] ?? 0);
         $aiCreditsBalance = (int)($aiLimits['ai_credits_balance'] ?? 0);
         $aiPercent = ($aiCreditsMonth > 0) ? (int)min(100, round(($aiCreditsUsed / $aiCreditsMonth) * 100)) : 0;
 
-        // 2. Campaign Posts Stats: Includes ALL AI posts ever published (even from deleted campaigns) + currently scheduled posts
-        $campPostsStmt = $db->prepare("
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'published' THEN 1 ELSE 0 END) as published,
-                SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled
-            FROM posts 
-            WHERE user_id = ? AND campaign_id IS NOT NULL
-        ");
-        $campPostsStmt->execute([$userId]);
-        $campPostStats = $campPostsStmt->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'published' => 0, 'scheduled' => 0];
-
-        $totalCampaignPosts     = (int)($campPostStats['total'] ?? 0);
-        $publishedCampaignPosts = (int)($campPostStats['published'] ?? 0);
-        $scheduledCampaignPosts = (int)($campPostStats['scheduled'] ?? 0);
-        $maxCampaignPosts       = max(1, (int)($aiLimits['ai_max_campaign_posts'] ?? 1));
-        $campaignPostsPercent   = (int)min(100, round(($totalCampaignPosts / $maxCampaignPosts) * 100));
-
-        // 3. Today's AI Posts: Counts posts PUBLISHED today or SCHEDULED for today
-        // Posts published weeks ago are excluded because their published_at date is in the past
-        $todayStmt = $db->prepare("
-            SELECT COUNT(*) 
-            FROM posts 
-            WHERE user_id = ? 
-              AND campaign_id IS NOT NULL 
-              AND (
-                  (status = 'published' AND DATE(COALESCE(published_at, scheduled_for)) = UTC_DATE())
-                  OR
-                  (status = 'scheduled' AND DATE(scheduled_for) = UTC_DATE())
-              )
-        ");
-        $todayStmt->execute([$userId]);
-        $todayAiPostsCount = (int)$todayStmt->fetchColumn();
-
-        $maxDailyPosts  = max(1, (int)($aiLimits['ai_max_daily_posts'] ?? 1));
-        $dailyPercent   = (int)min(100, round(($todayAiPostsCount / $maxDailyPosts) * 100));
-        $dailyRemaining = max(0, $maxDailyPosts - $todayAiPostsCount);
-
         // User target groups
         $groupModel = new \App\Models\Group($db);
         $groups = $groupModel->getUserGroups($userId);
 
-        // All user campaigns
+        // All user campaigns (with published & scheduled counters)
         $campaigns = AiCampaign::getByUserId($userId);
 
         require_once __DIR__ . '/../Views/ai_studio/index.php';
@@ -135,7 +97,7 @@ class AiStudioController {
     }
 
     /**
-     * Update an existing campaign
+     * Update an existing campaign (enforces plan limits)
      */
     public function update() {
         if (!isset($_SESSION['user_id'])) {
@@ -166,6 +128,7 @@ class AiStudioController {
         $startTime = $_POST['start_time'] ?? ($existing['schedule_settings']['start_time'] ?? '09:00');
         $endTime = $_POST['end_time'] ?? ($existing['schedule_settings']['end_time'] ?? '18:00');
 
+        // Server-side strict limit checks
         if ($totalPosts > $aiLimits['ai_max_campaign_posts']) {
             $_SESSION['error'] = __('plan_campaign_limit_exceeded') ?? 'Total posts exceed your plan allowance.';
             header('Location: /ai-studio');
