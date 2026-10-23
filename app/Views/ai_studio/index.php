@@ -53,10 +53,10 @@ if (!isset($_SESSION['user_id'])) exit;
             <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
 
-        <!-- AI CREDITS & PLAN LIMITS ROW -->
+        <!-- DYNAMIC AI CREDITS & REAL-TIME PLAN LIMITS ROW -->
         <div class="row g-4 mb-4">
             
-            <!-- AI Credits Balance & Usage -->
+            <!-- Card 1: AI Credits Balance & Usage -->
             <div class="col-12 col-md-4">
                 <div class="card stat-card h-100 shadow-sm border-0 bg-white position-relative overflow-hidden">
                     <div class="card-body">
@@ -82,7 +82,7 @@ if (!isset($_SESSION['user_id'])) exit;
                 </div>
             </div>
 
-            <!-- Max Posts Per Single Campaign -->
+            <!-- Card 2: AI Campaign Posts (Created vs Allowed per campaign) -->
             <div class="col-12 col-md-4">
                 <div class="card stat-card h-100 shadow-sm border-0 bg-white position-relative overflow-hidden">
                     <div class="card-body">
@@ -93,18 +93,22 @@ if (!isset($_SESSION['user_id'])) exit;
                             </div>
                         </div>
                         <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0 text-dark"><?= (int)$aiLimits['ai_max_campaign_posts'] ?></h2>
-                            <span class="text-muted ms-2 fs-6"><?= __('posts_per_campaign_sub') ?? 'posts allowed' ?></span>
+                            <h2 class="display-6 fw-bold mb-0 text-dark"><?= number_format($totalCampaignPosts) ?></h2>
+                            <span class="text-muted ms-2 fs-6">/ <?= (int)$aiLimits['ai_max_campaign_posts'] ?> <?= __('max_allowed') ?? 'max/campaign' ?></span>
                         </div>
-                        <p class="text-muted small mb-0 mt-3">
-                            <?= __('plan_campaign_posts_desc') ?? 'Maximum number of social posts you can generate in one automated campaign.' ?>
-                        </p>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $campaignPostsPercent ?>%;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span><strong class="text-success"><?= $publishedCampaignPosts ?></strong> <?= __('published') ?? 'published' ?> • <strong class="text-primary"><?= $scheduledCampaignPosts ?></strong> <?= __('scheduled') ?? 'scheduled' ?></span>
+                            <span class="fw-bold text-dark"><?= (int)$aiLimits['ai_max_campaign_posts'] ?> <?= __('limit_short') ?? 'limit' ?></span>
+                        </div>
                     </div>
                     <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #0d6efd;"></div>
                 </div>
             </div>
 
-            <!-- Max Daily Scheduling Limit -->
+            <!-- Card 3: Daily AI Posts (Today's Posts vs Daily Limit) -->
             <div class="col-12 col-md-4">
                 <div class="card stat-card h-100 shadow-sm border-0 bg-white position-relative overflow-hidden">
                     <div class="card-body">
@@ -115,12 +119,16 @@ if (!isset($_SESSION['user_id'])) exit;
                             </div>
                         </div>
                         <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0 text-dark"><?= (int)$aiLimits['ai_max_daily_posts'] ?></h2>
-                            <span class="text-muted ms-2 fs-6"><?= __('per_day') ?? 'per day' ?></span>
+                            <h2 class="display-6 fw-bold mb-0 text-dark"><?= number_format($todayAiPostsCount) ?></h2>
+                            <span class="text-muted ms-2 fs-6">/ <?= (int)$aiLimits['ai_max_daily_posts'] ?> <?= __('per_day') ?? 'per day' ?></span>
                         </div>
-                        <p class="text-muted small mb-0 mt-3">
-                            <?= __('plan_daily_posts_desc') ?? 'Maximum number of automated posts scheduled to be posted within a single 24-hour day.' ?>
-                        </p>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: <?= $dailyPercent ?>%;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span><?= $dailyPercent ?>% <?= __('today_used_label') ?? 'used today' ?></span>
+                            <span class="fw-bold text-success"><?= $dailyRemaining ?> <?= __('remaining_today') ?? 'remaining today' ?></span>
+                        </div>
                     </div>
                     <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #198754;"></div>
                 </div>
@@ -246,7 +254,6 @@ if (!isset($_SESSION['user_id'])) exit;
                 <!-- Right Column: Scheduling Rules & Submit -->
                 <div class="col-lg-4">
                     
-                    <!-- Step 3: Scheduling Rules -->
                     <div class="card shadow-sm border-0 bg-white mb-4 position-sticky" style="top: 1.5rem;">
                         <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
                             <h5 class="fw-bold text-secondary mb-0">
@@ -405,7 +412,7 @@ if (!isset($_SESSION['user_id'])) exit;
                                             <div class="btn-group btn-group-sm">
                                                 <!-- View Scheduled Posts Modal Button -->
                                                 <button type="button" 
-                                                        class="btn btn-outline-info view-campaign-posts-btn"
+                                                        class="btn btn-outline-info view-campaign-posts-btn" 
                                                         data-id="<?= (int)$camp['id'] ?>"
                                                         title="<?= __('view_manage_scheduled_posts') ?? 'View Scheduled Posts' ?>">
                                                     <i class="bi bi-list-check"></i>
@@ -462,7 +469,6 @@ if (!isset($_SESSION['user_id'])) exit;
             </div>
             <div class="modal-body p-4">
                 
-                <!-- Action Toolbar for Selected Posts -->
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div class="d-flex align-items-center gap-2">
                         <input class="form-check-input mt-0" type="checkbox" id="selectAllModalPosts">
@@ -480,7 +486,6 @@ if (!isset($_SESSION['user_id'])) exit;
                     </div>
                 </div>
 
-                <!-- Posts Data Table inside Modal -->
                 <div class="table-responsive border rounded p-2 bg-light">
                     <table class="table table-hover align-middle w-100 bg-white" id="modal-posts-table">
                         <thead class="table-light">
@@ -694,7 +699,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 tbody.innerHTML = html;
 
-                // Initialize DataTable inside modal
                 modalDataTable = $('#modal-posts-table').DataTable({
                     pageLength: 10,
                     order: [[3, 'asc']],
