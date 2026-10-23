@@ -33,7 +33,7 @@ foreach ($activeCampaigns as $campaign) {
     $startTime = $settings['start_time'] ?? '09:00';
     $isUniqueContent = !empty($settings['unique_posts']);
 
-    // Check how many posts have already been generated for this campaign
+    // Check how many posts have already been scheduled for this campaign
     $stmt = $db->prepare("SELECT COUNT(DISTINCT scheduled_for) as generated_count FROM posts WHERE campaign_id = :campaign_id");
     $stmt->execute(['campaign_id' => $campaign['id']]);
     $generatedCount = (int)($stmt->fetch(PDO::FETCH_ASSOC)['generated_count'] ?? 0);
@@ -44,7 +44,7 @@ foreach ($activeCampaigns as $campaign) {
         continue;
     }
 
-    // Prepare the insert statement matching the exact table schema
+    // Prepare insert statement matching the database table schema
     $insertStmt = $db->prepare("
         INSERT INTO posts (user_id, campaign_id, social_account_id, content, media_url, status, scheduled_for) 
         VALUES (?, ?, ?, ?, NULL, 'scheduled', ?)
@@ -67,22 +67,26 @@ foreach ($activeCampaigns as $campaign) {
         // Build unique prompt instructions if enabled
         $uniqueInstructions = "";
         if ($isUniqueContent) {
+            // Select recent posts without DISTINCT in SQL to satisfy MySQL strict mode
             $prevStmt = $db->prepare("
-                SELECT DISTINCT content 
+                SELECT content 
                 FROM posts 
                 WHERE campaign_id = :campaign_id 
                 ORDER BY id DESC 
-                LIMIT 5
+                LIMIT 10
             ");
             $prevStmt->execute(['campaign_id' => $campaign['id']]);
-            $previousPosts = $prevStmt->fetchAll(PDO::FETCH_COLUMN);
+            $rawPrevious = $prevStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            
+            // Deduplicate in PHP
+            $previousPosts = array_slice(array_unique($rawPrevious), 0, 5);
 
             $postNumber = $generatedCount + 1;
             $uniqueInstructions .= "\n\nThis is post #{$postNumber} of a {$targetTotalPosts}-post series.";
             $uniqueInstructions .= " IMPORTANT: Write a completely UNIQUE and fresh post with a different angle, hook, and phrasing.";
             
             if (!empty($previousPosts)) {
-                $uniqueInstructions .= " Do NOT repeat or closely mirror the following recent posts from this campaign:\n";
+                $uniqueInstructions .= "\nDo NOT repeat or closely mirror the following recent posts from this campaign:\n";
                 foreach ($previousPosts as $prev) {
                     $snippet = trim(preg_replace('/\s+/', ' ', substr($prev, 0, 140)));
                     $uniqueInstructions .= "- " . $snippet . "...\n";
