@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Sind Sie sicher, dass Sie ALLE geplante Beiträge für diese Kampagne löschen möchten? Der KI-Arbeiter kann sie dann regenerieren, wenn die Kampagne aktiv ist.",
     "no_scheduled_posts_in_campaign": "Für diese Kampagne werden derzeit keine Posten geplant.",
     "account": "Konto",
-    "scheduled_for": "Geplant für"
+    "scheduled_for": "Geplant für",
+    "max_allowed": "max",
+    "limit_short": "höchstmenge",
+    "today_used_label": "heute",
+    "remaining_today": "noch heute"
 }

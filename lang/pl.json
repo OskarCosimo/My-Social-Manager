@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Jesteś pewien, że chcesz usunąć wszystkie zaplanowane posty do tej kampanii? Pracownik AI może je zregenerować, jeśli kampania jest aktywna.",
     "no_scheduled_posts_in_campaign": "Brak zaplanowanych stanowisk w kolejce do tej kampanii.",
     "account": "Konto",
-    "scheduled_for": "Zaplanowany"
+    "scheduled_for": "Zaplanowany",
+    "max_allowed": "max \/ kampania",
+    "limit_short": "granica",
+    "today_used_label": "używane dzisiaj",
+    "remaining_today": "pozostały dziś"
 }

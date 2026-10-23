@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Bu kampanya için TÜM planlanan mesajları silmek istediğinizden emin misiniz? AI çalışanı daha sonra kampanya aktif olup olmadığını yeniden üretebilir.",
     "no_scheduled_posts_in_campaign": "Şu anda bu kampanya için kuyrukta planlanmamış mesajlar yok.",
     "account": "Hesap Hesabı",
-    "scheduled_for": "Scheduled For için"
+    "scheduled_for": "Scheduled For için",
+    "max_allowed": "max\/campaign",
+    "limit_short": "limit",
+    "today_used_label": "bugün kullanılmakta olan bugün kullanılmıştı",
+    "remaining_today": "bugün geriye kalan bugün kaldı"
 }

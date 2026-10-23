@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Jste si jisti, že chcete smazat všechny plánované příspěvky pro tuto kampaň? Pracovník AI je pak může regenerovat, pokud je kampaň aktivní.",
     "no_scheduled_posts_in_campaign": "Žádná plánovaná místa ve frontě na tuto kampaň.",
     "account": "Účet",
-    "scheduled_for": "Plánované pro"
+    "scheduled_for": "Plánované pro",
+    "max_allowed": "max \/ kampaň",
+    "limit_short": "limit",
+    "today_used_label": "použitý dnes",
+    "remaining_today": "zbývající"
 }

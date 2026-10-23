@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Sei sicuro di voler eliminare tutti i messaggi programmati per questa campagna? Il lavoratore AI può poi rigenerarli se la campagna è attiva.",
     "no_scheduled_posts_in_campaign": "Nessun post programmato attualmente in coda per questa campagna.",
     "account": "Account",
-    "scheduled_for": "Programmato per"
+    "scheduled_for": "Programmato per",
+    "max_allowed": "max\/campagna",
+    "limit_short": "limite",
+    "today_used_label": "usato oggi",
+    "remaining_today": "rimanente oggi"
 }

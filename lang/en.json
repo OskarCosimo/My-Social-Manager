@@ -659,5 +659,9 @@
   "confirm_delete_all_scheduled_posts": "Are you sure you want to delete ALL scheduled posts for this campaign? The AI worker can then regenerate them if the campaign is active.",
   "no_scheduled_posts_in_campaign": "No scheduled posts currently in queue for this campaign.",
   "account": "Account",
-  "scheduled_for": "Scheduled For"
+  "scheduled_for": "Scheduled For",
+  "max_allowed": "max/campaign",
+  "limit_short": "limit",
+  "today_used_label": "used today",
+  "remaining_today": "remaining today"
 }

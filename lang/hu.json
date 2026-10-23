@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Biztos vagy benne, hogy törölni akarod a kampány összes állását? A mesterséges intelligenciáért felelős munkás ezután regenerálhatja őket, ha a kampány aktív.",
     "no_scheduled_posts_in_campaign": "Jelenleg nincs beütemezett állás erre a kampányra.",
     "account": "Számla",
-    "scheduled_for": "Tervezett"
+    "scheduled_for": "Tervezett",
+    "max_allowed": "max. \/ kampány",
+    "limit_short": "határérték",
+    "today_used_label": "ma használt",
+    "remaining_today": "fennmaradó"
 }

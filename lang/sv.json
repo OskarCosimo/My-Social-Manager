@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Är du säker på att du vill ta bort alla schemalagda inlägg för denna kampanj? AI-arbetaren kan sedan regenerera dem om kampanjen är aktiv.",
     "no_scheduled_posts_in_campaign": "Inga schemalagda inlägg för närvarande i kö för denna kampanj.",
     "account": "Kontokonto",
-    "scheduled_for": "Schemalagd för"
+    "scheduled_for": "Schemalagd för",
+    "max_allowed": "max\/kampanj",
+    "limit_short": "gränsgräns",
+    "today_used_label": "används idag",
+    "remaining_today": "återstående idag"
 }

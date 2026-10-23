@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Tem certeza de que deseja excluir TODOS os posts agendados para esta campanha? O trabalhador de IA pode então regenerá-los se a campanha estiver ativa.",
     "no_scheduled_posts_in_campaign": "Nenhum post agendado atualmente na fila para esta campanha.",
     "account": "Conta",
-    "scheduled_for": "Agendado para"
+    "scheduled_for": "Agendado para",
+    "max_allowed": "máx.\/campanha",
+    "limit_short": "limite",
+    "today_used_label": "usado hoje",
+    "remaining_today": "permanecendo hoje"
 }

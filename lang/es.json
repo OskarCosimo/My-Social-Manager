@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "¿Estás seguro de que quieres eliminar TODAS las publicaciones programadas para esta campaña? El trabajador de AI puede regenerarlos si la campaña está activa.",
     "no_scheduled_posts_in_campaign": "No hay puestos programados actualmente en fila para esta campaña.",
     "account": "Cuenta",
-    "scheduled_for": "Puestos previstos"
+    "scheduled_for": "Puestos previstos",
+    "max_allowed": "max\/campaign",
+    "limit_short": "límite",
+    "today_used_label": "hoy",
+    "remaining_today": "hoy"
 }

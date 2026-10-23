@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Voulez-vous vraiment supprimer TOUS les messages prévus pour cette campagne ? Le travailleur de l'IA peut alors les régénérer si la campagne est active.",
     "no_scheduled_posts_in_campaign": "Aucun poste prévu n'est actuellement en attente pour cette campagne.",
     "account": "Compte",
-    "scheduled_for": "Prévue pour"
+    "scheduled_for": "Prévue pour",
+    "max_allowed": "max\/campagne",
+    "limit_short": "limite",
+    "today_used_label": "utilisé aujourd'hui",
+    "remaining_today": "restant aujourd'hui"
 }

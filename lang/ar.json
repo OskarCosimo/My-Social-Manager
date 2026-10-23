@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "هل أنت متأكد أنك تريد حذف كل الوظائف المقررة لهذه الحملة؟ The AI worker can then regenerate them if the campaign is active.",
     "no_scheduled_posts_in_campaign": "No scheduled posts currently in queue for this campaign.",
     "account": "الحساب",
-    "scheduled_for": "الجدول الزمني"
+    "scheduled_for": "الجدول الزمني",
+    "max_allowed": "الحد الأقصى\/الحمل",
+    "limit_short": "الحد الأقصى",
+    "today_used_label": "اليوم",
+    "remaining_today": "تبقى اليوم"
 }

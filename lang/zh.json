@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "您确定要删除本次竞选的所有预定文章吗 ? 如果竞选活动积极,人工智能工人可以再生.",
     "no_scheduled_posts_in_campaign": "目前没有为这场运动排队的预定帖子 .",
     "account": "账户",
-    "scheduled_for": "计划"
+    "scheduled_for": "计划",
+    "max_allowed": "最大\/ 活动",
+    "limit_short": "限制",
+    "today_used_label": "今天使用过的",
+    "remaining_today": "现今尚存"
 }

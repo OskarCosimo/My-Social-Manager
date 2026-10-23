@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "このキャンペーンのすべてのスケジュール投稿を削除したいですか? キャンペーンがアクティブの場合、AI ワーカーはそれらを再生することができます.",
     "no_scheduled_posts_in_campaign": "現在、このキャンペーンのキューにスケジュールされた投稿はありません.",
     "account": "パスワード",
-    "scheduled_for": "スケジュール"
+    "scheduled_for": "スケジュール",
+    "max_allowed": "最高\/campaign",
+    "limit_short": "制限なし",
+    "today_used_label": "今日使用",
+    "remaining_today": "今日の残り"
 }

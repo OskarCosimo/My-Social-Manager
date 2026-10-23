@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Sigur doriți să ștergeți TOATE posturile programate pentru această campanie? Muncitorul AI îi poate regenera dacă campania este activă.",
     "no_scheduled_posts_in_campaign": "Nu există posturi programate în prezent în coadă pentru această campanie.",
     "account": "Cont",
-    "scheduled_for": "Programat pentru"
+    "scheduled_for": "Programat pentru",
+    "max_allowed": "max\/campaign",
+    "limit_short": "limită",
+    "today_used_label": "utilizat astăzi",
+    "remaining_today": "rămas astăzi"
 }

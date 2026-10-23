@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "이 캠페인에 대한 모든 예약된 게시물을 삭제하시겠습니까? AI worker는 캠페인이 활성화되면 재생할 수 있습니다.",
     "no_scheduled_posts_in_campaign": "이 캠페인에 대한 queue에서 예약 된 게시물이 없습니다.",
     "account": "계좌정보",
-    "scheduled_for": "자주 묻는 질문"
+    "scheduled_for": "자주 묻는 질문",
+    "max_allowed": "최대\/campaign",
+    "limit_short": "지원하다",
+    "today_used_label": "오늘 사용",
+    "remaining_today": "현재 위치"
 }

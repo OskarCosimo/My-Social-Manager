@@ -659,5 +659,9 @@
     "confirm_delete_all_scheduled_posts": "Weet u zeker dat u ALLE geplande berichten voor deze campagne wilt verwijderen? De AI werknemer kan ze dan regenereren als de campagne actief is.",
     "no_scheduled_posts_in_campaign": "Geen geplande berichten in de wachtrij voor deze campagne.",
     "account": "Account",
-    "scheduled_for": "Gepland voor"
+    "scheduled_for": "Gepland voor",
+    "max_allowed": "max\/campagne",
+    "limit_short": "limiet",
+    "today_used_label": "vandaag gebruikt",
+    "remaining_today": "blijven vandaag"
 }
