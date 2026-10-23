@@ -4,6 +4,13 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') exit;
 
 require_once __DIR__ . '/../../Models/Plan.php';
 $plans = Plan::getAll();
+
+$rawPacks = SystemSetting::get('ai_credit_packs');
+$aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
+    ['credits' => 100,  'price' => 5.00],
+    ['credits' => 500,  'price' => 20.00],
+    ['credits' => 1000, 'price' => 35.00]
+];
 ?>
 <?php require_once __DIR__ . '/../partials/header.php'; ?>
 
@@ -33,7 +40,8 @@ $plans = Plan::getAll();
             <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
 
-        <div class="card mb-5 shadow-sm border-0">
+        <!-- PLANS TABLE -->
+        <div class="card mb-4 shadow-sm border-0">
             <div class="card-header bg-white border-bottom-0 pt-4 pb-0 fw-bold">
                 <h5 class="mb-0 text-secondary d-inline-flex align-items-center gap-2">
                     <i class="bi bi-card-checklist text-primary"></i> <?= __('existing_subscription_plans') ?? 'Existing Subscription Plans' ?>
@@ -100,6 +108,52 @@ $plans = Plan::getAll();
                 </div>
             </div>
         </div>
+
+        <!-- AI CREDITS TOP-UP PACKAGES SECTION -->
+        <div class="card mb-5 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 fw-bold">
+                <h5 class="mb-0 text-secondary d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-stars text-primary"></i> <?= __('ai_credit_topup_packages') ?? 'AI Credit Top-Up Packages (One-Time Purchases)' ?>
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-4">
+                    <?= __('ai_credit_topup_desc') ?? 'Configure available credit packages that users can purchase using Stripe or PayPal to top up their account balance.' ?>
+                </p>
+
+                <form action="/admin/billing/ai-packs" method="POST">
+                    <div id="ai-packs-container">
+                        <?php foreach ($aiPacks as $idx => $pack): ?>
+                            <div class="row g-3 align-items-end mb-3 pack-row">
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold"><?= __('credits_amount') ?? 'AI Credits' ?></label>
+                                    <input type="number" name="pack_credits[]" class="form-control" value="<?= (int)$pack['credits'] ?>" required min="10">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold"><?= __('price_eur') ?? 'Price (€)' ?></label>
+                                    <input type="number" step="0.01" name="pack_prices[]" class="form-control" value="<?= number_format((float)$pack['price'], 2, '.', '') ?>" required min="0.50">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-danger w-100 remove-pack-btn">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="add-pack-btn">
+                            <i class="bi bi-plus-circle me-1"></i> <?= __('add_package') ?? 'Add Package' ?>
+                        </button>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <?= __('save_packages') ?? 'Save Packages' ?>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -184,7 +238,6 @@ $plans = Plan::getAll();
                         <input type="number" name="max_rss_posts" class="form-control form-control-sm" value="50" required>
                     </div>
 
-                    <!-- Channel Automations Limits -->
                     <div class="col-md-6 mt-3">
                         <label class="form-label small fw-bold text-primary"><?= __('max_channel_automations') ?? 'Max Channel Automations' ?></label>
                         <input type="number" name="max_channel_automations" class="form-control form-control-sm" value="5" required>
@@ -213,15 +266,22 @@ $plans = Plan::getAll();
                     <hr class="my-3">
                     <h6 class="fw-bold text-secondary">🤖 <?= __('section_ai_limits') ?? 'AI Studio Limits' ?></h6>
 
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold"><?= __('ai_monthly_credits') ?? 'AI Monthly Credits' ?></label>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold"><?= __('ai_monthly_credits') ?? 'AI Credits Allowance' ?></label>
                         <input type="number" name="ai_credits_month" class="form-control form-control-sm" value="50" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold"><?= __('ai_credits_period') ?? 'Credits Period' ?></label>
+                        <select name="ai_credits_period" class="form-select form-select-sm">
+                            <option value="monthly" selected><?= __('monthly') ?? 'Monthly' ?></option>
+                            <option value="daily"><?= __('daily') ?? 'Daily' ?></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold"><?= __('ai_max_campaign_posts') ?? 'AI Max Campaign Posts' ?></label>
                         <input type="number" name="ai_max_campaign_posts" class="form-control form-control-sm" value="10" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold"><?= __('ai_max_daily_posts') ?? 'AI Max Daily Posts' ?></label>
                         <input type="number" name="ai_max_daily_posts" class="form-control form-control-sm" value="2" required>
                     </div>
@@ -329,7 +389,6 @@ $plans = Plan::getAll();
                         <input type="number" name="max_rss_posts" id="edit_max_rss_posts" class="form-control form-control-sm" required>
                     </div>
 
-                    <!-- Channel Automations Limits -->
                     <div class="col-md-6 mt-3">
                         <label class="form-label small fw-bold text-primary"><?= __('max_channel_automations') ?? 'Max Channel Automations' ?></label>
                         <input type="number" name="max_channel_automations" id="edit_max_channel_automations" class="form-control form-control-sm" required>
@@ -358,15 +417,22 @@ $plans = Plan::getAll();
                     <hr class="my-3">
                     <h6 class="fw-bold text-secondary">🤖 <?= __('section_ai_limits') ?? 'AI Studio Limits' ?></h6>
 
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold"><?= __('ai_monthly_credits') ?? 'AI Monthly Credits' ?></label>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold"><?= __('ai_monthly_credits') ?? 'AI Credits Allowance' ?></label>
                         <input type="number" name="ai_credits_month" id="edit_ai_credits_month" class="form-control form-control-sm" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold"><?= __('ai_credits_period') ?? 'Credits Period' ?></label>
+                        <select name="ai_credits_period" id="edit_ai_credits_period" class="form-select form-select-sm">
+                            <option value="monthly"><?= __('monthly') ?? 'Monthly' ?></option>
+                            <option value="daily"><?= __('daily') ?? 'Daily' ?></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold"><?= __('ai_max_campaign_posts') ?? 'AI Max Campaign Posts' ?></label>
                         <input type="number" name="ai_max_campaign_posts" id="edit_ai_max_campaign_posts" class="form-control form-control-sm" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold"><?= __('ai_max_daily_posts') ?? 'AI Max Daily Posts' ?></label>
                         <input type="number" name="ai_max_daily_posts" id="edit_ai_max_daily_posts" class="form-control form-control-sm" required>
                     </div>
@@ -393,9 +459,6 @@ $plans = Plan::getAll();
 </div>
 
 <script>
-    /**
-     * Populate edit modal fields with plan data
-     */
     function editPlan(plan) {
         document.getElementById('edit_plan_id').value = plan.id || '';
         document.getElementById('edit_name').value = plan.name || '';
@@ -411,6 +474,7 @@ $plans = Plan::getAll();
         document.getElementById('edit_max_channel_automations').value = plan.max_channel_automations !== undefined ? plan.max_channel_automations : 5;
         document.getElementById('edit_max_channel_posts').value = plan.max_channel_posts !== undefined ? plan.max_channel_posts : 50;
         document.getElementById('edit_ai_credits_month').value = plan.ai_credits_month || 0;
+        document.getElementById('edit_ai_credits_period').value = plan.ai_credits_period || 'monthly';
         document.getElementById('edit_ai_max_campaign_posts').value = plan.ai_max_campaign_posts || 0;
         document.getElementById('edit_ai_max_daily_posts').value = plan.ai_max_daily_posts || 0;
         document.getElementById('edit_max_storage_size').value = plan.max_storage_size || '1GB';
@@ -423,6 +487,38 @@ $plans = Plan::getAll();
         document.getElementById('edit_is_default').checked = parseInt(plan.is_default || 0) === 1;
         document.getElementById('edit_is_hidden').checked = parseInt(plan.is_hidden || 0) === 1;
     }
+
+    // Dynamic Pack Adder
+    document.getElementById('add-pack-btn').addEventListener('click', function() {
+        const container = document.getElementById('ai-packs-container');
+        const row = document.createElement('div');
+        row.className = 'row g-3 align-items-end mb-3 pack-row';
+        row.innerHTML = `
+            <div class="col-md-5">
+                <input type="number" name="pack_credits[]" class="form-control" placeholder="100" required min="10">
+            </div>
+            <div class="col-md-5">
+                <input type="number" step="0.01" name="pack_prices[]" class="form-control" placeholder="5.00" required min="0.50">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger w-100 remove-pack-btn">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-pack-btn')) {
+            const rows = document.querySelectorAll('.pack-row');
+            if (rows.length > 1) {
+                e.target.closest('.pack-row').remove();
+            } else {
+                alert('At least one package is required.');
+            }
+        }
+    });
 </script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
