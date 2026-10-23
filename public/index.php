@@ -73,6 +73,9 @@ $router->get('/ai-studio', ['AiStudioController', 'index']);
 $router->post('/ai-studio/store', ['AiStudioController', 'store']);
 $router->post('/ai-studio/update', ['AiStudioController', 'update']);
 $router->post('/ai-studio/delete', ['AiStudioController', 'delete']);
+$router->get('/ai-studio/campaign-posts/{id}', ['AiStudioController', 'getCampaignPosts']);
+$router->post('/ai-studio/posts/delete', ['AiStudioController', 'deleteCampaignPosts']);
+$router->post('/ai-studio/posts/delete-all', ['AiStudioController', 'deleteAllCampaignPosts']);
 
 // Plugin Auth Routes
 $router->get('/plugin/auth', ['PluginAuthController', 'redirect']);
