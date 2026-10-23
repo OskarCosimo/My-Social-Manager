@@ -4,23 +4,31 @@
 require_once __DIR__ . '/../Core/Database.php';
 
 class Plan {
-    
+
     /**
-     * Fetch all available plans
+     * Ensure database schema has ai_credits_period column on plans table
      */
+    private static function ensureAiPeriodColumn(): void {
+        static $checked = false;
+        if ($checked) return;
+        try {
+            $db = Database::getInstance();
+            $db->exec("ALTER TABLE plans ADD COLUMN ai_credits_period VARCHAR(20) NOT NULL DEFAULT 'monthly'");
+        } catch (Exception $e) {}
+        $checked = true;
+    }
+    
     public static function getAll(): array {
+        self::ensureAiPeriodColumn();
         $db = Database::getInstance();
         $stmt = $db->query("SELECT * FROM plans ORDER BY price ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Update an existing plan's limits, Stripe Price ID, and periods
-     */
     public static function update(int $id, array $data): void {
+        self::ensureAiPeriodColumn();
         $db = Database::getInstance();
 
-        // If this plan is set as default, reset other plans first
         if (!empty($data['is_default'])) {
             $db->exec("UPDATE plans SET is_default = 0");
         }
@@ -40,6 +48,7 @@ class Plan {
                 max_channel_automations = :max_channel_automations,
                 max_channel_posts = :max_channel_posts,
                 ai_credits_month = :ai_credits_month,
+                ai_credits_period = :ai_credits_period,
                 ai_max_campaign_posts = :ai_max_campaign_posts,
                 ai_max_daily_posts = :ai_max_daily_posts,
                 max_storage_size = :max_storage_size,
@@ -66,6 +75,7 @@ class Plan {
             ':max_channel_automations'  => $data['max_channel_automations'] ?? 5,
             ':max_channel_posts'        => $data['max_channel_posts'] ?? 50,
             ':ai_credits_month'         => $data['ai_credits_month'],
+            ':ai_credits_period'        => $data['ai_credits_period'] ?? 'monthly',
             ':ai_max_campaign_posts'    => $data['ai_max_campaign_posts'],
             ':ai_max_daily_posts'       => $data['ai_max_daily_posts'],
             ':max_storage_size'         => $data['max_storage_size'],
@@ -79,10 +89,8 @@ class Plan {
         ]);
     }
 
-    /**
-     * Create a new subscription plan
-     */
     public static function create(array $data): void {
+        self::ensureAiPeriodColumn();
         $db = Database::getInstance();
 
         if (!empty($data['is_default'])) {
@@ -94,7 +102,7 @@ class Plan {
                 name, plan_code, stripe_price_id, price, billing_cycle, 
                 max_accounts, max_posts, post_period, max_rss_feeds, max_rss_posts,
                 max_channel_automations, max_channel_posts,
-                ai_credits_month, is_default, is_hidden, ai_max_campaign_posts, 
+                ai_credits_month, ai_credits_period, is_default, is_hidden, ai_max_campaign_posts, 
                 ai_max_daily_posts, max_storage_size, max_upload_size, 
                 max_mailing_lists, max_subscribers_per_list, max_emails_per_month
             )
@@ -102,7 +110,7 @@ class Plan {
                 :name, :plan_code, :stripe_price_id, :price, :billing_cycle, 
                 :max_accounts, :max_posts, :post_period, :max_rss_feeds, :max_rss_posts,
                 :max_channel_automations, :max_channel_posts,
-                :ai_credits_month, :is_default, :is_hidden, :ai_max_campaign_posts, 
+                :ai_credits_month, :ai_credits_period, :is_default, :is_hidden, :ai_max_campaign_posts, 
                 :ai_max_daily_posts, :max_storage_size, :max_upload_size, 
                 :max_mailing_lists, :max_subscribers_per_list, :max_emails_per_month
             )
@@ -122,6 +130,7 @@ class Plan {
             ':max_channel_automations'  => $data['max_channel_automations'] ?? 5,
             ':max_channel_posts'        => $data['max_channel_posts'] ?? 50,
             ':ai_credits_month'         => $data['ai_credits_month'],
+            ':ai_credits_period'        => $data['ai_credits_period'] ?? 'monthly',
             ':is_default'               => !empty($data['is_default']) ? 1 : 0,
             ':is_hidden'                => !empty($data['is_hidden']) ? 1 : 0,
             ':ai_max_campaign_posts'    => $data['ai_max_campaign_posts'],
@@ -146,6 +155,7 @@ class Plan {
     }
     
     public static function getByUserId(int $userId): ?array {
+        self::ensureAiPeriodColumn();
         $db = Database::getInstance();
         $stmt = $db->prepare("
             SELECT p.* FROM plans p 
