@@ -639,5 +639,12 @@
     "campaign_updated_success": "キャンペーンが正常に更新されました.",
     "invalid_campaign_id": "無効なキャンペーンID.",
     "campaign_deleted_success": "キャンペーンおよびスケジュールされた投稿が削除されました.",
-    "campaign_delete_error": "キャンペーンを削除できません."
+    "campaign_delete_error": "キャンペーンを削除できません.",
+    "manage": "マネージング",
+    "manage_user": "ユーザーアカウントの管理",
+    "registered_at": "会員登録",
+    "email_verified": "メールアドレス 確認済み",
+    "password_recovery_title": "パスワード回復",
+    "password_recovery_desc": "登録されたメールに安全なリセットリンクを送信して、新しいパスワードを定義できます.",
+    "send_reset_link": "リセットリンクを送信"
 }

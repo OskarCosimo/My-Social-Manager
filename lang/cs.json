@@ -639,5 +639,12 @@
     "campaign_updated_success": "Kampaň úspěšně aktualizována.",
     "invalid_campaign_id": "Neplatné ID kampaně.",
     "campaign_deleted_success": "Kampaň a její plánovaná místa byla zrušena.",
-    "campaign_delete_error": "Nepodařilo se odstranit kampaň."
+    "campaign_delete_error": "Nepodařilo se odstranit kampaň.",
+    "manage": "Správa",
+    "manage_user": "Správa uživatelského účtu",
+    "registered_at": "Zaevidováno",
+    "email_verified": "E-mailová adresa ověřena",
+    "password_recovery_title": "Obnovení hesla",
+    "password_recovery_desc": "Poslat zabezpečený reset odkaz na registrovaný e-mail, takže uživatel může definovat nové heslo.",
+    "send_reset_link": "Odeslat odkaz na reset"
 }

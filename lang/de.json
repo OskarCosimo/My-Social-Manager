@@ -639,5 +639,12 @@
     "campaign_updated_success": "Kampagne erfolgreich aktualisiert.",
     "invalid_campaign_id": "Invalide Kampagne ID.",
     "campaign_deleted_success": "Die Kampagne und ihre geplanten Beiträge wurden gestrichen.",
-    "campaign_delete_error": "Nicht zu löschen Kampagne."
+    "campaign_delete_error": "Nicht zu löschen Kampagne.",
+    "manage": "Verwalten",
+    "manage_user": "Benutzerkonto verwalten",
+    "registered_at": "Angemeldet",
+    "email_verified": "Email Adresse Verifiziert",
+    "password_recovery_title": "Passwort vergessen",
+    "password_recovery_desc": "Senden Sie einen sicheren Reset-Link an die registrierte E-Mail, damit der Benutzer ein neues Passwort definieren kann.",
+    "send_reset_link": "Zurücksetzen Link"
 }

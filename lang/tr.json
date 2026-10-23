@@ -639,5 +639,12 @@
     "campaign_updated_success": "Kampanya başarıyla güncellendi.",
     "invalid_campaign_id": "Invalid kampanyası ID.",
     "campaign_deleted_success": "Kampanya ve planlanan mesajları silindi.",
-    "campaign_delete_error": "Kampanyayı silmek için başarısız oldu."
+    "campaign_delete_error": "Kampanyayı silmek için başarısız oldu.",
+    "manage": "Yönetim Yönetimi Yönetimi Yönetimi",
+    "manage_user": "Kullanıcı Hesabını Yönetin",
+    "registered_at": "Kayıt",
+    "email_verified": "E-posta Adresi",
+    "password_recovery_title": "Şifre kurtarma",
+    "password_recovery_desc": "Kayıtlı e-postaya güvenli bir sıfırlama linkini gönderin, böylece kullanıcı yeni bir şifre tanımlayabilir.",
+    "send_reset_link": "Send reset Link Link"
 }

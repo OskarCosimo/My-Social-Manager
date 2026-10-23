@@ -639,5 +639,12 @@
     "campaign_updated_success": "캠페인이 성공적으로 업데이트되었습니다.",
     "invalid_campaign_id": "잘못된 캠페인 ID.",
     "campaign_deleted_success": "캠페인 및 예정된 게시물이 삭제되었습니다.",
-    "campaign_delete_error": "캠페인 삭제에 실패."
+    "campaign_delete_error": "캠페인 삭제에 실패.",
+    "manage": "계정 관리",
+    "manage_user": "사용자 계정 관리",
+    "registered_at": "로그인",
+    "email_verified": "이메일 주소 인증",
+    "password_recovery_title": "비밀번호 복구",
+    "password_recovery_desc": "등록 된 이메일에 보안 재설정 링크를 전송하므로 사용자는 새로운 암호를 정의 할 수 있습니다.",
+    "send_reset_link": "재설정 링크"
 }

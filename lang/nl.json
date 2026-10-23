@@ -639,5 +639,12 @@
     "campaign_updated_success": "Campagne succesvol bijgewerkt.",
     "invalid_campaign_id": "Ongeldig campagne-ID.",
     "campaign_deleted_success": "De campagne en de geplande posten zijn geschrapt.",
-    "campaign_delete_error": "Verwijderen van campagne is mislukt."
+    "campaign_delete_error": "Verwijderen van campagne is mislukt.",
+    "manage": "Beheer",
+    "manage_user": "Gebruikersaccount beheren",
+    "registered_at": "Geregistreerd op",
+    "email_verified": "E-mailadres geverifieerd",
+    "password_recovery_title": "Wachtwoordherstel",
+    "password_recovery_desc": "Stuur een veilige resetlink naar de geregistreerde e-mail zodat de gebruiker een nieuw wachtwoord kan definiëren.",
+    "send_reset_link": "Koppeling versturen"
 }

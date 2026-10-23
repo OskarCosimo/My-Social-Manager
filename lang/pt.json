@@ -639,5 +639,12 @@
     "campaign_updated_success": "Campanha atualizada com sucesso.",
     "invalid_campaign_id": "ID da campanha inválido.",
     "campaign_deleted_success": "Campanha e seus posts agendados foram excluídos.",
-    "campaign_delete_error": "Não foi possível apagar a campanha."
+    "campaign_delete_error": "Não foi possível apagar a campanha.",
+    "manage": "Gerenciar",
+    "manage_user": "Gerenciar conta de usuário",
+    "registered_at": "Registrado em",
+    "email_verified": "Endereço de e- mail verificado",
+    "password_recovery_title": "Recuperação de senha",
+    "password_recovery_desc": "Envie um link de reset seguro para o e-mail registrado para que o usuário possa definir uma nova senha.",
+    "send_reset_link": "Enviar a Ligação de Reiniciar"
 }

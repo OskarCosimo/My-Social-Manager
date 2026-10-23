@@ -639,5 +639,12 @@
     "campaign_updated_success": "A kampány sikeresen frissült.",
     "invalid_campaign_id": "Érvénytelen kampányazonosító.",
     "campaign_deleted_success": "A kampányt és annak tervezett bejegyzéseit törölték.",
-    "campaign_delete_error": "Nem sikerült törölni a kampányt."
+    "campaign_delete_error": "Nem sikerült törölni a kampányt.",
+    "manage": "Kezelés",
+    "manage_user": "Felhasználói számla kezelése",
+    "registered_at": "Nyilvántartásba véve",
+    "email_verified": "Ellenőrzött e- mail cím",
+    "password_recovery_title": "Jelszó visszaállítása",
+    "password_recovery_desc": "Küldjön egy biztonságos reset linket a regisztrált e-mail, így a felhasználó meg tud határozni egy új jelszót.",
+    "send_reset_link": "A link újraindítása"
 }

@@ -639,5 +639,12 @@
     "campaign_updated_success": "Campaña actualizada con éxito.",
     "invalid_campaign_id": "ID de campaña inválida.",
     "campaign_deleted_success": "Se han eliminado las campañas y sus puestos programados.",
-    "campaign_delete_error": "Failed to delete campaign."
+    "campaign_delete_error": "Failed to delete campaign.",
+    "manage": "Manage",
+    "manage_user": "Administrar la Cuenta de Usuario",
+    "registered_at": "Registrado",
+    "email_verified": "Dirección de correo electrónico verificada",
+    "password_recovery_title": "Recuperación de contraseña",
+    "password_recovery_desc": "Enviar un enlace de reset seguro al correo electrónico registrado para que el usuario pueda definir una nueva contraseña.",
+    "send_reset_link": "Send Reset Link"
 }

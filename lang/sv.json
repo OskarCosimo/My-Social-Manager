@@ -639,5 +639,12 @@
     "campaign_updated_success": "Kampanjen uppdateras framgångsrikt.",
     "invalid_campaign_id": "Invalid kampanj ID.",
     "campaign_deleted_success": "Kampanjen och dess schemalagda inlägg har raderats.",
-    "campaign_delete_error": "Misslyckades med att ta bort kampanjen."
+    "campaign_delete_error": "Misslyckades med att ta bort kampanjen.",
+    "manage": "Hantera",
+    "manage_user": "Hantera användarkonto",
+    "registered_at": "Registrerad på",
+    "email_verified": "E-postadress verifierad",
+    "password_recovery_title": "Lösenord Återhämtning",
+    "password_recovery_desc": "Skicka en säker återställningslänk till den registrerade e-posten så att användaren kan definiera ett nytt lösenord.",
+    "send_reset_link": "Skicka Återställ Link"
 }

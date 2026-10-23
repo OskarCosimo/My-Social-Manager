@@ -639,5 +639,12 @@
     "campaign_updated_success": "竞选成功更新 .",
     "invalid_campaign_id": "无效的竞选ID .",
     "campaign_deleted_success": "竞选及其预定职位已被删除.",
-    "campaign_delete_error": "删除活动失败 ."
+    "campaign_delete_error": "删除活动失败 .",
+    "manage": "管理",
+    "manage_user": "管理用户账户",
+    "registered_at": "已注册",
+    "email_verified": "电子邮件地址已验证",
+    "password_recovery_title": "密码回收",
+    "password_recovery_desc": "发送安全重置链接到注册的电子邮件,以便用户定义新的密码.",
+    "send_reset_link": "发送重置链接"
 }

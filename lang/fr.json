@@ -639,5 +639,12 @@
     "campaign_updated_success": "Campagne mise à jour avec succès.",
     "invalid_campaign_id": "Identification de campagne non valide.",
     "campaign_deleted_success": "La campagne et les messages prévus ont été supprimés.",
-    "campaign_delete_error": "Impossible de supprimer la campagne."
+    "campaign_delete_error": "Impossible de supprimer la campagne.",
+    "manage": "Gérer",
+    "manage_user": "Gérer le compte utilisateur",
+    "registered_at": "Enregistré le",
+    "email_verified": "Adresse électronique vérifiée",
+    "password_recovery_title": "Récupération de mot de passe",
+    "password_recovery_desc": "Envoyer un lien sécurisé de réinitialisation vers l'e-mail enregistré afin que l'utilisateur puisse définir un nouveau mot de passe.",
+    "send_reset_link": "Envoyer Reset Link"
 }

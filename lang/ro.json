@@ -639,5 +639,12 @@
     "campaign_updated_success": "Campania a fost actualizată cu succes.",
     "invalid_campaign_id": "ID-ul de campanie nevalidă.",
     "campaign_deleted_success": "Campania și posturile programate ale acesteia au fost eliminate.",
-    "campaign_delete_error": "A eșuat eliminarea campaniei."
+    "campaign_delete_error": "A eșuat eliminarea campaniei.",
+    "manage": "Gestionează",
+    "manage_user": "Gestionează contul de utilizator",
+    "registered_at": "Înregistrată",
+    "email_verified": "Adresa de e-mail verificată",
+    "password_recovery_title": "Recuperarea parolei",
+    "password_recovery_desc": "Trimite un link securizat de resetare pe e-mailul înregistrat astfel încât utilizatorul să poată defini o nouă parolă.",
+    "send_reset_link": "Trimite legătura de resetare"
 }

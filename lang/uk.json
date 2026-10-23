@@ -639,5 +639,12 @@
     "campaign_updated_success": "Кампанія успішно оновлюється.",
     "invalid_campaign_id": "Інвалідний ідентифікатор кампанії.",
     "campaign_deleted_success": "Відшкодування та його планові повідомлення.",
-    "campaign_delete_error": "Не вдалося видалити кампанію."
+    "campaign_delete_error": "Не вдалося видалити кампанію.",
+    "manage": "Мапа",
+    "manage_user": "Управління обліковим записом користувача",
+    "registered_at": "Реєстрація",
+    "email_verified": "Адреса електронної пошти",
+    "password_recovery_title": "Відновлення пароля",
+    "password_recovery_desc": "Надішліть посилання на захищене скидання, щоб користувач міг визначити новий пароль.",
+    "send_reset_link": "Надіслати посилання"
 }

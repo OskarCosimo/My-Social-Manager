@@ -639,5 +639,12 @@
     "campaign_updated_success": "Campagna aggiornata con successo.",
     "invalid_campaign_id": "ID campagna non valida.",
     "campaign_deleted_success": "Campagna e i suoi messaggi programmati sono stati cancellati.",
-    "campaign_delete_error": "Non ha cancellato la campagna."
+    "campaign_delete_error": "Non ha cancellato la campagna.",
+    "manage": "Gestione",
+    "manage_user": "Gestione account utente",
+    "registered_at": "Registrato su",
+    "email_verified": "Indirizzo email verificato",
+    "password_recovery_title": "Recupero password",
+    "password_recovery_desc": "Invia un link di reset sicuro all'email registrata in modo che l'utente possa definire una nuova password.",
+    "send_reset_link": "Inviare Reset Link"
 }

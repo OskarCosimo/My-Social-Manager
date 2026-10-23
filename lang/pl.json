@@ -639,5 +639,12 @@
     "campaign_updated_success": "Kampania zaktualizowana pomyślnie.",
     "invalid_campaign_id": "Nieprawidłowy identyfikator kampanii.",
     "campaign_deleted_success": "Kampania i jej zaplanowane stanowiska zostały usunięte.",
-    "campaign_delete_error": "Nie udało się usunąć kampanii."
+    "campaign_delete_error": "Nie udało się usunąć kampanii.",
+    "manage": "Zarządzanie",
+    "manage_user": "Zarządzanie kontem użytkownika",
+    "registered_at": "Zarejestrowany",
+    "email_verified": "Zweryfikowany adres e-mail",
+    "password_recovery_title": "Odzyskiwanie hasła",
+    "password_recovery_desc": "Wyślij bezpieczny link do zarejestrowanej poczty e-mail, aby użytkownik mógł zdefiniować nowe hasło.",
+    "send_reset_link": "Wyślij odnośnik"
 }

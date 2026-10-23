@@ -639,5 +639,12 @@
     "campaign_updated_success": "الحملة استكملت بنجاح.",
     "invalid_campaign_id": "هوية الحملة الغير صالحة.",
     "campaign_deleted_success": "وقد حذفت الحملة والوظائف المقررة لها.",
-    "campaign_delete_error": "فشل في حذف الحملة."
+    "campaign_delete_error": "فشل في حذف الحملة.",
+    "manage": "Manage",
+    "manage_user": "حساب المستعمل",
+    "registered_at": "المسجلة",
+    "email_verified": "عنوان البريد الإلكتروني",
+    "password_recovery_title": "استعادة كلمة السر",
+    "password_recovery_desc": "أرسلوا وصلة مأمونة مع البريد الإلكتروني المسجل حتى يستطيع المستخدم تحديد كلمة سر جديدة.",
+    "send_reset_link": "أرسل ريست لينك"
 }

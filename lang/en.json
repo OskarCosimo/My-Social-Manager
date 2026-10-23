@@ -639,5 +639,12 @@
   "campaign_updated_success": "Campaign updated successfully.",
   "invalid_campaign_id": "Invalid campaign ID.",
   "campaign_deleted_success": "Campaign and its scheduled posts have been deleted.",
-  "campaign_delete_error": "Failed to delete campaign."
+  "campaign_delete_error": "Failed to delete campaign.",
+  "manage": "Manage",
+  "manage_user": "Manage User Account",
+  "registered_at": "Registered On",
+  "email_verified": "Email Address Verified",
+  "password_recovery_title": "Password Recovery",
+  "password_recovery_desc": "Send a secure reset link to the registered email so the user can define a new password.",
+  "send_reset_link": "Send Reset Link"
 }
