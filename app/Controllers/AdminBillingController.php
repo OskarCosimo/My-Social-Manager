@@ -18,6 +18,14 @@ class AdminBillingController {
         
         $plans = Plan::getAll();
 
+        // Get saved AI credit top-up packages
+        $rawPacks = SystemSetting::get('ai_credit_packs');
+        $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
+            ['credits' => 100,  'price' => 5.00],
+            ['credits' => 500,  'price' => 20.00],
+            ['credits' => 1000, 'price' => 35.00]
+        ];
+
         require_once __DIR__ . '/../Views/admin/billing.php';
     }
 
@@ -36,8 +44,36 @@ class AdminBillingController {
     }
 
     /**
-     * Create a new plan from the admin modal
+     * Save AI credit packs available for purchase
      */
+    public function saveAiCreditPacks(): void {
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            die("Unauthorized");
+        }
+
+        $credits = $_POST['pack_credits'] ?? [];
+        $prices = $_POST['pack_prices'] ?? [];
+        $packs = [];
+
+        foreach ($credits as $idx => $creditVal) {
+            $creditAmount = (int)$creditVal;
+            $priceAmount = (float)($prices[$idx] ?? 0);
+
+            if ($creditAmount > 0 && $priceAmount > 0) {
+                $packs[] = [
+                    'credits' => $creditAmount,
+                    'price'   => round($priceAmount, 2)
+                ];
+            }
+        }
+
+        SystemSetting::set('ai_credit_packs', json_encode($packs));
+
+        $_SESSION['success'] = "AI Credit packages updated successfully.";
+        header('Location: /admin/billing');
+        exit;
+    }
+
     public function createPlan(): void {
         if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') {
             die("Unauthorized");
@@ -60,6 +96,7 @@ class AdminBillingController {
             'max_channel_automations'  => (int)($_POST['max_channel_automations'] ?? ($_POST['new_max_channel_automations'] ?? 5)),
             'max_channel_posts'        => (int)($_POST['max_channel_posts'] ?? ($_POST['new_max_channel_posts'] ?? 50)),
             'ai_credits_month'         => (int)($_POST['ai_credits_month'] ?? ($_POST['new_ai_credits_month'] ?? 0)),
+            'ai_credits_period'        => trim($_POST['ai_credits_period'] ?? 'monthly'),
             'ai_max_campaign_posts'    => (int)($_POST['ai_max_campaign_posts'] ?? ($_POST['new_ai_max_campaign_posts'] ?? 10)),
             'ai_max_daily_posts'       => (int)($_POST['ai_max_daily_posts'] ?? ($_POST['new_ai_max_daily_posts'] ?? 2)),
             'max_storage_size'         => trim($_POST['max_storage_size'] ?? ($_POST['new_max_storage_size'] ?? '1GB')),
@@ -76,9 +113,6 @@ class AdminBillingController {
         exit;
     }
 
-    /**
-     * Update an existing plan from the admin edit modal
-     */
     public function updatePlan(): void {
         if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') {
             die("Unauthorized");
@@ -109,6 +143,7 @@ class AdminBillingController {
             'max_channel_automations'  => (int)($_POST['max_channel_automations'] ?? 5),
             'max_channel_posts'        => (int)($_POST['max_channel_posts'] ?? 50),
             'ai_credits_month'         => (int)($_POST['ai_credits_month'] ?? 0),
+            'ai_credits_period'        => trim($_POST['ai_credits_period'] ?? 'monthly'),
             'ai_max_campaign_posts'    => (int)($_POST['ai_max_campaign_posts'] ?? 10),
             'ai_max_daily_posts'       => (int)($_POST['ai_max_daily_posts'] ?? 2),
             'max_storage_size'         => trim($_POST['max_storage_size'] ?? '1GB'),
