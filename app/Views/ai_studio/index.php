@@ -6,7 +6,7 @@ if (!isset($_SESSION['user_id'])) exit;
 
 <style>
     .stat-card { border-radius: 12px; }
-    .stat-icon-badge { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; }
+    .stat-icon-badge { width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; }
     .progress { height: 10px; border-radius: 5px; }
     .cursor-pointer { cursor: pointer; }
 </style>
@@ -52,10 +52,10 @@ if (!isset($_SESSION['user_id'])) exit;
             <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
 
-        <!-- TOP BAR: AI CREDITS ONLY -->
+        <!-- TOP BAR: AI CREDITS ONLY (CLEAN TWO-COLUMN LAYOUT) -->
         <div class="card stat-card shadow-sm border-0 bg-white mb-4 position-relative overflow-hidden">
             <div class="card-body p-4">
-                <div class="row align-items-center g-3">
+                <div class="row align-items-center g-4">
                     <div class="col-md-4 d-flex align-items-center gap-3">
                         <div class="stat-icon-badge" style="background-color: rgba(111, 66, 193, 0.12); color: #6f42c1;">
                             <i class="bi bi-stars fs-3"></i>
@@ -68,23 +68,14 @@ if (!isset($_SESSION['user_id'])) exit;
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-8">
                         <div class="progress mb-2">
                             <div class="progress-bar" role="progressbar" style="width: <?= $aiPercent ?>%; background-color: #6f42c1;"></div>
                         </div>
                         <div class="d-flex justify-content-between small text-muted">
                             <span><?= str_replace('{percent}', $aiPercent, __('ai_allowance_used') ?? ($aiPercent . '% used')) ?></span>
-                            <span class="fw-bold text-success"><?= number_format($aiCreditsBalance) ?> <?= __('remaining') ?? 'remaining' ?></span>
+                            <span class="fw-bold text-success fs-6"><?= number_format($aiCreditsBalance) ?> <?= __('remaining') ?? 'remaining' ?></span>
                         </div>
-                    </div>
-                    <div class="col-md-3 text-md-end text-start">
-                        <?php if ($aiCreditsBalance <= 0): ?>
-                            <span class="badge bg-danger p-2 fs-6"><?= __('ai_credits_exhausted') ?? 'Credits Exhausted' ?></span>
-                        <?php else: ?>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle p-2 fs-6">
-                                <i class="bi bi-check-circle me-1"></i><?= __('ai_service_active') ?? 'Active & Ready' ?>
-                            </span>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -278,7 +269,6 @@ if (!isset($_SESSION['user_id'])) exit;
                         <i class="bi bi-clock-history text-primary"></i>
                         <?= __('my_ai_campaigns_title') ?? 'Active & Past AI Campaigns' ?>
                     </h5>
-                    <!-- Mention plan limits for clarity right above the table -->
                     <div class="small text-muted mt-1">
                         <?= __('plan_allows_max_campaign_posts', ['max' => (int)$aiLimits['ai_max_campaign_posts']]) ?> • <?= __('plan_allows_max_daily_posts', ['max' => (int)$aiLimits['ai_max_daily_posts']]) ?>
                     </div>
@@ -371,7 +361,6 @@ if (!isset($_SESSION['user_id'])) exit;
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group btn-group-sm">
-                                                <!-- View Scheduled Posts Modal Button -->
                                                 <button type="button" 
                                                         class="btn btn-outline-info view-campaign-posts-btn" 
                                                         data-id="<?= (int)$camp['id'] ?>"
@@ -379,7 +368,6 @@ if (!isset($_SESSION['user_id'])) exit;
                                                     <i class="bi bi-list-check"></i>
                                                 </button>
 
-                                                <!-- Edit Campaign Modal Button -->
                                                 <button type="button" 
                                                         class="btn btn-outline-primary edit-campaign-btn"
                                                         data-id="<?= (int)$camp['id'] ?>"
@@ -394,7 +382,6 @@ if (!isset($_SESSION['user_id'])) exit;
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
                                                 
-                                                <!-- Delete Entire Campaign Form -->
                                                 <form action="/ai-studio/delete" method="POST" class="d-inline" onsubmit="return confirm('<?= addslashes(__('confirm_delete_ai_campaign') ?? 'Are you sure you want to delete this campaign? All scheduled posts generated for it will also be deleted.') ?>');">
                                                     <input type="hidden" name="campaign_id" value="<?= (int)$camp['id'] ?>">
                                                     <button type="submit" class="btn btn-outline-danger" title="<?= __('delete_campaign') ?? 'Delete Campaign' ?>">
@@ -473,7 +460,7 @@ if (!isset($_SESSION['user_id'])) exit;
     </div>
 </div>
 
-<!-- MODAL 2: EDIT CAMPAIGN (ENFORCES PLAN LIMITS) -->
+<!-- MODAL 2: EDIT CAMPAIGN -->
 <div class="modal fade" id="editCampaignModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form action="/ai-studio/update" method="POST" id="editCampaignForm">
@@ -552,7 +539,6 @@ if (!isset($_SESSION['user_id'])) exit;
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-    // --- 1. INITIALIZE CAMPAIGNS MAIN DATATABLE ---
     if (document.getElementById('ai-campaigns-table')) {
         $('#ai-campaigns-table').DataTable({
             order: [[0, 'desc']],
@@ -565,7 +551,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 2. EDIT CAMPAIGN MODAL POPULATE ---
     const editModalEl = document.getElementById('editCampaignModal');
     const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
 
@@ -586,7 +571,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- 3. VIEW & MANAGE SCHEDULED POSTS MODAL LOGIC ---
     let currentCampaignId = 0;
     const postsModalEl = document.getElementById('campaignPostsModal');
     const postsModal = postsModalEl ? new bootstrap.Modal(postsModalEl) : null;
@@ -795,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 4. LOCAL STORAGE & GROUP SELECTOR LOGIC ---
+    // --- LOCAL STORAGE & GROUP SELECTOR LOGIC ---
     const storageKey = 'aistudio_selected_accounts';
     const savedAccounts = JSON.parse(localStorage.getItem(storageKey)) || [];
     
