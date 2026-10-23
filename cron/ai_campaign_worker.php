@@ -5,7 +5,6 @@
  * Processes active campaigns, calls MLX-LM/Ollama/Gemini, and schedules posts.
  */
 
-// Include core files and models directly
 require_once __DIR__ . '/../app/Core/Config.php';
 require_once __DIR__ . '/../app/Core/Database.php';
 require_once __DIR__ . '/../app/Models/AiCampaign.php';
@@ -13,7 +12,6 @@ require_once __DIR__ . '/../app/Models/UsageManager.php';
 
 echo "[START] AI Campaign Worker started at " . date('Y-m-d H:i:s') . "\n";
 
-// Instantiate the global Database class
 $db = Database::getInstance();
 $activeCampaigns = AiCampaign::getActiveCampaigns();
 
@@ -27,15 +25,16 @@ foreach ($activeCampaigns as $campaign) {
 
     $userId = $campaign['user_id'];
     $settings = $campaign['schedule_settings'];
-    $targetTotalPosts = $settings['total_posts'] ?? 1;
+    $targetTotalPosts = max(1, (int)($settings['total_posts'] ?? 1));
+    $isUniqueContent = !empty($settings['unique_posts']);
     
     // 1. Check how many posts are already generated for this campaign
     $stmt = $db->prepare("SELECT COUNT(*) as generated_count FROM posts WHERE campaign_id = :campaign_id");
     $stmt->execute(['campaign_id' => $campaign['id']]);
-    $generatedCount = $stmt->fetch(PDO::FETCH_ASSOC)['generated_count'];
+    $generatedCount = (int)$stmt->fetch(PDO::FETCH_ASSOC)['generated_count'];
 
     if ($generatedCount >= $targetTotalPosts) {
-        echo "Campaign {$campaign['id']} reached its target. Marking as completed.\n";
+        echo "Campaign {$campaign['id']} reached its target ({$generatedCount}/{$targetTotalPosts}). Marking as completed.\n";
         AiCampaign::updateStatus($campaign['id'], 'completed');
         continue;
     }
@@ -49,18 +48,43 @@ foreach ($activeCampaigns as $campaign) {
 
     // 3. Calculate next schedule date
     $startTime = $settings['start_time'] ?? '09:00';
-    
-    // Calculate the days to add based on posts_per_day
     $postsPerDay = max(1, (int)($settings['posts_per_day'] ?? 1));
     $daysToAdd = floor($generatedCount / $postsPerDay);
     $scheduledDate = date('Y-m-d H:i:s', strtotime("+$daysToAdd days $startTime"));
 
-    // 4. Call AI Provider (OpenAI-compatible Chat, Ollama, or Gemini based on Config)
-    $aiPrompt = $campaign['prompt'] . "\n\nIMPORTANT: Write ONLY the post content. Do not include introductory text, explanations, or quotes around the text. Just the social media post.";
-    $generatedText = '';
+    // 4. Construct AI Prompt with uniqueness instructions if selected
+    $uniqueInstructions = "";
+    if ($isUniqueContent) {
+        // Fetch recent post contents from this campaign to prevent duplicates
+        $prevStmt = $db->prepare("
+            SELECT DISTINCT content 
+            FROM posts 
+            WHERE campaign_id = :campaign_id 
+            ORDER BY id DESC 
+            LIMIT 5
+        ");
+        $prevStmt->execute(['campaign_id' => $campaign['id']]);
+        $previousPosts = $prevStmt->fetchAll(PDO::FETCH_COLUMN);
 
+        $postIndex = $generatedCount + 1;
+        $uniqueInstructions .= "\n\nThis is post #{$postIndex} of a {$targetTotalPosts}-post series.";
+        $uniqueInstructions .= " IMPORTANT: Write a completely UNIQUE, fresh, and distinct post. Use a different perspective, opening hook, call-to-action, and structure.";
+        
+        if (!empty($previousPosts)) {
+            $uniqueInstructions .= "\nDo NOT repeat or closely mimic any of these previous posts from this same campaign:\n";
+            foreach ($previousPosts as $idx => $prev) {
+                $snippet = trim(preg_replace('/\s+/', ' ', substr($prev, 0, 140)));
+                $uniqueInstructions .= "- " . $snippet . "...\n";
+            }
+        }
+    }
+
+    $aiPrompt = $campaign['prompt'] . $uniqueInstructions . "\n\nIMPORTANT: Write ONLY the social media post text. Do not include introductory notes, explanations, or enclosing quotes.";
+    $generatedText = '';
+    $temperature = $isUniqueContent ? 0.85 : 0.7;
+
+    // 5. Call AI Provider
     if (Config::AI_PROVIDER === 'openai-chat') {
-        // --- OPENAI-COMPATIBLE CHAT LOGIC (MLX-LM, LocalAI, vLLM, OpenAI) ---
         $payload = json_encode([
             'model'       => Config::OPENAI_MODEL,
             'messages'    => [
@@ -70,7 +94,7 @@ foreach ($activeCampaigns as $campaign) {
                 ]
             ],
             'stream'      => false,
-            'temperature' => 0.7,
+            'temperature' => $temperature,
             'max_tokens'  => 1024
         ]);
 
@@ -99,13 +123,13 @@ foreach ($activeCampaigns as $campaign) {
         }
 
     } elseif (Config::AI_PROVIDER === 'ollama') {
-        // --- OLLAMA LOGIC ---
         $payload = json_encode([
             'model'  => Config::OLLAMA_MODEL,
             'prompt' => $aiPrompt,
             'stream' => false,
             'options' => [
-                'num_ctx' => 2048
+                'num_ctx'     => 2048,
+                'temperature' => $temperature
             ]
         ]);
 
@@ -129,7 +153,6 @@ foreach ($activeCampaigns as $campaign) {
         }
 
     } elseif (Config::AI_PROVIDER === 'gemini') {
-        // --- GEMINI LOGIC ---
         $geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . Config::GEMINI_API_KEY;
         
         $payload = json_encode([
@@ -139,6 +162,9 @@ foreach ($activeCampaigns as $campaign) {
                         ['text' => $aiPrompt]
                     ]
                 ]
+            ],
+            'generationConfig' => [
+                'temperature' => $temperature
             ]
         ]);
 
@@ -167,10 +193,10 @@ foreach ($activeCampaigns as $campaign) {
         continue;
     }
 
-    // 5. Insert the generated post into the database FOR EACH selected account
+    // 6. Insert the generated post into the database FOR EACH selected account
     $insertStmt = $db->prepare("
-        INSERT INTO posts (user_id, campaign_id, social_account_id, content, media_url, status, scheduled_for) 
-        VALUES (?, ?, ?, ?, NULL, 'scheduled', ?)
+        INSERT INTO posts (user_id, campaign_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, created_at) 
+        VALUES (?, ?, ?, ?, NULL, 'scheduled', ?, ?, NOW())
     ");
 
     foreach ($campaign['selected_accounts'] as $accountId) {
@@ -179,11 +205,12 @@ foreach ($activeCampaigns as $campaign) {
             $campaign['id'],
             (int)$accountId,
             $generatedText,
+            $scheduledDate,
             $scheduledDate
         ]);
     }
 
-    // 6. Increment AI usage counter
+    // 7. Increment AI usage counter
     UsageManager::incrementAiUsage($userId, 1);
     
     echo "Successfully generated and scheduled post for Campaign {$campaign['id']} at {$scheduledDate}. AI usage incremented.\n";
