@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 2) {
     $dbPass    = $_POST['db_pass'] ?? '';
     $appUrl    = rtrim(trim($_POST['app_url'] ?? ''), '/');
     
-    $adminEmail    = trim($_POST['admin_email'] ?? '');
+    $adminEmail    = strtolower(trim($_POST['admin_email'] ?? ''));
     $adminPassword = $_POST['admin_password'] ?? '';
 
     try {
@@ -54,16 +54,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 2) {
         $sql = file_get_contents($schemaFile);
         $pdo->exec($sql);
 
-        // 3. Create administrator account
-        $passwordHash = password_hash($adminPassword, PASSWORD_BCRYPT);
-        $stmt = $pdo->prepare("
-            INSERT INTO users (email, password, role, email_verified, accountsocialmanager, plan_id, status)
-            VALUES (?, ?, 'admin', 1, 1, 1, 'active')
-            ON DUPLICATE KEY UPDATE password = VALUES(password), role = 'admin', status = 'active'
-        ");
-        $stmt->execute([$adminEmail, $passwordHash]);
+        // 3. Automatically generate high-entropy 256-bit cryptographic keys
+        $encryptionKey = bin2hex(random_bytes(32));
+        $hmacKey       = bin2hex(random_bytes(32));
 
-        // 4. Update app/Core/Config.php
+        // 4. Encrypt administrator email and compute deterministic blind index
+        $rawKey = hash('sha256', $encryptionKey, true);
+        $iv = random_bytes(12);
+        $tag = '';
+        $ciphertext = openssl_encrypt(
+            $adminEmail,
+            'aes-256-gcm',
+            $rawKey,
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag,
+            '',
+            16
+        );
+        $encryptedAdminEmail = base64_encode($iv . $tag . $ciphertext);
+        $adminEmailHash = hash_hmac('sha256', $adminEmail, $hmacKey);
+
+        // 5. Create administrator account
+        $passwordHash = password_hash($adminPassword, PASSWORD_ARGON2ID);
+        $stmt = $pdo->prepare("
+            INSERT INTO users (email, email_hash, password, role, email_verified, accountsocialmanager, plan_id, status)
+            VALUES (?, ?, ?, 'admin', 1, 1, 1, 'active')
+            ON DUPLICATE KEY UPDATE 
+                email = VALUES(email),
+                email_hash = VALUES(email_hash),
+                password = VALUES(password),
+                role = 'admin',
+                status = 'active'
+        ");
+        $stmt->execute([$encryptedAdminEmail, $adminEmailHash, $passwordHash]);
+
+        // 6. Generate and write app/Core/Config.php
         $escapedDbPass = addcslashes($dbPass, "'\\");
         $escapedDbUser = addcslashes($dbUser, "'\\");
         $escapedDbName = addcslashes($dbName, "'\\");
@@ -75,12 +101,20 @@ $configTemplate = <<<PHP
 // app/Core/Config.php
 
 class Config {
+    // Application version and GitHub repository
+    public const APP_VERSION = '1.0.0';
+    public const GITHUB_REPO = 'OskarCosimo/My-Social-Manager';
+
     // Database connection details
     public const DB_HOST = '{$escapedDbHost}';
     public const DB_PORT = {$dbPort};
     public const DB_NAME = '{$escapedDbName}';
     public const DB_USER = '{$escapedDbUser}';
     public const DB_PASS = '{$escapedDbPass}';
+
+    // Encryption Keys (Generated automatically during installation)
+    public const ENCRYPTION_KEY = '{$encryptionKey}';
+    public const HMAC_KEY       = '{$hmacKey}';
 
     // Application settings
     public const APP_URL = '{$escapedAppUrl}';
@@ -112,7 +146,7 @@ PHP;
             throw new Exception("Unable to write configuration file at: {$configFile}");
         }
 
-        // 5. Create lock file
+        // 7. Create installation lock file
         if (file_put_contents($lockFile, date('Y-m-d H:i:s')) === false) {
             throw new Exception("Unable to create installation lock file at: {$lockFile}");
         }
@@ -215,6 +249,13 @@ PHP;
                                 <input type="password" name="admin_password" class="form-control" required minlength="8">
                             </div>
 
+                            <div class="alert alert-info small d-flex align-items-center gap-2 mb-4">
+                                <i class="bi bi-shield-lock-fill fs-4 flex-shrink-0"></i>
+                                <div>
+                                    <strong>Automatic Security at Rest:</strong> Cryptographic keys (AES-256-GCM & HMAC-SHA256) will be generated automatically and saved to your configuration file.
+                                </div>
+                            </div>
+
                             <button type="submit" class="btn btn-success w-100 py-2 fw-bold">Install My Social Manager</button>
                         </form>
 
@@ -222,7 +263,7 @@ PHP;
                         <div class="text-center py-4">
                             <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
                             <h3 class="text-success fw-bold mt-2">Installation Successful!</h3>
-                            <p class="text-muted">Configuration files and database schema have been created successfully.</p>
+                            <p class="text-muted">Configuration files, encryption keys, and database schema have been created successfully.</p>
                             <a href="/login" class="btn btn-primary px-4 py-2 mt-2 fw-bold">Go to Login</a>
                         </div>
                     <?php endif; ?>
