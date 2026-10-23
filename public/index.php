@@ -93,6 +93,7 @@ $router->post('/admin/user/plan', ['AdminController', 'changeUserPlan']);
 $router->post('/admin/settings/payments', ['AdminController', 'savePaymentSettings']);
 $router->post('/admin/settings/branding', ['AdminController', 'saveBrandingSettings']);
 $router->post('/admin/settings/ai', ['AdminController', 'saveAiSettings']);
+$router->post('/admin/settings/languages', ['AdminController', 'saveEnabledLanguages']);
 
 // Admin Billing & Subscription Plans Routes
 $router->get('/admin/billing', ['AdminBillingController', 'index']);
