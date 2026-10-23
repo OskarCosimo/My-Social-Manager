@@ -30,7 +30,7 @@ class AiStudioController {
         $aiCreditsBalance = (int)($aiLimits['ai_credits_balance'] ?? 0);
         $aiPercent = ($aiCreditsMonth > 0) ? (int)min(100, round(($aiCreditsUsed / $aiCreditsMonth) * 100)) : 0;
 
-        // 2. Campaign Posts Stats (Total, Published, Scheduled)
+        // 2. Campaign Posts Stats: Includes ALL AI posts ever published (even from deleted campaigns) + currently scheduled posts
         $campPostsStmt = $db->prepare("
             SELECT 
                 COUNT(*) as total,
@@ -48,13 +48,18 @@ class AiStudioController {
         $maxCampaignPosts       = max(1, (int)($aiLimits['ai_max_campaign_posts'] ?? 1));
         $campaignPostsPercent   = (int)min(100, round(($totalCampaignPosts / $maxCampaignPosts) * 100));
 
-        // 3. Today's AI Posts (Scheduled or Published for current day in UTC)
+        // 3. Today's AI Posts: Counts posts PUBLISHED today or SCHEDULED for today
+        // Posts published weeks ago are excluded because their published_at date is in the past
         $todayStmt = $db->prepare("
             SELECT COUNT(*) 
             FROM posts 
             WHERE user_id = ? 
               AND campaign_id IS NOT NULL 
-              AND DATE(scheduled_for) = UTC_DATE()
+              AND (
+                  (status = 'published' AND DATE(COALESCE(published_at, scheduled_for)) = UTC_DATE())
+                  OR
+                  (status = 'scheduled' AND DATE(scheduled_for) = UTC_DATE())
+              )
         ");
         $todayStmt->execute([$userId]);
         $todayAiPostsCount = (int)$todayStmt->fetchColumn();
@@ -189,7 +194,7 @@ class AiStudioController {
     }
 
     /**
-     * Delete a campaign and its scheduled posts
+     * Delete a campaign and its scheduled posts (published posts are preserved)
      */
     public function delete() {
         if (!isset($_SESSION['user_id'])) {
