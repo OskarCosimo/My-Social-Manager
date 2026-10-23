@@ -7,7 +7,6 @@ if (!defined('BASE_PATH')) {
 
 require_once BASE_PATH . 'app/Core/Database.php';
 
-// Allow execution either via CLI or via internal PHP cron runner
 if (php_sapi_name() !== 'cli' && !defined('INTERNAL_CRON_EXEC')) {
     die("This script can only be run from the command line or internal runner.");
 }
@@ -26,17 +25,30 @@ try {
            OR (p.post_period = 'weekly' AND DAYOFWEEK(CURRENT_DATE) = 2)
            OR (p.post_period = 'monthly' AND DAYOFMONTH(CURRENT_DATE) = 1)
     ");
-
     $postsResetCount = $stmtPosts->rowCount();
 
-    // 2. Reset AI credits and monthly email limits strictly on the 1st day of the month
+    // 2. Reset AI credits for DAILY AI credit plans
+    $stmtDailyAi = $db->query("
+        UPDATE users u
+        JOIN plans p ON u.plan_id = p.id
+        SET u.ai_credits_used = 0
+        WHERE p.ai_credits_period = 'daily'
+    ");
+    $dailyAiResetCount = $stmtDailyAi->rowCount();
+
+    // 3. Reset AI credits (monthly plans) and monthly email limits strictly on the 1st day of the month
     $aiResetCount = 0;
     if (date('j') == 1) {
-        $stmtAi = $db->query("UPDATE users SET ai_credits_used = 0, emails_sent_month = 0");
+        $stmtAi = $db->query("
+            UPDATE users u
+            JOIN plans p ON u.plan_id = p.id
+            SET u.ai_credits_used = 0, u.emails_sent_month = 0
+            WHERE p.ai_credits_period = 'monthly' OR p.ai_credits_period IS NULL
+        ");
         $aiResetCount = $stmtAi->rowCount();
     }
     
-    echo "[" . date('Y-m-d H:i:s') . "] Reset complete. Posts, RSS & Channels reset: {$postsResetCount}. AI/Email reset: {$aiResetCount}.\n";
+    echo "[" . date('Y-m-d H:i:s') . "] Reset complete. Posts/RSS/Channels: {$postsResetCount}, Daily AI: {$dailyAiResetCount}, Monthly AI/Email: {$aiResetCount}.\n";
 
 } catch (Exception $e) {
     error_log("CRON ERROR (Reset Limits): " . $e->getMessage());
