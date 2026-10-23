@@ -77,6 +77,15 @@ $router->get('/ai-studio/campaign-posts/{id}', ['AiStudioController', 'getCampai
 $router->post('/ai-studio/posts/delete', ['AiStudioController', 'deleteCampaignPosts']);
 $router->post('/ai-studio/posts/delete-all', ['AiStudioController', 'deleteAllCampaignPosts']);
 
+// --- AI Credits Top-Up Routes ---
+$router->post('/billing/buy-credits/stripe', ['BillingController', 'buyCreditsStripe']);
+$router->get('/billing/stripe-credits-success', ['BillingController', 'stripeCreditsSuccess']);
+$router->post('/billing/buy-credits/paypal', ['BillingController', 'buyCreditsPayPal']);
+$router->get('/billing/paypal-credits-return', ['BillingController', 'paypalCreditsReturn']);
+
+// Admin AI Credit Packs Settings Route
+$router->post('/admin/billing/ai-packs', ['AdminBillingController', 'saveAiCreditPacks']);
+
 // Plugin Auth Routes
 $router->get('/plugin/auth', ['PluginAuthController', 'redirect']);
 $router->get('/plugin/callback', ['PluginAuthController', 'callback']);
