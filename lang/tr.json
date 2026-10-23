@@ -646,5 +646,18 @@
     "email_verified": "E-posta Adresi",
     "password_recovery_title": "Şifre kurtarma",
     "password_recovery_desc": "Kayıtlı e-postaya güvenli bir sıfırlama linkini gönderin, böylece kullanıcı yeni bir şifre tanımlayabilir.",
-    "send_reset_link": "Send reset Link Link"
+    "send_reset_link": "Send reset Link Link",
+    "unique_posts_option": "Planlanan her yayın için benzersiz içerik",
+    "unique_posts_hint": "Eğer etkinleştirilirse, AI farklı bir bakış açısı, açı ve aynı metinden ziyade planlanan her yayın için kelime üretecektir.",
+    "unique_content_badge": "Benzersiz Yazılar",
+    "view_scheduled_posts_tooltip": "Planlanan mesajları görüntülemek veya silmek için tıklayın",
+    "view_manage_scheduled_posts": "View Scheduled Posts",
+    "campaign_scheduled_posts_title": "Kampanya Takvimi",
+    "delete_selected": "Delete Seçilmiş",
+    "delete_all_scheduled": "Delete All Scheduled",
+    "confirm_delete_selected_posts": "Seçilen yayınları silmek istediğinizden emin misiniz?",
+    "confirm_delete_all_scheduled_posts": "Bu kampanya için TÜM planlanan mesajları silmek istediğinizden emin misiniz? AI çalışanı daha sonra kampanya aktif olup olmadığını yeniden üretebilir.",
+    "no_scheduled_posts_in_campaign": "Şu anda bu kampanya için kuyrukta planlanmamış mesajlar yok.",
+    "account": "Hesap Hesabı",
+    "scheduled_for": "Scheduled For için"
 }

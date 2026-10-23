@@ -646,5 +646,18 @@
   "email_verified": "Email Address Verified",
   "password_recovery_title": "Password Recovery",
   "password_recovery_desc": "Send a secure reset link to the registered email so the user can define a new password.",
-  "send_reset_link": "Send Reset Link"
+  "send_reset_link": "Send Reset Link",
+  "unique_posts_option": "Generate unique content for each scheduled post",
+  "unique_posts_hint": "If enabled, the AI will generate a distinct perspective, angle, and wording for every scheduled post instead of duplicating the same text.",
+  "unique_content_badge": "Unique Posts",
+  "view_scheduled_posts_tooltip": "Click to view or delete scheduled posts",
+  "view_manage_scheduled_posts": "View Scheduled Posts",
+  "campaign_scheduled_posts_title": "Campaign Scheduled Posts",
+  "delete_selected": "Delete Selected",
+  "delete_all_scheduled": "Delete All Scheduled",
+  "confirm_delete_selected_posts": "Are you sure you want to delete the selected scheduled posts?",
+  "confirm_delete_all_scheduled_posts": "Are you sure you want to delete ALL scheduled posts for this campaign? The AI worker can then regenerate them if the campaign is active.",
+  "no_scheduled_posts_in_campaign": "No scheduled posts currently in queue for this campaign.",
+  "account": "Account",
+  "scheduled_for": "Scheduled For"
 }

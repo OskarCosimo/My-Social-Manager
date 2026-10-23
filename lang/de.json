@@ -646,5 +646,18 @@
     "email_verified": "Email Adresse Verifiziert",
     "password_recovery_title": "Passwort vergessen",
     "password_recovery_desc": "Senden Sie einen sicheren Reset-Link an die registrierte E-Mail, damit der Benutzer ein neues Passwort definieren kann.",
-    "send_reset_link": "Zurücksetzen Link"
+    "send_reset_link": "Zurücksetzen Link",
+    "unique_posts_option": "Erstellen Sie einzigartige Inhalte für jeden geplanten Beitrag",
+    "unique_posts_hint": "Wenn aktiviert, wird die KI eine eindeutige Perspektive, Winkel und Formulierung für jeden geplanten Post erzeugen, anstatt den gleichen Text zu duplizieren.",
+    "unique_content_badge": "Einzigartige Beiträge",
+    "view_scheduled_posts_tooltip": "Klicken Sie auf geplante Beiträge anzeigen oder löschen",
+    "view_manage_scheduled_posts": "Geplante Beiträge anzeigen",
+    "campaign_scheduled_posts_title": "Kampagnenplaner Beiträge",
+    "delete_selected": "Löschen Ausgewählt",
+    "delete_all_scheduled": "Alle Geplanten löschen",
+    "confirm_delete_selected_posts": "Sind Sie sicher, dass Sie die ausgewählten Posts löschen möchten?",
+    "confirm_delete_all_scheduled_posts": "Sind Sie sicher, dass Sie ALLE geplante Beiträge für diese Kampagne löschen möchten? Der KI-Arbeiter kann sie dann regenerieren, wenn die Kampagne aktiv ist.",
+    "no_scheduled_posts_in_campaign": "Für diese Kampagne werden derzeit keine Posten geplant.",
+    "account": "Konto",
+    "scheduled_for": "Geplant für"
 }

@@ -646,5 +646,18 @@
     "email_verified": "Adresse électronique vérifiée",
     "password_recovery_title": "Récupération de mot de passe",
     "password_recovery_desc": "Envoyer un lien sécurisé de réinitialisation vers l'e-mail enregistré afin que l'utilisateur puisse définir un nouveau mot de passe.",
-    "send_reset_link": "Envoyer Reset Link"
+    "send_reset_link": "Envoyer Reset Link",
+    "unique_posts_option": "Générer du contenu unique pour chaque poste programmé",
+    "unique_posts_hint": "Si activé, l'IA générera une perspective, un angle et une formulation distincts pour chaque poste programmé au lieu de dupliquer le même texte.",
+    "unique_content_badge": "Postes uniques",
+    "view_scheduled_posts_tooltip": "Cliquez pour afficher ou supprimer les messages programmés",
+    "view_manage_scheduled_posts": "Afficher les messages programmés",
+    "campaign_scheduled_posts_title": "Postes prévus pour la campagne",
+    "delete_selected": "Supprimer la sélection",
+    "delete_all_scheduled": "Supprimer tout programmé",
+    "confirm_delete_selected_posts": "Voulez-vous vraiment supprimer les messages programmés sélectionnés ?",
+    "confirm_delete_all_scheduled_posts": "Voulez-vous vraiment supprimer TOUS les messages prévus pour cette campagne ? Le travailleur de l'IA peut alors les régénérer si la campagne est active.",
+    "no_scheduled_posts_in_campaign": "Aucun poste prévu n'est actuellement en attente pour cette campagne.",
+    "account": "Compte",
+    "scheduled_for": "Prévue pour"
 }

@@ -646,5 +646,18 @@
     "email_verified": "عنوان البريد الإلكتروني",
     "password_recovery_title": "استعادة كلمة السر",
     "password_recovery_desc": "أرسلوا وصلة مأمونة مع البريد الإلكتروني المسجل حتى يستطيع المستخدم تحديد كلمة سر جديدة.",
-    "send_reset_link": "أرسل ريست لينك"
+    "send_reset_link": "أرسل ريست لينك",
+    "unique_posts_option": "توليد محتوى فريد لكل وظيفة مقررة",
+    "unique_posts_hint": "وإذا مُكنت المنظمة، فإنها ستولد منظوراً واضحاً وزاوية وصيغة لكل وظيفة مقررة بدلاً من تكرار نفس النص.",
+    "unique_content_badge": "Unique Posts",
+    "view_scheduled_posts_tooltip": "يرجى النظر إلى الوظائف المقررة أو حذفها",
+    "view_manage_scheduled_posts": "الوظائف المقررة",
+    "campaign_scheduled_posts_title": "الحملات المقررة",
+    "delete_selected": "تحذف عبارة مختارة",
+    "delete_all_scheduled": "تحذف جميع الجداول",
+    "confirm_delete_selected_posts": "هل أنت متأكد أنك تريد حذف الوظائف المحددة؟?",
+    "confirm_delete_all_scheduled_posts": "هل أنت متأكد أنك تريد حذف كل الوظائف المقررة لهذه الحملة؟ The AI worker can then regenerate them if the campaign is active.",
+    "no_scheduled_posts_in_campaign": "No scheduled posts currently in queue for this campaign.",
+    "account": "الحساب",
+    "scheduled_for": "الجدول الزمني"
 }

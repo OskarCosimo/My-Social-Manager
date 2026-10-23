@@ -646,5 +646,18 @@
     "email_verified": "이메일 주소 인증",
     "password_recovery_title": "비밀번호 복구",
     "password_recovery_desc": "등록 된 이메일에 보안 재설정 링크를 전송하므로 사용자는 새로운 암호를 정의 할 수 있습니다.",
-    "send_reset_link": "재설정 링크"
+    "send_reset_link": "재설정 링크",
+    "unique_posts_option": "각 예약된 게시물에 대한 독특한 내용 생성",
+    "unique_posts_hint": "활성화되면 AI는 동일한 텍스트를 duplicating 대신 모든 일정한 게시물에 대해 명백한 관점, 각도 및 단어를 생성합니다.",
+    "unique_content_badge": "자주 묻는 질문",
+    "view_scheduled_posts_tooltip": "자주 묻는 질문",
+    "view_manage_scheduled_posts": "시간표",
+    "campaign_scheduled_posts_title": "계획된 게시물",
+    "delete_selected": "자주 묻는 질문",
+    "delete_all_scheduled": "모든 일정 삭제",
+    "confirm_delete_selected_posts": "선택된 게시물을 삭제하시겠습니까?",
+    "confirm_delete_all_scheduled_posts": "이 캠페인에 대한 모든 예약된 게시물을 삭제하시겠습니까? AI worker는 캠페인이 활성화되면 재생할 수 있습니다.",
+    "no_scheduled_posts_in_campaign": "이 캠페인에 대한 queue에서 예약 된 게시물이 없습니다.",
+    "account": "계좌정보",
+    "scheduled_for": "자주 묻는 질문"
 }

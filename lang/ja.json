@@ -646,5 +646,18 @@
     "email_verified": "メールアドレス 確認済み",
     "password_recovery_title": "パスワード回復",
     "password_recovery_desc": "登録されたメールに安全なリセットリンクを送信して、新しいパスワードを定義できます.",
-    "send_reset_link": "リセットリンクを送信"
+    "send_reset_link": "リセットリンクを送信",
+    "unique_posts_option": "スケジュールされた投稿ごとにユニークなコンテンツを生成",
+    "unique_posts_hint": "有効な場合、AIは同じテキストを複製するのではなく、スケジュールされた投稿ごとに異なる視点、角度、単語を生成します.",
+    "unique_content_badge": "ユニークな投稿",
+    "view_scheduled_posts_tooltip": "クリックしてスケジュール投稿を表示または削除する",
+    "view_manage_scheduled_posts": "スケジュールされた投稿を見る",
+    "campaign_scheduled_posts_title": "キャンペーンスケジュール投稿",
+    "delete_selected": "選択された削除",
+    "delete_all_scheduled": "スケジュールされたすべての削除",
+    "confirm_delete_selected_posts": "選択したスケジュール投稿を削除したいですか?",
+    "confirm_delete_all_scheduled_posts": "このキャンペーンのすべてのスケジュール投稿を削除したいですか? キャンペーンがアクティブの場合、AI ワーカーはそれらを再生することができます.",
+    "no_scheduled_posts_in_campaign": "現在、このキャンペーンのキューにスケジュールされた投稿はありません.",
+    "account": "パスワード",
+    "scheduled_for": "スケジュール"
 }

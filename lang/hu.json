@@ -646,5 +646,18 @@
     "email_verified": "Ellenőrzött e- mail cím",
     "password_recovery_title": "Jelszó visszaállítása",
     "password_recovery_desc": "Küldjön egy biztonságos reset linket a regisztrált e-mail, így a felhasználó meg tud határozni egy új jelszót.",
-    "send_reset_link": "A link újraindítása"
+    "send_reset_link": "A link újraindítása",
+    "unique_posts_option": "Egyedi tartalom létrehozása minden egyes beosztáshoz",
+    "unique_posts_hint": "Ha ez be van jelölve, a MI külön perspektívát, szöget és megfogalmazást fog létrehozni minden ütemezett posztra, ahelyett, hogy ugyanazt a szöveget másolná.",
+    "unique_content_badge": "Egyedi álláshelyek",
+    "view_scheduled_posts_tooltip": "Klikkeljen a tervezett álláshelyek megtekintéséhez vagy törléséhez",
+    "view_manage_scheduled_posts": "Tervezett álláshelyek megtekintése",
+    "campaign_scheduled_posts_title": "Kampány ütemezett álláshelyek",
+    "delete_selected": "A kijelölt rész törlése",
+    "delete_all_scheduled": "Az összes ütemezett törlése",
+    "confirm_delete_selected_posts": "Biztos vagy benne, hogy törölni akarod a kijelölt beosztásokat?",
+    "confirm_delete_all_scheduled_posts": "Biztos vagy benne, hogy törölni akarod a kampány összes állását? A mesterséges intelligenciáért felelős munkás ezután regenerálhatja őket, ha a kampány aktív.",
+    "no_scheduled_posts_in_campaign": "Jelenleg nincs beütemezett állás erre a kampányra.",
+    "account": "Számla",
+    "scheduled_for": "Tervezett"
 }

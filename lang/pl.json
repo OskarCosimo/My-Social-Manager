@@ -646,5 +646,18 @@
     "email_verified": "Zweryfikowany adres e-mail",
     "password_recovery_title": "Odzyskiwanie hasła",
     "password_recovery_desc": "Wyślij bezpieczny link do zarejestrowanej poczty e-mail, aby użytkownik mógł zdefiniować nowe hasło.",
-    "send_reset_link": "Wyślij odnośnik"
+    "send_reset_link": "Wyślij odnośnik",
+    "unique_posts_option": "Generuj unikalną zawartość dla każdego zaplanowanego postu",
+    "unique_posts_hint": "Jeśli jest włączona, AI wygeneruje odrębną perspektywę, kąt i sformułowanie dla każdego planowanego postu zamiast powielania tego samego tekstu.",
+    "unique_content_badge": "Unikalne posty",
+    "view_scheduled_posts_tooltip": "Kliknij, aby zobaczyć lub usunąć zaplanowane posty",
+    "view_manage_scheduled_posts": "Widok Zaplanowane posty",
+    "campaign_scheduled_posts_title": "Planowane posty kampanii",
+    "delete_selected": "Usuń zaznaczone",
+    "delete_all_scheduled": "Usuń wszystkie zaplanowane",
+    "confirm_delete_selected_posts": "Czy na pewno chcesz usunąć wybrane zaplanowane posty?",
+    "confirm_delete_all_scheduled_posts": "Jesteś pewien, że chcesz usunąć wszystkie zaplanowane posty do tej kampanii? Pracownik AI może je zregenerować, jeśli kampania jest aktywna.",
+    "no_scheduled_posts_in_campaign": "Brak zaplanowanych stanowisk w kolejce do tej kampanii.",
+    "account": "Konto",
+    "scheduled_for": "Zaplanowany"
 }

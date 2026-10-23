@@ -646,5 +646,18 @@
     "email_verified": "E-mailadres geverifieerd",
     "password_recovery_title": "Wachtwoordherstel",
     "password_recovery_desc": "Stuur een veilige resetlink naar de geregistreerde e-mail zodat de gebruiker een nieuw wachtwoord kan definiëren.",
-    "send_reset_link": "Koppeling versturen"
+    "send_reset_link": "Koppeling versturen",
+    "unique_posts_option": "Genereer unieke inhoud voor elke geplande post",
+    "unique_posts_hint": "Indien ingeschakeld zal de AI een duidelijk perspectief, hoek en formulering voor elke geplande post genereren in plaats van dezelfde tekst te dupliceren.",
+    "unique_content_badge": "Unieke berichten",
+    "view_scheduled_posts_tooltip": "Klik om geplande berichten te bekijken of te verwijderen",
+    "view_manage_scheduled_posts": "Bekijk geplande berichten",
+    "campaign_scheduled_posts_title": "Campagne Geplande berichten",
+    "delete_selected": "Geselecteerd verwijderen",
+    "delete_all_scheduled": "Alle geplande verwijderen",
+    "confirm_delete_selected_posts": "Weet u zeker dat u de geselecteerde geplande berichten wilt verwijderen?",
+    "confirm_delete_all_scheduled_posts": "Weet u zeker dat u ALLE geplande berichten voor deze campagne wilt verwijderen? De AI werknemer kan ze dan regenereren als de campagne actief is.",
+    "no_scheduled_posts_in_campaign": "Geen geplande berichten in de wachtrij voor deze campagne.",
+    "account": "Account",
+    "scheduled_for": "Gepland voor"
 }

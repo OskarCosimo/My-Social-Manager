@@ -646,5 +646,18 @@
     "email_verified": "E-postadress verifierad",
     "password_recovery_title": "Lösenord Återhämtning",
     "password_recovery_desc": "Skicka en säker återställningslänk till den registrerade e-posten så att användaren kan definiera ett nytt lösenord.",
-    "send_reset_link": "Skicka Återställ Link"
+    "send_reset_link": "Skicka Återställ Link",
+    "unique_posts_option": "Skapa unikt innehåll för varje schemalagt inlägg",
+    "unique_posts_hint": "Om så är möjligt kommer AI att generera ett tydligt perspektiv, vinkel och ordalydelse för varje schemalagt inlägg istället för att duplicera samma text.",
+    "unique_content_badge": "Unika inlägg",
+    "view_scheduled_posts_tooltip": "Klicka för att visa eller ta bort schemalagda inlägg",
+    "view_manage_scheduled_posts": "Visa schemalagda inlägg",
+    "campaign_scheduled_posts_title": "Kampanj schemalagda inlägg",
+    "delete_selected": "Radera vald",
+    "delete_all_scheduled": "Ta bort alla schemalagda",
+    "confirm_delete_selected_posts": "Är du säker på att du vill ta bort de valda schemalagda inläggen?",
+    "confirm_delete_all_scheduled_posts": "Är du säker på att du vill ta bort alla schemalagda inlägg för denna kampanj? AI-arbetaren kan sedan regenerera dem om kampanjen är aktiv.",
+    "no_scheduled_posts_in_campaign": "Inga schemalagda inlägg för närvarande i kö för denna kampanj.",
+    "account": "Kontokonto",
+    "scheduled_for": "Schemalagd för"
 }

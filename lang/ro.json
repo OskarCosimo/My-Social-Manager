@@ -646,5 +646,18 @@
     "email_verified": "Adresa de e-mail verificată",
     "password_recovery_title": "Recuperarea parolei",
     "password_recovery_desc": "Trimite un link securizat de resetare pe e-mailul înregistrat astfel încât utilizatorul să poată defini o nouă parolă.",
-    "send_reset_link": "Trimite legătura de resetare"
+    "send_reset_link": "Trimite legătura de resetare",
+    "unique_posts_option": "Generează conținut unic pentru fiecare post programat",
+    "unique_posts_hint": "Dacă este activată, AI va genera o perspectivă, un unghi și o formulare distinctă pentru fiecare post programat în loc să reproducă același text.",
+    "unique_content_badge": "Posturi unice",
+    "view_scheduled_posts_tooltip": "Click pentru a vizualiza sau șterge mesajele programate",
+    "view_manage_scheduled_posts": "Vizualizează mesajele programate",
+    "campaign_scheduled_posts_title": "Posturi programate pentru campanie",
+    "delete_selected": "Șterge selecția",
+    "delete_all_scheduled": "Șterge tot programat",
+    "confirm_delete_selected_posts": "Sigur doriți să ștergeți mesajele programate selectate?",
+    "confirm_delete_all_scheduled_posts": "Sigur doriți să ștergeți TOATE posturile programate pentru această campanie? Muncitorul AI îi poate regenera dacă campania este activă.",
+    "no_scheduled_posts_in_campaign": "Nu există posturi programate în prezent în coadă pentru această campanie.",
+    "account": "Cont",
+    "scheduled_for": "Programat pentru"
 }

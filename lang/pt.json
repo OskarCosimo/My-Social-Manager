@@ -646,5 +646,18 @@
     "email_verified": "Endereço de e- mail verificado",
     "password_recovery_title": "Recuperação de senha",
     "password_recovery_desc": "Envie um link de reset seguro para o e-mail registrado para que o usuário possa definir uma nova senha.",
-    "send_reset_link": "Enviar a Ligação de Reiniciar"
+    "send_reset_link": "Enviar a Ligação de Reiniciar",
+    "unique_posts_option": "Gerar conteúdo único para cada publicação agendada",
+    "unique_posts_hint": "Se habilitado, o IA gerará uma perspectiva distinta, ângulo e redação para cada post agendado em vez de duplicar o mesmo texto.",
+    "unique_content_badge": "Mensagens Únicas",
+    "view_scheduled_posts_tooltip": "Clique para ver ou excluir mensagens agendadas",
+    "view_manage_scheduled_posts": "Ver Mensagens Agendadas",
+    "campaign_scheduled_posts_title": "Campanha Mensagens Agendadas",
+    "delete_selected": "Apagar o Seleccionado",
+    "delete_all_scheduled": "Apagar todos os agendados",
+    "confirm_delete_selected_posts": "Tem a certeza de que deseja apagar as mensagens agendadas seleccionadas?",
+    "confirm_delete_all_scheduled_posts": "Tem certeza de que deseja excluir TODOS os posts agendados para esta campanha? O trabalhador de IA pode então regenerá-los se a campanha estiver ativa.",
+    "no_scheduled_posts_in_campaign": "Nenhum post agendado atualmente na fila para esta campanha.",
+    "account": "Conta",
+    "scheduled_for": "Agendado para"
 }

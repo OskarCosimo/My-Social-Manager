@@ -646,5 +646,18 @@
     "email_verified": "E-mailová adresa ověřena",
     "password_recovery_title": "Obnovení hesla",
     "password_recovery_desc": "Poslat zabezpečený reset odkaz na registrovaný e-mail, takže uživatel může definovat nové heslo.",
-    "send_reset_link": "Odeslat odkaz na reset"
+    "send_reset_link": "Odeslat odkaz na reset",
+    "unique_posts_option": "Vytvořit jedinečný obsah pro každé plánované místo",
+    "unique_posts_hint": "Pokud je povoleno, bude AI generovat zvláštní perspektivu, úhel a znění pro každý plánovaný příspěvek místo duplikace stejného textu.",
+    "unique_content_badge": "Unikátní příspěvky",
+    "view_scheduled_posts_tooltip": "Kliknutím zobrazíte nebo smažete plánované příspěvky",
+    "view_manage_scheduled_posts": "Zobrazit plánované příspěvky",
+    "campaign_scheduled_posts_title": "Kampaň plánovaná místa",
+    "delete_selected": "Smazat vybrané",
+    "delete_all_scheduled": "Smazat všechny plánované",
+    "confirm_delete_selected_posts": "Jste si jisti, že chcete smazat vybrané plánované příspěvky?",
+    "confirm_delete_all_scheduled_posts": "Jste si jisti, že chcete smazat všechny plánované příspěvky pro tuto kampaň? Pracovník AI je pak může regenerovat, pokud je kampaň aktivní.",
+    "no_scheduled_posts_in_campaign": "Žádná plánovaná místa ve frontě na tuto kampaň.",
+    "account": "Účet",
+    "scheduled_for": "Plánované pro"
 }
