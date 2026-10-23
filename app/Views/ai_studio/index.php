@@ -9,18 +9,16 @@ if (!isset($_SESSION['user_id'])) exit;
     .stat-card:hover { transform: translateY(-3px); }
     .stat-icon-badge { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; }
     .progress { height: 8px; border-radius: 4px; }
+    .cursor-pointer { cursor: pointer; }
 </style>
 
-<!-- Main flex wrapper to align sidebar and content side-by-side -->
 <div class="d-flex main-wrapper bg-light">
     
-    <!-- Include the sidebar and set the active menu item -->
     <?php 
     $activeMenu = 'ai-studio'; 
     require __DIR__ . '/../partials/sidebar.php'; 
     ?>
 
-    <!-- Main content area taking up the remaining full width -->
     <main class="content-area w-100 p-4">
         
         <!-- Header Title Bar -->
@@ -148,8 +146,22 @@ if (!isset($_SESSION['user_id'])) exit;
                             <label class="form-label fw-bold text-dark">
                                 <?= __('what_ai_talk_about') ?? 'What should the AI talk about?' ?>
                             </label>
-                            <textarea name="prompt" class="form-control form-control-lg border-secondary-subtle shadow-sm" rows="6" placeholder="<?= htmlspecialchars(__('ai_prompt_instructions_placeholder') ?? 'e.g. Write a marketing campaign about our new open-source software release. Focus on core performance benefits, use an engaging tone, and output appropriate hashtags.') ?>" required></textarea>
-                            <div class="form-text mt-2 text-muted">
+                            <textarea name="prompt" class="form-control form-control-lg border-secondary-subtle shadow-sm mb-3" rows="6" placeholder="<?= htmlspecialchars(__('ai_prompt_instructions_placeholder') ?? 'e.g. Write a marketing campaign about our new open-source software release. Focus on core performance benefits, use an engaging tone, and output appropriate hashtags.') ?>" required></textarea>
+                            
+                            <!-- Unique content checkbox switch -->
+                            <div class="p-3 bg-light rounded border border-secondary-subtle mb-2">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" name="unique_posts" id="unique_posts" value="1" checked>
+                                    <label class="form-check-label fw-bold text-dark cursor-pointer" for="unique_posts">
+                                        ✨ <?= __('unique_posts_option') ?? 'Generate unique content for each scheduled post' ?>
+                                    </label>
+                                    <div class="form-text text-muted small mt-1">
+                                        <?= __('unique_posts_hint') ?? 'If enabled, the AI will generate a distinct perspective, angle, and wording for every scheduled post instead of duplicating the same text.' ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-text text-muted">
                                 <?= __('ai_prompt_hint') ?? 'Be descriptive. Specify tone of voice, theme, target audience, and desired formatting.' ?>
                             </div>
                         </div>
@@ -165,7 +177,6 @@ if (!isset($_SESSION['user_id'])) exit;
                         <div class="card-body p-4">
                             
                             <?php if (!empty($groups)): ?>
-                                <!-- Group Selection Dropdown -->
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-secondary small text-uppercase mb-2 d-inline-flex align-items-center gap-1">
                                         📁 <?= __('quick_selection') ?? 'Quick Selection' ?>
@@ -324,7 +335,7 @@ if (!isset($_SESSION['user_id'])) exit;
                                     <th><?= __('instructions_prompt') ?? 'Prompt Instructions' ?></th>
                                     <th><?= __('accounts') ?? 'Accounts' ?></th>
                                     <th><?= __('rules_frequency') ?? 'Rules' ?></th>
-                                    <th><?= __('posts_progress') ?? 'Progress' ?></th>
+                                    <th><?= __('posts_progress') ?? 'Progress & Scheduled' ?></th>
                                     <th><?= __('status') ?? 'Status' ?></th>
                                     <th><?= __('date') ?? 'Created At' ?></th>
                                     <th class="text-end"><?= __('actions') ?? 'Actions' ?></th>
@@ -339,6 +350,7 @@ if (!isset($_SESSION['user_id'])) exit;
                                         if ($camp['status'] === 'active')    $statusClass = 'bg-success';
                                         if ($camp['status'] === 'paused')    $statusClass = 'bg-warning text-dark';
                                         if ($camp['status'] === 'completed') $statusClass = 'bg-info text-dark';
+                                        $isUnique = !empty($campSettings['unique_posts']);
                                     ?>
                                     <tr>
                                         <td class="fw-bold">#<?= (int)$camp['id'] ?></td>
@@ -346,6 +358,11 @@ if (!isset($_SESSION['user_id'])) exit;
                                             <span class="d-inline-block text-truncate w-100" title="<?= htmlspecialchars($camp['prompt']) ?>">
                                                 <?= htmlspecialchars($camp['prompt']) ?>
                                             </span>
+                                            <?php if ($isUnique): ?>
+                                                <span class="badge bg-purple-subtle text-primary border border-primary-subtle small mt-1" style="font-size: 0.7em;">
+                                                    <i class="bi bi-stars"></i> <?= __('unique_content_badge') ?? 'Unique Posts' ?>
+                                                </span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <span class="badge bg-light text-dark border">
@@ -357,9 +374,15 @@ if (!isset($_SESSION['user_id'])) exit;
                                             <div class="text-muted"><?= (int)($campSettings['posts_per_day'] ?? 1) ?>/<?= __('day') ?? 'day' ?> (<?= htmlspecialchars($campSettings['start_time'] ?? '09:00') ?> - <?= htmlspecialchars($campSettings['end_time'] ?? '18:00') ?>)</div>
                                         </td>
                                         <td>
-                                            <div class="small fw-semibold mb-1">
-                                                <span class="text-success"><?= (int)($camp['published_posts_count'] ?? 0) ?> <?= __('published') ?? 'published' ?></span> | 
-                                                <span class="text-primary"><?= (int)($camp['scheduled_posts_count'] ?? 0) ?> <?= __('scheduled') ?? 'scheduled' ?></span>
+                                            <div class="small fw-semibold mb-1 d-flex align-items-center gap-2">
+                                                <span class="text-success"><i class="bi bi-check2"></i> <?= (int)($camp['published_posts_count'] ?? 0) ?> <?= __('published') ?? 'published' ?></span>
+                                                <span>•</span>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-link p-0 text-primary text-decoration-none fw-bold view-campaign-posts-btn" 
+                                                        data-id="<?= (int)$camp['id'] ?>"
+                                                        title="<?= __('view_scheduled_posts_tooltip') ?? 'Click to view or delete scheduled posts' ?>">
+                                                    <i class="bi bi-calendar2-week"></i> <?= (int)($camp['scheduled_posts_count'] ?? 0) ?> <?= __('scheduled') ?? 'scheduled' ?>
+                                                </button>
                                             </div>
                                             <div class="progress" style="height: 5px;">
                                                 <?php 
@@ -380,6 +403,15 @@ if (!isset($_SESSION['user_id'])) exit;
                                         </td>
                                         <td class="text-end">
                                             <div class="btn-group btn-group-sm">
+                                                <!-- View Scheduled Posts Modal Button -->
+                                                <button type="button" 
+                                                        class="btn btn-outline-info view-campaign-posts-btn"
+                                                        data-id="<?= (int)$camp['id'] ?>"
+                                                        title="<?= __('view_manage_scheduled_posts') ?? 'View Scheduled Posts' ?>">
+                                                    <i class="bi bi-list-check"></i>
+                                                </button>
+
+                                                <!-- Edit Campaign Modal Button -->
                                                 <button type="button" 
                                                         class="btn btn-outline-primary edit-campaign-btn"
                                                         data-id="<?= (int)$camp['id'] ?>"
@@ -389,10 +421,12 @@ if (!isset($_SESSION['user_id'])) exit;
                                                         data-daily="<?= (int)($campSettings['posts_per_day'] ?? 1) ?>"
                                                         data-start="<?= htmlspecialchars($campSettings['start_time'] ?? '09:00') ?>"
                                                         data-end="<?= htmlspecialchars($campSettings['end_time'] ?? '18:00') ?>"
+                                                        data-unique="<?= !empty($campSettings['unique_posts']) ? '1' : '0' ?>"
                                                         title="<?= __('edit_campaign') ?? 'Edit Campaign' ?>">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
                                                 
+                                                <!-- Delete Entire Campaign Form -->
                                                 <form action="/ai-studio/delete" method="POST" class="d-inline" onsubmit="return confirm('<?= addslashes(__('confirm_delete_ai_campaign') ?? 'Are you sure you want to delete this campaign? All scheduled posts generated for it will also be deleted.') ?>');">
                                                     <input type="hidden" name="campaign_id" value="<?= (int)$camp['id'] ?>">
                                                     <button type="submit" class="btn btn-outline-danger" title="<?= __('delete_campaign') ?? 'Delete Campaign' ?>">
@@ -414,7 +448,66 @@ if (!isset($_SESSION['user_id'])) exit;
     </main>
 </div>
 
-<!-- EDIT CAMPAIGN MODAL -->
+<!-- MODAL 1: VIEW & MANAGE SCHEDULED POSTS OF A CAMPAIGN -->
+<div class="modal fade" id="campaignPostsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    <span><?= __('campaign_scheduled_posts_title') ?? 'Campaign Scheduled Posts' ?></span>
+                    <span class="badge bg-light text-dark border ms-2" id="modal-campaign-id-badge"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                
+                <!-- Action Toolbar for Selected Posts -->
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0" type="checkbox" id="selectAllModalPosts">
+                        <label class="form-check-label fw-bold small text-muted cursor-pointer" for="selectAllModalPosts">
+                            <?= __('select_all') ?? 'Select All' ?>
+                        </label>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm fw-bold d-inline-flex align-items-center gap-1" id="deleteSelectedModalBtn" disabled>
+                            <i class="bi bi-trash"></i> <?= __('delete_selected') ?? 'Delete Selected' ?>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm fw-bold d-inline-flex align-items-center gap-1" id="deleteAllModalBtn">
+                            <i class="bi bi-trash3-fill"></i> <?= __('delete_all_scheduled') ?? 'Delete All Scheduled' ?>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Posts Data Table inside Modal -->
+                <div class="table-responsive border rounded p-2 bg-light">
+                    <table class="table table-hover align-middle w-100 bg-white" id="modal-posts-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 35px;" class="text-center">✓</th>
+                                <th style="width: 60px;">#</th>
+                                <th style="width: 150px;"><?= __('account') ?? 'Account' ?></th>
+                                <th style="width: 160px;"><?= __('scheduled_for') ?? 'Scheduled For' ?></th>
+                                <th><?= __('post_content') ?? 'Content' ?></th>
+                                <th style="width: 70px;" class="text-end"><?= __('actions') ?? 'Action' ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-posts-tbody">
+                            <!-- Injected via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= __('close') ?? 'Close' ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: EDIT CAMPAIGN -->
 <div class="modal fade" id="editCampaignModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form action="/ai-studio/update" method="POST" id="editCampaignForm">
@@ -432,6 +525,15 @@ if (!isset($_SESSION['user_id'])) exit;
                     <div class="mb-3">
                         <label class="form-label fw-bold"><?= __('prompt_instructions') ?? 'Prompt Instructions' ?></label>
                         <textarea name="prompt" id="edit_prompt" rows="5" class="form-control" required></textarea>
+                    </div>
+
+                    <div class="p-3 bg-light rounded border border-secondary-subtle mb-3">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" name="unique_posts" id="edit_unique_posts" value="1">
+                            <label class="form-check-label fw-bold text-dark cursor-pointer" for="edit_unique_posts">
+                                ✨ <?= __('unique_posts_option') ?? 'Generate unique content for each scheduled post' ?>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="row g-3 mb-3">
@@ -478,7 +580,7 @@ if (!isset($_SESSION['user_id'])) exit;
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-    // Initialize campaigns DataTables if present
+    // --- 1. INITIALIZE CAMPAIGNS MAIN DATATABLE ---
     if (document.getElementById('ai-campaigns-table')) {
         $('#ai-campaigns-table').DataTable({
             order: [[0, 'desc']],
@@ -491,7 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Modal populate logic for Edit Campaign
+    // --- 2. EDIT CAMPAIGN MODAL POPULATE ---
     const editModalEl = document.getElementById('editCampaignModal');
     const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
 
@@ -504,6 +606,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_start_time').value  = this.dataset.start;
             document.getElementById('edit_end_time').value    = this.dataset.end;
             document.getElementById('edit_status').value      = this.dataset.status;
+            document.getElementById('edit_unique_posts').checked = (this.dataset.unique === '1');
 
             if (editModal) {
                 editModal.show();
@@ -511,7 +614,224 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- LOCAL STORAGE LOGIC FOR AI STUDIO ACCOUNTS ---
+    // --- 3. VIEW & MANAGE SCHEDULED POSTS MODAL LOGIC ---
+    let currentCampaignId = 0;
+    const postsModalEl = document.getElementById('campaignPostsModal');
+    const postsModal = postsModalEl ? new bootstrap.Modal(postsModalEl) : null;
+    let modalDataTable = null;
+
+    function refreshDeleteSelectedState() {
+        const checkedCount = document.querySelectorAll('.modal-post-chk:checked').length;
+        const deleteSelectedBtn = document.getElementById('deleteSelectedModalBtn');
+        if (deleteSelectedBtn) {
+            deleteSelectedBtn.disabled = (checkedCount === 0);
+            deleteSelectedBtn.innerHTML = `<i class="bi bi-trash"></i> <?= __('delete_selected') ?? 'Delete Selected' ?> (${checkedCount})`;
+        }
+    }
+
+    function loadCampaignPosts(campaignId) {
+        currentCampaignId = campaignId;
+        document.getElementById('modal-campaign-id-badge').textContent = `Campaign #${campaignId}`;
+        const tbody = document.getElementById('modal-posts-tbody');
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading scheduled posts...</td></tr>`;
+
+        if (modalDataTable) {
+            modalDataTable.destroy();
+            modalDataTable = null;
+        }
+
+        fetch(`/ai-studio/campaign-posts/${campaignId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${data.error || 'Failed to load posts'}</td></tr>`;
+                    return;
+                }
+
+                if (!data.posts || data.posts.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><?= __('no_scheduled_posts_in_campaign') ?? 'No scheduled posts currently in queue for this campaign.' ?></td></tr>`;
+                    document.getElementById('deleteAllModalBtn').disabled = true;
+                    document.getElementById('selectAllModalPosts').disabled = true;
+                    return;
+                }
+
+                document.getElementById('deleteAllModalBtn').disabled = false;
+                document.getElementById('selectAllModalPosts').disabled = false;
+                document.getElementById('selectAllModalPosts').checked = false;
+
+                let html = '';
+                data.posts.forEach(post => {
+                    const cleanContent = post.content ? post.content.replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+                    const platform = post.platform_name ? post.platform_name : (post.plugin_id ? post.plugin_id.toUpperCase() : 'Social');
+
+                    html += `
+                        <tr id="modal-post-row-${post.id}">
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input modal-post-chk" value="${post.id}">
+                            </td>
+                            <td class="fw-bold">#${post.id}</td>
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-share me-1 text-primary"></i> ${platform}
+                                </span>
+                            </td>
+                            <td class="small fw-semibold text-muted">
+                                <i class="bi bi-calendar3 me-1"></i> ${post.scheduled_for}
+                            </td>
+                            <td>
+                                <div style="max-height: 80px; overflow-y: auto; font-size: 0.9em;" class="p-1 bg-light rounded border border-light-subtle">
+                                    ${cleanContent}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-danger single-delete-modal-post-btn" data-id="${post.id}" title="<?= __('delete_post') ?? 'Delete Post' ?>">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+
+                // Initialize DataTable inside modal
+                modalDataTable = $('#modal-posts-table').DataTable({
+                    pageLength: 10,
+                    order: [[3, 'asc']],
+                    responsive: true
+                });
+
+                refreshDeleteSelectedState();
+            })
+            .catch(err => {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Network error while fetching posts.</td></tr>`;
+            });
+    }
+
+    // Attach click listener to view scheduled posts
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.view-campaign-posts-btn');
+        if (btn) {
+            const campaignId = btn.dataset.id;
+            loadCampaignPosts(campaignId);
+            if (postsModal) postsModal.show();
+        }
+    });
+
+    // Select all checkboxes in modal
+    const selectAllModalPosts = document.getElementById('selectAllModalPosts');
+    if (selectAllModalPosts) {
+        selectAllModalPosts.addEventListener('change', function() {
+            const isChecked = this.checked;
+            if (modalDataTable) {
+                modalDataTable.$('.modal-post-chk').prop('checked', isChecked);
+            } else {
+                document.querySelectorAll('.modal-post-chk').forEach(chk => chk.checked = isChecked);
+            }
+            refreshDeleteSelectedState();
+        });
+    }
+
+    // Individual checkbox change listener
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('modal-post-chk')) {
+            refreshDeleteSelectedState();
+        }
+    });
+
+    // Delete single post from modal
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.single-delete-modal-post-btn');
+        if (btn) {
+            const postId = btn.dataset.id;
+            if (!confirm('<?= addslashes(__('confirm_delete_scheduled_post') ?? 'Are you sure you want to delete this scheduled post?') ?>')) {
+                return;
+            }
+
+            fetch('/ai-studio/posts/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ post_ids: [postId] })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    loadCampaignPosts(currentCampaignId);
+                } else {
+                    alert(res.error || 'Failed to delete post.');
+                }
+            });
+        }
+    });
+
+    // Delete selected posts from modal
+    const deleteSelectedModalBtn = document.getElementById('deleteSelectedModalBtn');
+    if (deleteSelectedModalBtn) {
+        deleteSelectedModalBtn.addEventListener('click', function() {
+            let checkedIds = [];
+            if (modalDataTable) {
+                modalDataTable.$('.modal-post-chk:checked').each(function() {
+                    checkedIds.push($(this).val());
+                });
+            } else {
+                document.querySelectorAll('.modal-post-chk:checked').forEach(chk => checkedIds.push(chk.value));
+            }
+
+            if (checkedIds.length === 0) return;
+
+            if (!confirm('<?= addslashes(__('confirm_delete_selected_posts') ?? 'Are you sure you want to delete the selected scheduled posts?') ?>')) {
+                return;
+            }
+
+            fetch('/ai-studio/posts/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ post_ids: checkedIds })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    loadCampaignPosts(currentCampaignId);
+                } else {
+                    alert(res.error || 'Failed to delete selected posts.');
+                }
+            });
+        });
+    }
+
+    // Delete ALL scheduled posts for current campaign
+    const deleteAllModalBtn = document.getElementById('deleteAllModalBtn');
+    if (deleteAllModalBtn) {
+        deleteAllModalBtn.addEventListener('click', function() {
+            if (!confirm('<?= addslashes(__('confirm_delete_all_scheduled_posts') ?? 'Are you sure you want to delete ALL scheduled posts for this campaign? The AI worker can then regenerate them if the campaign is active.') ?>')) {
+                return;
+            }
+
+            fetch('/ai-studio/posts/delete-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaign_id: currentCampaignId })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    loadCampaignPosts(currentCampaignId);
+                } else {
+                    alert(res.error || 'Failed to delete all scheduled posts.');
+                }
+            });
+        });
+    }
+
+    // Refresh page when closing scheduled posts modal to update counters
+    if (postsModalEl) {
+        postsModalEl.addEventListener('hidden.bs.modal', function () {
+            window.location.reload();
+        });
+    }
+
+    // --- 4. LOCAL STORAGE & GROUP SELECTOR LOGIC ---
     const storageKey = 'aistudio_selected_accounts';
     const savedAccounts = JSON.parse(localStorage.getItem(storageKey)) || [];
     
@@ -528,7 +848,6 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.addEventListener('change', updateSavedAccounts);
     });
 
-    // --- BULLETPROOF GROUP SELECTBOX LOGIC ---
     const groupSelect = document.getElementById('group-select');
     if (groupSelect) {
         groupSelect.addEventListener('change', function() {
@@ -564,7 +883,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- CLEAR ALL ACCOUNTS LOGIC ---
     const clearBtn = document.getElementById('clear-accounts-btn');
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
@@ -580,7 +898,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- FORM SUBMISSION INTERCEPT (DataTables Pagination Support) ---
     $('#ai-studio-form').on('submit', function(e) {
         let dt;
         try {
