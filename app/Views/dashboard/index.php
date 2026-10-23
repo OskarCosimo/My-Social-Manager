@@ -17,13 +17,26 @@ function getProgressPercent(int $used, int $max): int {
     return (int)min(100, round(($used / $max) * 100));
 }
 
-$accountsPercent = getProgressPercent($limits['current_accounts'] ?? 0, $limits['max_accounts'] ?? 1);
-$postsPercent    = getProgressPercent($limits['posts_used'] ?? 0, $limits['max_posts'] ?? 1);
-$rssPostsPercent = getProgressPercent($limits['rss_posts_used'] ?? 0, $limits['max_rss_posts'] ?? 1);
-$aiPercent       = getProgressPercent($limits['ai_credits_used'] ?? 0, $limits['ai_credits_month'] ?? 0);
-$emailsPercent   = getProgressPercent($limits['emails_sent_month'] ?? 0, $limits['max_emails_per_month'] ?? 1);
+// Compute total AI credits including extra purchased credits
+$aiTotalCredits      = (int)($limits['ai_credits_month'] ?? 0) + (int)($limits['extra_ai_credits'] ?? 0);
+$aiBalance           = max(0, $aiTotalCredits - (int)($limits['ai_credits_used'] ?? 0));
 
-$postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? 'monthly'));
+$accountsPercent     = getProgressPercent($limits['current_accounts'] ?? 0, $limits['max_accounts'] ?? 1);
+$postsPercent        = getProgressPercent($limits['posts_used'] ?? 0, $limits['max_posts'] ?? 1);
+$rssPostsPercent     = getProgressPercent($limits['rss_posts_used'] ?? 0, $limits['max_rss_posts'] ?? 1);
+$channelPostsPercent = getProgressPercent($limits['channel_posts_used'] ?? 0, $limits['max_channel_posts'] ?? 1);
+$aiPercent           = getProgressPercent($limits['ai_credits_used'] ?? 0, $aiTotalCredits > 0 ? $aiTotalCredits : 1);
+$emailsPercent       = getProgressPercent($limits['emails_sent_month'] ?? 0, $limits['max_emails_per_month'] ?? 1);
+
+$postPeriodLabel     = ucfirst(htmlspecialchars($limits['post_period'] ?? 'monthly'));
+
+// Fetch configured AI credit top-up packages
+$rawPacks = SystemSetting::get('ai_credit_packs');
+$aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
+    ['credits' => 100,  'price' => 5.00],
+    ['credits' => 500,  'price' => 20.00],
+    ['credits' => 1000, 'price' => 35.00]
+];
 
 $freePlans    = [];
 $monthlyPlans = [];
@@ -55,6 +68,8 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
     .stat-card:hover { transform: translateY(-4px); }
     .progress { height: 8px; border-radius: 4px; }
     .stat-icon-badge { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0; }
+    .pack-option-card { border: 2px solid #dee2e6; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+    .pack-option-card:hover, .pack-option-card.selected { border-color: #6f42c1; background-color: rgba(111, 66, 193, 0.04); }
 </style>
 
 <div class="d-flex main-wrapper">
@@ -87,7 +102,7 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
             <?php unset($_SESSION['success']); ?>
         <?php endif; ?>
 
-        <!-- Stat Cards Row 1: Core Usage -->
+        <!-- Stat Cards Row 1: Social Accounts & Publishing Channels (4 Cards) -->
         <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-4">
             
             <!-- Social Accounts Card -->
@@ -173,36 +188,77 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
                 </div>
             </div>
 
-            <!-- AI Credits Card -->
+            <!-- Channel Automations Limits Card -->
             <div class="col">
                 <div class="card stat-card h-100 shadow-sm border-0 position-relative overflow-hidden">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="text-uppercase fw-bold text-muted mb-0"><?= __('ai_credits_title') ?></h6>
-                            <div class="stat-icon-badge" style="background-color: rgba(111, 66, 193, 0.1); color: #6f42c1;">
-                                <i class="bi bi-stars fs-5"></i>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-uppercase fw-bold text-muted mb-0"><?= __('channel_automations') ?? 'Channel Automations' ?></h6>
+                            <div class="stat-icon-badge bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-broadcast-pin fs-5"></i>
                             </div>
                         </div>
-                        <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0"><?= $limits['ai_credits_used'] ?? 0 ?></h2>
-                            <span class="text-muted ms-2">/ <?= $limits['ai_credits_month'] ?? 0 ?></span>
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between border-bottom pb-1 mb-2">
+                                <span class="text-muted small fw-bold">Active Channels:</span>
+                                <span class="fw-bold text-dark"><?= $limits['current_channel_automations'] ?? 0 ?> / <?= $limits['max_channel_automations'] ?? 0 ?></span>
+                            </div>
+                            <div class="d-flex align-items-end mb-1">
+                                <span class="fs-5 fw-bold mb-0"><?= $limits['channel_posts_used'] ?? 0 ?></span>
+                                <span class="text-muted small ms-1">/ <?= (int)($limits['max_channel_posts'] ?? 0) ?> Posts</span>
+                            </div>
+                            <div class="progress mb-1">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $channelPostsPercent ?>%"></div>
+                            </div>
+                            <small class="text-muted">
+                                <?= str_replace(['{percent}', '{period}'], [$channelPostsPercent, strtolower($postPeriodLabel)], __('channel_limit_reached_percent') ?? '{percent}% of {period} channel posting limit reached') ?>
+                            </small>
                         </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar" role="progressbar" style="width: <?= $aiPercent ?>%; background-color: #6f42c1;"></div>
-                        </div>
-                        <small class="text-muted">
-                            <?= str_replace('{percent}', $aiPercent, __('ai_allowance_used')) ?>
-                        </small>
                     </div>
-                    <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #6f42c1;"></div>
+                    <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #0d6efd;"></div>
                 </div>
             </div>
 
         </div>
 
-        <!-- Stat Cards Row 2: Storage & Mailing Lists -->
-        <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+        <!-- Stat Cards Row 2: AI, Storage & Mailing Lists (4 Cards) -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-5">
             
+            <!-- AI Credits Card with Top-Up Button -->
+            <div class="col">
+                <div class="card stat-card h-100 shadow-sm border-0 position-relative overflow-hidden">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-uppercase fw-bold text-muted mb-0"><?= __('ai_credits_title') ?></h6>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" data-bs-toggle="modal" data-bs-target="#buyCreditsModal" title="<?= __('top_up_credits') ?? 'Top Up Credits' ?>">
+                                    <i class="bi bi-cart-plus-fill"></i> <?= __('buy_ai_credits') ?? 'Buy' ?>
+                                </button>
+                                <div class="stat-icon-badge" style="background-color: rgba(111, 66, 193, 0.1); color: #6f42c1;">
+                                    <i class="bi bi-stars fs-5"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-end mb-2">
+                            <h2 class="display-6 fw-bold mb-0"><?= (int)($limits['ai_credits_used'] ?? 0) ?></h2>
+                            <span class="text-muted ms-2">/ <?= $aiTotalCredits ?></span>
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar" role="progressbar" style="width: <?= $aiPercent ?>%; background-color: #6f42c1;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <?= str_replace('{percent}', $aiPercent, __('ai_allowance_used')) ?>
+                            </small>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle small fw-bold">
+                                <?= number_format($aiBalance) ?> <?= __('remaining') ?? 'remaining' ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #6f42c1;"></div>
+                </div>
+            </div>
+
             <!-- File Manager Storage -->
             <div class="col">
                 <div class="card stat-card h-100 shadow-sm border-0 position-relative overflow-hidden">
@@ -281,6 +337,7 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
         </div>
 
         <div class="row">
+            <!-- Left Column: Quick Actions -->
             <div class="col-lg-4 mb-4">
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
@@ -297,6 +354,15 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
                                 <div>
                                     <strong class="d-block text-dark"><?= __('connect_social_account') ?></strong>
                                     <small class="text-muted"><?= __('connect_social_account_sub') ?></small>
+                                </div>
+                            </a>
+                            <a href="/channel-automations" class="btn btn-outline-secondary d-flex align-items-center justify-content-start p-3 text-start">
+                                <div class="stat-icon-badge bg-primary bg-opacity-10 text-primary me-3">
+                                    <i class="bi bi-broadcast-pin fs-5"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block text-dark"><?= __('channel_automations') ?? 'Channel Automations' ?></strong>
+                                    <small class="text-muted">Automate video & social page cross-posting</small>
                                 </div>
                             </a>
                             <a href="/mailinglists" class="btn btn-outline-secondary d-flex align-items-center justify-content-start p-3 text-start">
@@ -331,7 +397,7 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
                 </div>
             </div>
 
-            <!-- Current Plan Box -->
+            <!-- Right Column: Current Plan Box -->
             <div class="col-lg-8 mb-4">
                 <div class="card shadow-sm border-0 bg-primary text-white h-100 overflow-hidden position-relative">
                     <div class="position-absolute top-0 end-0 p-5 opacity-25" style="transform: scale(2) translate(10%, -10%); font-size: 10rem; pointer-events: none;">
@@ -425,6 +491,65 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
     </main>
 </div>
 
+<!-- MODALE ACQUISTO CREDITI AI (ONE-TIME TOP-UP VIA STRIPE O PAYPAL) -->
+<div class="modal fade" id="buyCreditsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                    <i class="bi bi-stars text-primary"></i> <?= __('buy_ai_credits_title') ?? 'Purchase Additional AI Credits' ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-4">
+                    <?= __('buy_ai_credits_desc') ?? 'Top up your account with extra AI credits anytime. Purchased credits never expire and are consumed only after your plan allowance is depleted.' ?>
+                </p>
+
+                <div class="row g-3 mb-4">
+                    <?php foreach ($aiPacks as $index => $pack): ?>
+                        <div class="col-md-4">
+                            <div class="p-3 pack-option-card text-center <?= $index === 0 ? 'selected' : '' ?>" data-credits="<?= (int)$pack['credits'] ?>" data-price="<?= number_format((float)$pack['price'], 2, '.', '') ?>">
+                                <div class="badge bg-primary bg-opacity-10 text-primary mb-2 fw-bold px-3 py-1">
+                                    <i class="bi bi-lightning-charge"></i> <?= number_format((int)$pack['credits']) ?> Credits
+                                </div>
+                                <h3 class="fw-bold mb-0 text-dark">€<?= number_format((float)$pack['price'], 2) ?></h3>
+                                <small class="text-muted">one-time payment</small>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="border rounded p-3 bg-light mb-3">
+                    <label class="form-label fw-bold text-dark mb-2"><?= __('select_payment_method') ?? 'Choose Payment Method:' ?></label>
+                    
+                    <div class="d-flex gap-3">
+                        <form action="/billing/buy-credits/stripe" method="POST" class="flex-grow-1" id="stripeCreditFormDash">
+                            <input type="hidden" name="credits" id="stripe_credits_val_dash" value="<?= (int)($aiPacks[0]['credits'] ?? 100) ?>">
+                            <input type="hidden" name="price" id="stripe_price_val_dash" value="<?= number_format((float)($aiPacks[0]['price'] ?? 5.00), 2, '.', '') ?>">
+                            <button type="submit" class="btn btn-outline-primary btn-lg w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-credit-card-2-front"></i> <?= __('pay_with_card') ?? 'Card (Stripe)' ?>
+                            </button>
+                        </form>
+
+                        <form action="/billing/buy-credits/paypal" method="POST" class="flex-grow-1" id="paypalCreditFormDash">
+                            <input type="hidden" name="credits" id="paypal_credits_val_dash" value="<?= (int)($aiPacks[0]['credits'] ?? 100) ?>">
+                            <input type="hidden" name="price" id="paypal_price_val_dash" value="<?= number_format((float)($aiPacks[0]['price'] ?? 5.00), 2, '.', '') ?>">
+                            <button type="submit" class="btn btn-outline-warning text-dark btn-lg w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-paypal text-primary"></i> <?= __('pay_with_paypal') ?? 'PayPal' ?>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= __('close') ?? 'Close' ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- MODALE CAMBIO PIANO -->
 <div class="modal fade" id="upgradeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -499,6 +624,7 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
                                             <i class="bi bi-check-circle-fill text-success me-2"></i>
                                             <span><?= str_replace('{count}', (int)$plan['ai_credits_month'], __('ai_credits_limit')) ?></span>
                                         </li>
+                                        <!-- RSS Feeds Limits -->
                                         <li class="mb-2 border-top pt-2 mt-2 text-info d-flex align-items-center">
                                             <i class="bi bi-rss text-info me-2"></i>
                                             <span><?= str_replace('{count}', (int)($plan['max_rss_feeds'] ?? 0), __('rss_feeds_limit')) ?></span>
@@ -507,6 +633,16 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
                                             <i class="bi bi-robot text-info me-2"></i>
                                             <span><?= str_replace(['{count}', '{period}'], [(int)($plan['max_rss_posts'] ?? 0), htmlspecialchars($plan['post_period'] ?? 'monthly')], __('rss_posts_limit')) ?></span>
                                         </li>
+                                        <!-- Channel Automations Limits -->
+                                        <li class="mb-2 border-top pt-2 mt-2 text-primary d-flex align-items-center">
+                                            <i class="bi bi-broadcast-pin text-primary me-2"></i>
+                                            <span><?= str_replace('{count}', (int)($plan['max_channel_automations'] ?? 0), __('channel_automations_limit')) ?></span>
+                                        </li>
+                                        <li class="mb-2 text-primary d-flex align-items-center">
+                                            <i class="bi bi-shuffle text-primary me-2"></i>
+                                            <span><?= str_replace(['{count}', '{period}'], [(int)($plan['max_channel_posts'] ?? 0), htmlspecialchars($plan['post_period'] ?? 'monthly')], __('channel_posts_limit')) ?></span>
+                                        </li>
+                                        <!-- Mailing Lists Limits -->
                                         <li class="mb-2 border-top pt-2 mt-2 text-danger d-flex align-items-center">
                                             <i class="bi bi-envelope-paper text-danger me-2"></i>
                                             <span><?= str_replace('{count}', (int)($plan['max_mailing_lists'] ?? 0), __('mailing_lists_limit')) ?></span>
@@ -519,13 +655,14 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
                                             <i class="bi bi-send text-danger me-2"></i>
                                             <span><?= str_replace('{count}', number_format((int)($plan['max_emails_per_month'] ?? 0)), __('monthly_email_limit')) ?></span>
                                         </li>
+                                        <!-- Storage & Upload Limits -->
                                         <li class="mb-2 border-top pt-2 mt-2 text-warning d-flex align-items-center">
                                             <i class="bi bi-folder2 text-warning me-2"></i>
                                             <span><?= str_replace('{size}', htmlspecialchars($plan['max_storage_size'] ?? '1GB'), __('storage_label')) ?></span>
                                         </li>
                                         <li class="mb-2 text-warning d-flex align-items-center">
                                             <i class="bi bi-cloud-arrow-up text-warning me-2"></i>
-                                            <span><?= str_replace('{size}', htmlspecialchars($plan['max_upload_size'] ?? '50MB'), __('max_upload_limit')) ?></span>
+                                            <span><?= str_replace('{size}', htmlspecialchars($plan['max_upload_size'] ?? '50MB'), __('max_upload_label')) ?></span>
                                         </li>
                                         <?php if ($hasAdsConfigured): ?>
                                             <?php if ($adsFreeOnly === '1' && !$isFreePlan): ?>
@@ -597,5 +734,25 @@ $activeTab = !empty($freePlans) ? 'free' : (!empty($monthlyPlans) ? 'monthly' : 
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pack selection handler in Dashboard Buy Credits Modal
+    document.querySelectorAll('#buyCreditsModal .pack-option-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('#buyCreditsModal .pack-option-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+
+            const credits = this.dataset.credits;
+            const price = this.dataset.price;
+
+            document.getElementById('stripe_credits_val_dash').value = credits;
+            document.getElementById('stripe_price_val_dash').value   = price;
+            document.getElementById('paypal_credits_val_dash').value = credits;
+            document.getElementById('paypal_price_val_dash').value   = price;
+        });
+    });
+});
+</script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
