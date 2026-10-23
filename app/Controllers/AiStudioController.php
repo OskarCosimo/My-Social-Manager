@@ -10,7 +10,7 @@ require_once __DIR__ . '/../Core/Database.php';
 class AiStudioController {
     
     /**
-     * Display the AI Studio campaign creation form and active campaigns list
+     * Display the AI Studio campaign creation form, real-time stats and active campaigns list
      */
     public function index() {
         if (!isset($_SESSION['user_id'])) {
@@ -19,19 +19,55 @@ class AiStudioController {
         }
 
         $userId = (int)$_SESSION['user_id'];
+        $db = Database::getInstance(); 
         
         $accounts = SocialAccount::getUserAccounts($userId);
         $aiLimits = UsageManager::getAiLimits($userId);
 
+        // 1. AI Credits Quota
         $aiCreditsUsed    = (int)($aiLimits['ai_credits_used'] ?? 0);
         $aiCreditsMonth   = (int)($aiLimits['ai_credits_month'] ?? 0);
         $aiCreditsBalance = (int)($aiLimits['ai_credits_balance'] ?? 0);
         $aiPercent = ($aiCreditsMonth > 0) ? (int)min(100, round(($aiCreditsUsed / $aiCreditsMonth) * 100)) : 0;
 
-        $db = Database::getInstance(); 
+        // 2. Campaign Posts Stats (Total, Published, Scheduled)
+        $campPostsStmt = $db->prepare("
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'published' THEN 1 ELSE 0 END) as published,
+                SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled
+            FROM posts 
+            WHERE user_id = ? AND campaign_id IS NOT NULL
+        ");
+        $campPostsStmt->execute([$userId]);
+        $campPostStats = $campPostsStmt->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'published' => 0, 'scheduled' => 0];
+
+        $totalCampaignPosts     = (int)($campPostStats['total'] ?? 0);
+        $publishedCampaignPosts = (int)($campPostStats['published'] ?? 0);
+        $scheduledCampaignPosts = (int)($campPostStats['scheduled'] ?? 0);
+        $maxCampaignPosts       = max(1, (int)($aiLimits['ai_max_campaign_posts'] ?? 1));
+        $campaignPostsPercent   = (int)min(100, round(($totalCampaignPosts / $maxCampaignPosts) * 100));
+
+        // 3. Today's AI Posts (Scheduled or Published for current day in UTC)
+        $todayStmt = $db->prepare("
+            SELECT COUNT(*) 
+            FROM posts 
+            WHERE user_id = ? 
+              AND campaign_id IS NOT NULL 
+              AND DATE(scheduled_for) = UTC_DATE()
+        ");
+        $todayStmt->execute([$userId]);
+        $todayAiPostsCount = (int)$todayStmt->fetchColumn();
+
+        $maxDailyPosts  = max(1, (int)($aiLimits['ai_max_daily_posts'] ?? 1));
+        $dailyPercent   = (int)min(100, round(($todayAiPostsCount / $maxDailyPosts) * 100));
+        $dailyRemaining = max(0, $maxDailyPosts - $todayAiPostsCount);
+
+        // User target groups
         $groupModel = new \App\Models\Group($db);
         $groups = $groupModel->getUserGroups($userId);
 
+        // All user campaigns
         $campaigns = AiCampaign::getByUserId($userId);
 
         require_once __DIR__ . '/../Views/ai_studio/index.php';
@@ -198,7 +234,7 @@ class AiStudioController {
 
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT p.id, p.content, p.scheduled_for, p.status, p.created_at,
+            SELECT p.id, p.content, p.scheduled_for, p.status,
                    s.platform_name, s.plugin_id
             FROM posts p
             LEFT JOIN social_accounts s ON p.social_account_id = s.id
