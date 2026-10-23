@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Models/AiCampaign.php';
 require_once __DIR__ . '/../Models/SocialAccount.php';
 require_once __DIR__ . '/../Models/UsageManager.php';
 require_once __DIR__ . '/../Models/Group.php';
+require_once __DIR__ . '/../Core/Database.php';
 
 class AiStudioController {
     
@@ -19,27 +20,20 @@ class AiStudioController {
 
         $userId = (int)$_SESSION['user_id'];
         
-        // Fetch connected accounts
         $accounts = SocialAccount::getUserAccounts($userId);
-
-        // Fetch AI usage limits for the current user
         $aiLimits = UsageManager::getAiLimits($userId);
 
-        // Calculate progress percentage of used AI credits
         $aiCreditsUsed    = (int)($aiLimits['ai_credits_used'] ?? 0);
         $aiCreditsMonth   = (int)($aiLimits['ai_credits_month'] ?? 0);
         $aiCreditsBalance = (int)($aiLimits['ai_credits_balance'] ?? 0);
         $aiPercent = ($aiCreditsMonth > 0) ? (int)min(100, round(($aiCreditsUsed / $aiCreditsMonth) * 100)) : 0;
 
-        // Fetch user groups to populate the Quick Selection dropdown
         $db = Database::getInstance(); 
         $groupModel = new \App\Models\Group($db);
         $groups = $groupModel->getUserGroups($userId);
 
-        // Fetch all campaigns created by this user
         $campaigns = AiCampaign::getByUserId($userId);
 
-        // Load the view
         require_once __DIR__ . '/../Views/ai_studio/index.php';
     }
 
@@ -56,12 +50,14 @@ class AiStudioController {
         
         $prompt = trim($_POST['prompt'] ?? '');
         $selectedAccounts = $_POST['accounts'] ?? [];
+        $uniquePosts = !empty($_POST['unique_posts']) ? 1 : 0;
         
         $scheduleSettings = [
             'total_posts'   => max(1, (int)($_POST['total_posts'] ?? 1)),
             'posts_per_day' => max(1, (int)($_POST['posts_per_day'] ?? 1)),
             'start_time'    => $_POST['start_time'] ?? '09:00',
-            'end_time'      => $_POST['end_time'] ?? '18:00'
+            'end_time'      => $_POST['end_time'] ?? '18:00',
+            'unique_posts'  => $uniquePosts
         ];
 
         if (empty($prompt) || empty($selectedAccounts)) {
@@ -110,6 +106,7 @@ class AiStudioController {
         $campaignId = (int)($_POST['campaign_id'] ?? 0);
         $prompt = trim($_POST['prompt'] ?? '');
         $status = $_POST['status'] ?? 'active';
+        $uniquePosts = !empty($_POST['unique_posts']) ? 1 : 0;
 
         if (!in_array($status, ['active', 'paused', 'completed'])) {
             $status = 'active';
@@ -144,7 +141,8 @@ class AiStudioController {
             'total_posts'   => $totalPosts,
             'posts_per_day' => $postsPerDay,
             'start_time'    => $startTime,
-            'end_time'      => $endTime
+            'end_time'      => $endTime,
+            'unique_posts'  => $uniquePosts
         ];
 
         AiCampaign::update($campaignId, $userId, $prompt, $scheduleSettings, $status);
@@ -181,6 +179,115 @@ class AiStudioController {
         }
 
         header('Location: /ai-studio');
+        exit;
+    }
+
+    /**
+     * Return scheduled posts of a campaign in JSON format for the modal DataTables
+     */
+    public function getCampaignPosts($campaignId): void {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $campaignId = (int)$campaignId;
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            SELECT p.id, p.content, p.scheduled_for, p.status, p.created_at,
+                   s.platform_name, s.plugin_id
+            FROM posts p
+            LEFT JOIN social_accounts s ON p.social_account_id = s.id
+            WHERE p.campaign_id = :campaign_id 
+              AND p.user_id = :user_id 
+              AND p.status = 'scheduled'
+            ORDER BY p.scheduled_for ASC
+        ");
+        $stmt->execute([':campaign_id' => $campaignId, ':user_id' => $userId]);
+        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['success' => true, 'posts' => $posts]);
+        exit;
+    }
+
+    /**
+     * Delete selected scheduled posts
+     */
+    public function deleteCampaignPosts(): void {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $postIds = $input['post_ids'] ?? [];
+
+        if (!is_array($postIds)) {
+            $postIds = [$postIds];
+        }
+
+        $postIds = array_map('intval', array_filter($postIds));
+
+        if (empty($postIds)) {
+            echo json_encode(['success' => false, 'error' => 'No posts selected']);
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $placeholders = implode(',', array_fill(0, count($postIds), '?'));
+        $params = array_merge($postIds, [$userId]);
+
+        $stmt = $db->prepare("
+            DELETE FROM posts 
+            WHERE id IN ($placeholders) 
+              AND user_id = ? 
+              AND status = 'scheduled'
+        ");
+        $stmt->execute($params);
+        $deletedCount = $stmt->rowCount();
+
+        echo json_encode(['success' => true, 'deleted_count' => $deletedCount]);
+        exit;
+    }
+
+    /**
+     * Delete all scheduled posts for a campaign
+     */
+    public function deleteAllCampaignPosts(): void {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $campaignId = (int)($input['campaign_id'] ?? 0);
+
+        if ($campaignId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Invalid campaign ID']);
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            DELETE FROM posts 
+            WHERE campaign_id = :campaign_id 
+              AND user_id = :user_id 
+              AND status = 'scheduled'
+        ");
+        $stmt->execute([':campaign_id' => $campaignId, ':user_id' => $userId]);
+        $deletedCount = $stmt->rowCount();
+
+        echo json_encode(['success' => true, 'deleted_count' => $deletedCount]);
         exit;
     }
 }
