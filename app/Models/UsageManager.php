@@ -4,8 +4,25 @@
 require_once __DIR__ . '/../Core/Database.php';
 
 class UsageManager {
+
+    /**
+     * Ensure database schema has extra_ai_credits column on users table
+     */
+    private static function ensureExtraCreditsColumn(): void {
+        static $checked = false;
+        if ($checked) return;
+        
+        try {
+            $db = Database::getInstance();
+            $db->exec("ALTER TABLE users ADD COLUMN extra_ai_credits INT NOT NULL DEFAULT 0");
+        } catch (Exception $e) {
+            // Column already exists
+        }
+        $checked = true;
+    }
     
     public static function getUserLimits(int $userId): array {
+        self::ensureExtraCreditsColumn();
         $db = Database::getInstance();
 
         // 1. Check if subscription period has expired and process pending downgrade
@@ -47,7 +64,7 @@ class UsageManager {
 
         // 2. Main query retrieving all limits including dedicated Channel Automations
         $stmt = $db->prepare("
-            SELECT u.posts_used, u.rss_posts_used, u.channel_posts_used, u.ai_credits_used, u.emails_sent_month, u.plan_id,
+            SELECT u.posts_used, u.rss_posts_used, u.channel_posts_used, u.ai_credits_used, u.extra_ai_credits, u.emails_sent_month, u.plan_id,
                    u.is_premium, u.premium_expires_at, u.current_period_end,
                    p.name as plan_name, p.price, p.billing_cycle, p.max_accounts, p.max_posts, 
                    p.max_rss_feeds, p.max_rss_posts, 
@@ -80,14 +97,17 @@ class UsageManager {
     }
 
     public static function getAiLimits(int $userId): array {
+        self::ensureExtraCreditsColumn();
         $db = Database::getInstance();
         
         $stmt = $db->prepare("
             SELECT 
                 u.ai_credits_used,
+                u.extra_ai_credits,
                 p.ai_credits_month,
                 p.ai_max_campaign_posts,
-                p.ai_max_daily_posts 
+                p.ai_max_daily_posts,
+                COALESCE(p.ai_credits_period, 'monthly') as ai_credits_period
             FROM users u
             LEFT JOIN plans p ON u.plan_id = p.id
             WHERE u.id = ?
@@ -99,20 +119,30 @@ class UsageManager {
             return [
                 'ai_credits_used'       => 0,
                 'ai_credits_month'      => 0,
+                'extra_ai_credits'      => 0,
+                'total_ai_credits'      => 0,
                 'ai_max_campaign_posts' => 3,
                 'ai_max_daily_posts'    => 1,
-                'ai_credits_balance'    => 0
+                'ai_credits_balance'    => 0,
+                'ai_credits_period'     => 'monthly'
             ];
         }
 
-        $data['ai_credits_balance'] = max(0, $data['ai_credits_month'] - $data['ai_credits_used']);
+        $used = (int)($data['ai_credits_used'] ?? 0);
+        $planCredits = (int)($data['ai_credits_month'] ?? 0);
+        $extraCredits = (int)($data['extra_ai_credits'] ?? 0);
+        $totalCredits = $planCredits + $extraCredits;
+        $balance = max(0, $totalCredits - $used);
 
         return [
-            'ai_credits_used'       => (int)($data['ai_credits_used'] ?? 0),
-            'ai_credits_month'      => (int)($data['ai_credits_month'] ?? 0),
+            'ai_credits_used'       => $used,
+            'ai_credits_month'      => $planCredits,
+            'extra_ai_credits'      => $extraCredits,
+            'total_ai_credits'      => $totalCredits,
             'ai_max_campaign_posts' => (int)($data['ai_max_campaign_posts'] ?? 3),
             'ai_max_daily_posts'    => (int)($data['ai_max_daily_posts'] ?? 1),
-            'ai_credits_balance'    => (int)$data['ai_credits_balance']
+            'ai_credits_balance'    => $balance,
+            'ai_credits_period'     => $data['ai_credits_period'] ?? 'monthly'
         ];
     }
 
@@ -128,18 +158,12 @@ class UsageManager {
         return $limits['posts_used'] < $limits['max_posts'];
     }
 
-    /**
-     * Check if user can add/publish RSS posts
-     */
     public static function canPublishRssPost(int $userId, int $count = 1): bool {
         $limits = self::getUserLimits($userId);
         if (empty($limits)) return false;
         return ($limits['rss_posts_used'] + $count) <= $limits['max_rss_posts'];
     }
 
-    /**
-     * Check if user can create a new Channel Automation rule
-     */
     public static function canAddChannelAutomation(int $userId): bool {
         $limits = self::getUserLimits($userId);
         if (empty($limits)) return false;
@@ -151,9 +175,6 @@ class UsageManager {
         return $current < $max;
     }
 
-    /**
-     * Check if user can post from Channel Automations within dedicated quota
-     */
     public static function canPublishChannelPost(int $userId, int $count = 1): bool {
         $limits = self::getUserLimits($userId);
         if (empty($limits)) return false;
@@ -166,9 +187,8 @@ class UsageManager {
     }
 
     public static function canGenerateAi(int $userId): bool {
-        $limits = self::getUserLimits($userId);
-        if (empty($limits)) return false;
-        return $limits['ai_credits_used'] < $limits['ai_credits_month'];
+        $limits = self::getAiLimits($userId);
+        return $limits['ai_credits_balance'] > 0;
     }
 
     public static function incrementPostUsage(int $userId): void {
@@ -190,9 +210,6 @@ class UsageManager {
         }
     }
 
-    /**
-     * Increment dedicated Channel Automation post counter
-     */
     public static function incrementChannelPostUsage(int $userId, int $amount = 1): void {
         try {
             $db = Database::getInstance();
@@ -206,13 +223,35 @@ class UsageManager {
         }
     }
 
+    /**
+     * Consume AI credits: plan quota first, then extra purchased credits
+     */
     public static function incrementAiUsage(int $userId, int $amount = 1): void {
+        self::ensureExtraCreditsColumn();
         $db = Database::getInstance();
-        $stmt = $db->prepare("UPDATE users SET ai_credits_used = ai_credits_used + :amount WHERE id = :user_id");
-        $stmt->execute([
-            ':amount' => $amount,
-            ':user_id' => $userId
-        ]);
+        $limits = self::getAiLimits($userId);
+
+        if ($limits['ai_credits_used'] >= $limits['ai_credits_month'] && $limits['extra_ai_credits'] > 0) {
+            // Deduct directly from purchased credits so they survive monthly resets
+            $stmt = $db->prepare("UPDATE users SET extra_ai_credits = GREATEST(0, extra_ai_credits - :amount) WHERE id = :user_id");
+            $stmt->execute([':amount' => $amount, ':user_id' => $userId]);
+        } else {
+            // Increment standard monthly usage
+            $stmt = $db->prepare("UPDATE users SET ai_credits_used = ai_credits_used + :amount WHERE id = :user_id");
+            $stmt->execute([':amount' => $amount, ':user_id' => $userId]);
+        }
+    }
+
+    /**
+     * Add purchased AI credits to user account
+     */
+    public static function addPurchasedAiCredits(int $userId, int $credits): bool {
+        self::ensureExtraCreditsColumn();
+        if ($userId <= 0 || $credits <= 0) return false;
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("UPDATE users SET extra_ai_credits = extra_ai_credits + :credits WHERE id = :user_id");
+        return $stmt->execute([':credits' => $credits, ':user_id' => $userId]);
     }
 
     public static function canSendEmails(int $userId, int $count = 1): bool {
