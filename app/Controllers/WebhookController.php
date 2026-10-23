@@ -4,20 +4,16 @@
 require_once __DIR__ . '/../Core/Database.php';
 require_once __DIR__ . '/../Models/SystemSetting.php';
 require_once __DIR__ . '/../Models/MailingList.php';
+require_once __DIR__ . '/../Models/UsageManager.php';
 
 class WebhookController {
 
-    /**
-     * Handle incoming Stripe webhook events for platform plans and mailing list subscriptions
-     */
     public function handleStripe(): void {
         $payload = file_get_contents('php://input');
         $sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
         
-        // Retrieve the dynamic webhook secret configured in Admin Panel
         $webhookSecret = SystemSetting::get('stripe_webhook_secret', ''); 
 
-        // 1. Verify the Stripe Signature manually
         if (!empty($webhookSecret) && !$this->verifyStripeSignature($payload, $sigHeader, $webhookSecret)) {
             http_response_code(400);
             die('Webhook Error: Invalid signature.');
@@ -32,15 +28,26 @@ class WebhookController {
         $db = Database::getInstance();
 
         try {
-            // 2. Process specific event types
             switch ($event['type']) {
                 
                 case 'checkout.session.completed':
                     $session = $event['data']['object'];
                     $clientRef = $session['client_reference_id'] ?? '';
+                    $metadata = $session['metadata'] ?? [];
 
-                    // ROUTE 1: Check if this checkout belongs to a Mailing List subscription ("list_id|email")
-                    if (str_contains($clientRef, '|')) {
+                    // ROUTE A: AI Credits One-Time Top-Up
+                    if (($metadata['type'] ?? '') === 'ai_credits' || str_starts_with($clientRef, 'ai_credits|')) {
+                        $parts = explode('|', $clientRef);
+                        $targetUserId = (int)($metadata['user_id'] ?? ($parts[1] ?? 0));
+                        $creditsAmount = (int)($metadata['credits'] ?? ($parts[2] ?? 0));
+
+                        if ($targetUserId > 0 && $creditsAmount > 0) {
+                            UsageManager::addPurchasedAiCredits($targetUserId, $creditsAmount);
+                            error_log("AI Credits Webhook Success: Added {$creditsAmount} credits to User ID {$targetUserId}.");
+                        }
+                    }
+                    // ROUTE B: Mailing List subscription ("list_id|email")
+                    elseif (str_contains($clientRef, '|')) {
                         $parts = explode('|', $clientRef, 2);
                         $listId = (int)$parts[0];
                         $email = trim($parts[1]);
@@ -49,17 +56,16 @@ class WebhookController {
                             $subId = $session['subscription'] ?? $session['payment_intent'] ?? 'PAYMENT_OK';
                             $expiresAt = date('Y-m-d H:i:s', strtotime('+1 month'));
 
-                            // Activate paid subscriber for the mailing list
                             MailingList::addSubscriber($listId, $email, false, 'paid', $subId, $expiresAt);
                             error_log("Mailing List Payment Success: Email {$email} added to List ID {$listId}.");
                         }
                     } 
-                    // ROUTE 2: Platform Plan Subscription Upgrade (pure integer user_id)
+                    // ROUTE C: Platform Plan Subscription Upgrade (pure integer user_id)
                     else {
                         $userId = (int)$clientRef;
                         $stripeCustomerId = $session['customer'] ?? null;
                         $subscriptionId = $session['subscription'] ?? null;
-                        $planId = (int)($session['metadata']['plan_id'] ?? 1); // Fallback to Free Tier
+                        $planId = (int)($session['metadata']['plan_id'] ?? 1);
 
                         if ($userId > 0 && !empty($stripeCustomerId)) {
                             $stmt = $db->prepare("
@@ -87,7 +93,6 @@ class WebhookController {
                     $subscriptionId = $subscription['id'] ?? '';
                     $stripeCustomerId = $subscription['customer'] ?? '';
                     
-                    // First attempt to cancel any mailing list subscription matching this ID
                     if (!empty($subscriptionId)) {
                         $updatedListSub = MailingList::setSubscriberPaymentStatus($subscriptionId, 'expired');
                         if ($updatedListSub) {
@@ -95,7 +100,6 @@ class WebhookController {
                         }
                     }
 
-                    // Also process platform user downgrade if it matches a platform customer
                     if (!empty($stripeCustomerId)) {
                         $stmt = $db->prepare("
                             UPDATE users 
@@ -126,13 +130,8 @@ class WebhookController {
         echo 'Webhook handled successfully.';
     }
 
-    /**
-     * Manually verify the Stripe webhook signature using HMAC SHA256
-     */
     private function verifyStripeSignature(string $payload, string $sigHeader, string $secret): bool {
-        if (empty($sigHeader)) {
-            return false;
-        }
+        if (empty($sigHeader)) return false;
 
         $elements = explode(',', $sigHeader);
         $timestamp = '';
@@ -149,9 +148,7 @@ class WebhookController {
             }
         }
 
-        if (empty($timestamp) || empty($signatures)) {
-            return false;
-        }
+        if (empty($timestamp) || empty($signatures)) return false;
 
         $signedPayload = $timestamp . '.' . $payload;
         $expectedSignature = hash_hmac('sha256', $signedPayload, $secret);
