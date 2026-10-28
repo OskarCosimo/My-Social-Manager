@@ -56,6 +56,48 @@ class MailingList {
     }
 
     /**
+     * Update an existing mailing list
+     */
+    public static function update(
+        int $listId,
+        int $userId,
+        string $name,
+        bool $requireConfirmation = false,
+        bool $isPaid = false,
+        string $gateway = 'stripe',
+        string $type = 'one_time',
+        string $period = 'monthly',
+        float $price = 0.00,
+        string $currency = 'EUR'
+    ): bool {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            UPDATE mailing_lists 
+            SET name = ?, 
+                require_confirmation = ?, 
+                is_paid = ?, 
+                payment_gateway = ?, 
+                payment_type = ?, 
+                billing_period = ?, 
+                price = ?, 
+                currency = ? 
+            WHERE id = ? AND user_id = ?
+        ");
+        return $stmt->execute([
+            $name, 
+            $requireConfirmation ? 1 : 0, 
+            $isPaid ? 1 : 0, 
+            $gateway, 
+            $type, 
+            $period, 
+            $price, 
+            strtoupper($currency),
+            $listId,
+            $userId
+        ]);
+    }
+
+    /**
      * Add subscriber with payment details and encrypted email at rest
      */
     public static function addSubscriber(
