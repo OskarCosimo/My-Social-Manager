@@ -232,6 +232,9 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                                             <a href="/mailinglists/<?= $list['id'] ?>/subscribers" class="btn btn-sm btn-outline-primary me-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-people"></i> <?= __('view_subscribers') ?>
                                             </a>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-1 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#editListModal_<?= $list['id'] ?>">
+                                                <i class="bi bi-pencil"></i> <?= __('edit') ?>
+                                            </button>
                                             <form action="/mailinglist/delete" method="POST" class="d-inline" onsubmit="return confirm('<?= addslashes(__('confirm_delete_list')) ?>');">
                                                 <input type="hidden" name="list_id" value="<?= $list['id'] ?>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1">
@@ -240,6 +243,104 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                                             </form>
                                         </td>
                                     </tr>
+
+                                    <!-- EDIT MODAL FOR MAILING LIST #<?= $list['id'] ?> -->
+                                    <div class="modal fade" id="editListModal_<?= $list['id'] ?>" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg text-start">
+                                            <div class="modal-content">
+                                                <form action="/mailinglist/update" method="POST">
+                                                    <input type="hidden" name="list_id" value="<?= (int)$list['id'] ?>">
+
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title fw-bold d-inline-flex align-items-center gap-2">
+                                                            <i class="bi bi-pencil-square text-primary"></i> <?= __('edit') ?>: <?= htmlspecialchars($list['name']) ?>
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+
+                                                    <div class="modal-body p-4">
+                                                        <div class="row g-3 align-items-end mb-3">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label fw-bold text-dark"><?= __('list_name_field') ?></label>
+                                                                <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($list['name']) ?>" required>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-check mt-md-4">
+                                                                    <input class="form-check-input" type="checkbox" name="require_confirmation" value="1" id="edit_req_confirm_<?= $list['id'] ?>" <?= !empty($list['require_confirmation']) ? 'checked' : '' ?>>
+                                                                    <label class="form-check-label small text-dark" for="edit_req_confirm_<?= $list['id'] ?>">
+                                                                        <?= __('require_double_optin') ?>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Edit Payment Options Setup -->
+                                                        <div class="border p-3 rounded bg-light mb-3">
+                                                            <div class="form-check form-switch mb-2">
+                                                                <input class="form-check-input" type="checkbox" id="edit_is_paid_<?= $list['id'] ?>" name="is_paid" value="1" onchange="toggleEditPaymentFields(<?= $list['id'] ?>);" <?= !empty($list['is_paid']) ? 'checked' : '' ?>>
+                                                                <label class="form-check-label fw-bold text-dark" for="edit_is_paid_<?= $list['id'] ?>"><?= __('require_paid_access') ?></label>
+                                                            </div>
+
+                                                            <div class="row g-3 mt-1" id="edit_paid_options_<?= $list['id'] ?>" style="<?= !empty($list['is_paid']) ? 'display: flex;' : 'display: none;' ?>">
+                                                                <div class="col-md-3">
+                                                                    <label class="form-label small fw-bold"><?= __('gateway_field') ?></label>
+                                                                    <select name="payment_gateway" id="edit_payment_gateway_<?= $list['id'] ?>" class="form-select form-select-sm" onchange="toggleEditPaymentFields(<?= $list['id'] ?>);">
+                                                                        <option value="stripe" <?= ($list['payment_gateway'] === 'stripe') ? 'selected' : '' ?>>Stripe</option>
+                                                                        <option value="paypal" <?= ($list['payment_gateway'] === 'paypal') ? 'selected' : '' ?>>PayPal</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <label class="form-label small fw-bold"><?= __('payment_type_field') ?></label>
+                                                                    <select name="payment_type" class="form-select form-select-sm">
+                                                                        <option value="one_time" <?= ($list['payment_type'] === 'one_time') ? 'selected' : '' ?>><?= __('one_time_fee') ?></option>
+                                                                        <option value="subscription" <?= ($list['payment_type'] === 'subscription') ? 'selected' : '' ?>><?= __('recurring_subscription') ?></option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label small fw-bold"><?= __('period_field') ?></label>
+                                                                    <select name="billing_period" class="form-select form-select-sm">
+                                                                        <option value="monthly" <?= ($list['billing_period'] === 'monthly') ? 'selected' : '' ?>><?= __('monthly') ?></option>
+                                                                        <option value="yearly" <?= ($list['billing_period'] === 'yearly') ? 'selected' : '' ?>><?= __('yearly') ?></option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label small fw-bold"><?= __('price_field') ?></label>
+                                                                    <input type="number" step="0.01" min="0.01" name="price" class="form-control form-control-sm" value="<?= number_format($list['price'] ?? 5.00, 2, '.', '') ?>">
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label small fw-bold"><?= __('currency_field') ?></label>
+                                                                    <select name="currency" class="form-select form-select-sm">
+                                                                        <option value="EUR" <?= ($list['currency'] === 'EUR') ? 'selected' : '' ?>>EUR (€)</option>
+                                                                        <option value="USD" <?= ($list['currency'] === 'USD') ? 'selected' : '' ?>>USD ($)</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                <!-- Stripe Account ID -->
+                                                                <div class="col-md-12 mt-2" id="edit_stripe_cred_<?= $list['id'] ?>" style="<?= ($list['payment_gateway'] === 'stripe') ? 'display: block;' : 'display: none;' ?>">
+                                                                    <label class="form-label small fw-bold text-danger"><?= __('stripe_account_id_field') ?></label>
+                                                                    <input type="text" name="creator_stripe_account_id" id="edit_creator_stripe_account_id_<?= $list['id'] ?>" class="form-control form-control-sm" placeholder="e.g. acct_1NXXXXXXXXXXXXXX" value="<?= htmlspecialchars($currentUser['creator_stripe_account_id'] ?? '') ?>">
+                                                                    <div class="form-text small"><?= __('stripe_account_id_help') ?></div>
+                                                                </div>
+
+                                                                <!-- PayPal Payout Email -->
+                                                                <div class="col-md-12 mt-2" id="edit_paypal_cred_<?= $list['id'] ?>" style="<?= ($list['payment_gateway'] === 'paypal') ? 'display: block;' : 'display: none;' ?>">
+                                                                    <label class="form-label small fw-bold text-danger"><?= __('paypal_payout_email_field') ?></label>
+                                                                    <input type="email" name="creator_paypal_email" id="edit_creator_paypal_email_<?= $list['id'] ?>" class="form-control form-control-sm" placeholder="e.g. creator@example.com" value="<?= htmlspecialchars($currentUser['creator_paypal_email'] ?? '') ?>">
+                                                                    <div class="form-text small"><?= __('paypal_payout_email_help') ?></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= __('cancel') ?></button>
+                                                        <button type="submit" class="btn btn-primary fw-bold"><?= __('save_changes') ?></button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
@@ -261,6 +362,39 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
         
         const stripeInput = document.getElementById('creator_stripe_account_id');
         const paypalInput = document.getElementById('creator_paypal_email');
+
+        if (isPaid) {
+            paidOptions.style.display = 'flex';
+            if (gateway === 'stripe') {
+                stripeCred.style.display = 'block';
+                paypalCred.style.display = 'none';
+                
+                stripeInput.setAttribute('required', 'required');
+                paypalInput.removeAttribute('required');
+            } else {
+                stripeCred.style.display = 'none';
+                paypalCred.style.display = 'block';
+                
+                paypalInput.setAttribute('required', 'required');
+                stripeInput.removeAttribute('required');
+            }
+        } else {
+            paidOptions.style.display = 'none';
+            stripeInput.removeAttribute('required');
+            paypalInput.removeAttribute('required');
+        }
+    }
+
+    function toggleEditPaymentFields(listId) {
+        const isPaid = document.getElementById('edit_is_paid_' + listId).checked;
+        const gateway = document.getElementById('edit_payment_gateway_' + listId).value;
+        
+        const paidOptions = document.getElementById('edit_paid_options_' + listId);
+        const stripeCred = document.getElementById('edit_stripe_cred_' + listId);
+        const paypalCred = document.getElementById('edit_paypal_cred_' + listId);
+        
+        const stripeInput = document.getElementById('edit_creator_stripe_account_id_' + listId);
+        const paypalInput = document.getElementById('edit_creator_paypal_email_' + listId);
 
         if (isPaid) {
             paidOptions.style.display = 'flex';
