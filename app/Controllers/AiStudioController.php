@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Models/AiCampaign.php';
 require_once __DIR__ . '/../Models/SocialAccount.php';
 require_once __DIR__ . '/../Models/UsageManager.php';
 require_once __DIR__ . '/../Models/Group.php';
+require_once __DIR__ . '/../Models/MailingList.php';
 require_once __DIR__ . '/../Core/Database.php';
 
 class AiStudioController {
@@ -23,6 +24,9 @@ class AiStudioController {
         
         $accounts = SocialAccount::getUserAccounts($userId);
         $aiLimits = UsageManager::getAiLimits($userId);
+
+        // Fetch user mailing lists
+        $mailingLists = MailingList::getUserLists($userId);
 
         // AI Credits Quota for top banner
         $aiCreditsUsed    = (int)($aiLimits['ai_credits_used'] ?? 0);
@@ -52,19 +56,21 @@ class AiStudioController {
         $userId = (int)$_SESSION['user_id'];
         
         $prompt = trim($_POST['prompt'] ?? '');
-        $selectedAccounts = $_POST['accounts'] ?? [];
+        $selectedAccounts = array_map('intval', $_POST['accounts'] ?? []);
+        $targetMailingLists = array_map('intval', $_POST['target_mailing_lists'] ?? []);
         $uniquePosts = !empty($_POST['unique_posts']) ? 1 : 0;
         
         $scheduleSettings = [
-            'total_posts'   => max(1, (int)($_POST['total_posts'] ?? 1)),
-            'posts_per_day' => max(1, (int)($_POST['posts_per_day'] ?? 1)),
-            'start_time'    => $_POST['start_time'] ?? '09:00',
-            'end_time'      => $_POST['end_time'] ?? '18:00',
-            'unique_posts'  => $uniquePosts
+            'total_posts'          => max(1, (int)($_POST['total_posts'] ?? 1)),
+            'posts_per_day'        => max(1, (int)($_POST['posts_per_day'] ?? 1)),
+            'start_time'           => $_POST['start_time'] ?? '09:00',
+            'end_time'             => $_POST['end_time'] ?? '18:00',
+            'unique_posts'         => $uniquePosts,
+            'target_mailing_lists' => $targetMailingLists
         ];
 
-        if (empty($prompt) || empty($selectedAccounts)) {
-            $_SESSION['error'] = __('ai_studio_missing_fields') ?? 'Prompt and at least one target account are required.';
+        if (empty($prompt) || (empty($selectedAccounts) && empty($targetMailingLists))) {
+            $_SESSION['error'] = __('ai_studio_missing_fields') ?? 'Prompt and at least one target account or mailing list are required.';
             header('Location: /ai-studio');
             exit;
         }
@@ -110,6 +116,7 @@ class AiStudioController {
         $prompt = trim($_POST['prompt'] ?? '');
         $status = $_POST['status'] ?? 'active';
         $uniquePosts = !empty($_POST['unique_posts']) ? 1 : 0;
+        $targetMailingLists = isset($_POST['target_mailing_lists']) ? array_map('intval', $_POST['target_mailing_lists']) : [];
 
         if (!in_array($status, ['active', 'paused', 'completed'])) {
             $status = 'active';
@@ -142,11 +149,12 @@ class AiStudioController {
         }
 
         $scheduleSettings = [
-            'total_posts'   => $totalPosts,
-            'posts_per_day' => $postsPerDay,
-            'start_time'    => $startTime,
-            'end_time'      => $endTime,
-            'unique_posts'  => $uniquePosts
+            'total_posts'          => $totalPosts,
+            'posts_per_day'        => $postsPerDay,
+            'start_time'           => $startTime,
+            'end_time'             => $endTime,
+            'unique_posts'         => $uniquePosts,
+            'target_mailing_lists' => $targetMailingLists
         ];
 
         AiCampaign::update($campaignId, $userId, $prompt, $scheduleSettings, $status);
@@ -202,7 +210,7 @@ class AiStudioController {
 
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT p.id, p.content, p.scheduled_for, p.status,
+            SELECT p.id, p.content, p.scheduled_for, p.status, p.source_link,
                    s.platform_name, s.plugin_id
             FROM posts p
             LEFT JOIN social_accounts s ON p.social_account_id = s.id
