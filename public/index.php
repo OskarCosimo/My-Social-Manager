@@ -147,6 +147,8 @@ $router->post('/compose/publish', ['ComposeController', 'publish']);
 $router->get('/mailinglists', ['MailingListController', 'index']);
 $router->post('/mailinglists/store', ['MailingListController', 'store']);
 $router->post('/mailinglist/create', ['MailingListController', 'create']);
+$router->post('/mailinglist/update', ['MailingListController', 'update']);
+$router->post('/mailinglists/update', ['MailingListController', 'update']);
 $router->post('/mailinglist/delete', ['MailingListController', 'delete']);
 $router->get('/mailinglists/{id}/subscribers', ['MailingListController', 'subscribers']);
 $router->post('/mailinglists/subscribers/toggle-exclusion', ['MailingListController', 'toggleExclusion']);
