@@ -59,6 +59,7 @@ foreach ($activeCampaigns as $campaign) {
     $startTime = !empty($settings['start_time']) ? $settings['start_time'] : '09:00';
     $endTime = !empty($settings['end_time']) ? $settings['end_time'] : '18:00';
     $isUniqueContent = !empty($settings['unique_posts']);
+    $targetMailingLists = $settings['target_mailing_lists'] ?? [];
 
     // Retrieve user timezone with system fallback
     $userTzString = 'UTC';
@@ -107,8 +108,8 @@ foreach ($activeCampaigns as $campaign) {
 
     // Prepare SQL insert matching the database schema
     $insertStmt = $db->prepare("
-        INSERT INTO posts (user_id, campaign_id, social_account_id, content, media_url, status, scheduled_for) 
-        VALUES (?, ?, ?, ?, NULL, 'scheduled', ?)
+        INSERT INTO posts (user_id, campaign_id, social_account_id, content, media_url, status, scheduled_for, source_link) 
+        VALUES (?, ?, ?, ?, NULL, 'scheduled', ?, ?)
     ");
 
     // Loop until all planned posts for this campaign are generated
@@ -297,8 +298,23 @@ foreach ($activeCampaigns as $campaign) {
                 $campaign['id'],
                 (int)$accountId,
                 $cleanedPost,
-                $scheduledDate
+                $scheduledDate,
+                null
             ]);
+        }
+
+        // Insert into database for each selected mailing list
+        if (!empty($targetMailingLists)) {
+            foreach ($targetMailingLists as $mlId) {
+                $insertStmt->execute([
+                    $userId,
+                    $campaign['id'],
+                    null,
+                    $cleanedPost,
+                    $scheduledDate,
+                    'mailing_list:' . (int)$mlId
+                ]);
+            }
         }
 
         // Increment user AI credits usage
