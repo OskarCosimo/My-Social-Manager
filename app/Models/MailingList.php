@@ -2,6 +2,7 @@
 // app/Models/MailingList.php
 
 require_once __DIR__ . '/../Core/Database.php';
+require_once __DIR__ . '/../Core/Crypto.php';
 
 class MailingList {
     
@@ -55,7 +56,7 @@ class MailingList {
     }
 
     /**
-     * Add subscriber with payment details
+     * Add subscriber with payment details and encrypted email at rest
      */
     public static function addSubscriber(
         int $listId, 
@@ -66,9 +67,11 @@ class MailingList {
         ?string $expiresAt = null
     ) {
         $db = Database::getInstance();
+        $normalizedEmail = strtolower(trim($email));
+        $emailHash = Crypto::hashEmail($normalizedEmail);
         
-        $stmt = $db->prepare("SELECT id, is_confirmed, payment_status FROM mailing_list_subscribers WHERE list_id = ? AND email = ?");
-        $stmt->execute([$listId, $email]);
+        $stmt = $db->prepare("SELECT id, is_confirmed, payment_status FROM mailing_list_subscribers WHERE list_id = ? AND email_hash = ?");
+        $stmt->execute([$listId, $emailHash]);
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existing) {
@@ -84,13 +87,14 @@ class MailingList {
 
         $isConfirmed = ($requireConfirmation && $paymentStatus === 'free') ? 0 : 1;
         $token = ($requireConfirmation && $paymentStatus === 'free') ? bin2hex(random_bytes(32)) : null;
+        $encryptedEmail = Crypto::encrypt($normalizedEmail);
 
         $stmt = $db->prepare("
             INSERT INTO mailing_list_subscribers 
-            (list_id, email, is_confirmed, confirmation_token, payment_status, gateway_subscription_id, expires_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (list_id, email, email_hash, is_confirmed, confirmation_token, payment_status, gateway_subscription_id, expires_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $success = $stmt->execute([$listId, $email, $isConfirmed, $token, $paymentStatus, $subscriptionId, $expiresAt]);
+        $success = $stmt->execute([$listId, $encryptedEmail, $emailHash, $isConfirmed, $token, $paymentStatus, $subscriptionId, $expiresAt]);
 
         if ($success && $requireConfirmation && $paymentStatus === 'free') {
             return $token;
@@ -104,12 +108,14 @@ class MailingList {
      */
     public static function activatePaidSubscriber(int $listId, string $email, string $subscriptionId, ?string $expiresAt): bool {
         $db = Database::getInstance();
+        $emailHash = Crypto::hashEmail($email);
+
         $stmt = $db->prepare("
             UPDATE mailing_list_subscribers 
             SET payment_status = 'paid', is_confirmed = 1, gateway_subscription_id = ?, expires_at = ? 
-            WHERE list_id = ? AND email = ?
+            WHERE list_id = ? AND email_hash = ?
         ");
-        return $stmt->execute([$subscriptionId, $expiresAt, $listId, $email]);
+        return $stmt->execute([$subscriptionId, $expiresAt, $listId, $emailHash]);
     }
 
     /**
@@ -161,6 +167,9 @@ class MailingList {
         return $stmt->execute([$subscriberId, $listId]);
     }
 
+    /**
+     * Get detailed list of subscribers with decrypted email addresses
+     */
     public static function getSubscribersDetailed(int $listId, int $userId): array {
         $db = Database::getInstance();
         $stmt = $db->prepare("
@@ -171,12 +180,21 @@ class MailingList {
             ORDER BY mls.id DESC
         ");
         $stmt->execute([$listId, $userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $subscribers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($subscribers as &$sub) {
+            if (isset($sub['email'])) {
+                $sub['email'] = Crypto::decrypt($sub['email']);
+            }
+        }
+        unset($sub);
+
+        return $subscribers;
     }
 
     /**
      * Get active non-excluded confirmed subscriber emails for sending campaigns.
-     * Checks if payment is valid (free or paid and non-expired).
+     * Checks if payment is valid (free or paid and non-expired) and decrypts emails.
      */
     public static function getActiveSubscribers(int $listId): array {
         $db = Database::getInstance();
@@ -188,6 +206,10 @@ class MailingList {
               AND (payment_status = 'free' OR (payment_status = 'paid' AND (expires_at IS NULL OR expires_at > NOW())))
         ");
         $stmt->execute([$listId]);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $encryptedEmails = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        return array_map(function ($email) {
+            return Crypto::decrypt($email);
+        }, $encryptedEmails);
     }
 }
