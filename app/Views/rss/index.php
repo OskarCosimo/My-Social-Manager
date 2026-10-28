@@ -198,7 +198,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                 </div>
 
                                 <?php if (!empty($connectedAccounts)): ?>
-                                    <div class="table-responsive bg-light border rounded p-2 shadow-sm mb-4">
+                                    <div class="table-responsive bg-light border rounded p-2 shadow-sm mb-3">
                                         <table class="table table-hover align-middle mb-0 dt-table w-100" id="rss-accounts-table">
                                             <thead class="table-light">
                                                 <tr>
@@ -224,6 +224,30 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                 <?php endforeach; ?>
                                             </tbody>
                                         </table>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($mailingLists)): ?>
+                                    <hr class="text-muted opacity-25">
+                                    <div class="mt-3 mb-4">
+                                        <label class="form-label fw-semibold text-secondary d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-envelope-paper"></i> <?= __('mailing_lists') ?>
+                                        </label>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <?php foreach ($mailingLists as $list): ?>
+                                                <div class="form-check border rounded px-3 py-2 bg-white shadow-sm">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="target_mailing_lists[]" 
+                                                           value="<?= $list['id'] ?>" 
+                                                           id="rss_ml_<?= $list['id'] ?>"
+                                                           <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                                    <label class="form-check-label d-flex align-items-center gap-2" for="rss_ml_<?= $list['id'] ?>">
+                                                        <span class="badge bg-warning text-dark">Mailing List</span>
+                                                        <?= htmlspecialchars($list['name']) ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
                                     </div>
                                 <?php endif; ?>
 
@@ -294,25 +318,46 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                 $targets = json_decode($feed['target_accounts'], true) ?? [];
                                                 if (!empty($targets)):
                                                     foreach ($targets as $targetId):
-                                                        $accName = "ID: " . $targetId;
-                                                        $accPlugin = "";
-                                                        foreach ($connectedAccounts as $acc) {
-                                                            if ($acc['id'] == $targetId) {
-                                                                $accName = $acc['platform_name'] ?? 'Account';
-                                                                $accPlugin = $acc['plugin_id'] ?? '';
-                                                                break;
+                                                        if (is_string($targetId) && str_starts_with($targetId, 'ml_')):
+                                                            $mlId = (int)substr($targetId, 3);
+                                                            $mlName = "Mailing List #" . $mlId;
+                                                            if (!empty($mailingLists)) {
+                                                                foreach ($mailingLists as $ml) {
+                                                                    if ((int)$ml['id'] === $mlId) {
+                                                                        $mlName = $ml['name'];
+                                                                        break;
+                                                                    }
+                                                                }
                                                             }
-                                                        }
                                                 ?>
-                                                    <span class="badge bg-light text-dark border d-flex align-items-center shadow-sm py-1">
-                                                        <span class="text-truncate d-inline-block" style="max-width: 100px;" title="<?= htmlspecialchars($accName) ?>">
-                                                            <?= htmlspecialchars($accName) ?>
-                                                        </span>
-                                                        <?php if ($accPlugin): ?>
-                                                            <span class="badge bg-secondary ms-1" style="font-size: 0.65em;"><?= htmlspecialchars(ucfirst($accPlugin)) ?></span>
-                                                        <?php endif; ?>
-                                                    </span>
+                                                            <span class="badge bg-warning text-dark border d-flex align-items-center shadow-sm py-1">
+                                                                <i class="bi bi-envelope-paper me-1"></i>
+                                                                <span class="text-truncate d-inline-block" style="max-width: 120px;" title="<?= htmlspecialchars($mlName) ?>">
+                                                                    <?= htmlspecialchars($mlName) ?>
+                                                                </span>
+                                                            </span>
                                                 <?php 
+                                                        else:
+                                                            $accName = "ID: " . $targetId;
+                                                            $accPlugin = "";
+                                                            foreach ($connectedAccounts as $acc) {
+                                                                if ($acc['id'] == $targetId) {
+                                                                    $accName = $acc['platform_name'] ?? 'Account';
+                                                                    $accPlugin = $acc['plugin_id'] ?? '';
+                                                                    break;
+                                                                }
+                                                            }
+                                                ?>
+                                                            <span class="badge bg-light text-dark border d-flex align-items-center shadow-sm py-1">
+                                                                <span class="text-truncate d-inline-block" style="max-width: 100px;" title="<?= htmlspecialchars($accName) ?>">
+                                                                    <?= htmlspecialchars($accName) ?>
+                                                                </span>
+                                                                <?php if ($accPlugin): ?>
+                                                                    <span class="badge bg-secondary ms-1" style="font-size: 0.65em;"><?= htmlspecialchars(ucfirst($accPlugin)) ?></span>
+                                                                <?php endif; ?>
+                                                            </span>
+                                                <?php 
+                                                        endif;
                                                     endforeach;
                                                 else: 
                                                 ?>
@@ -405,15 +450,16 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                             </div>
                                                         </div>
 
+                                                        <!-- Target Social Accounts (Edit Modal) -->
                                                         <div class="mb-3">
                                                             <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
                                                                 <i class="bi bi-share"></i> <?= __('target_social_accounts') ?>
                                                             </label>
-                                                            <div class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                                            <div class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto;">
                                                                 <?php 
                                                                 $selectedTargets = json_decode($feed['target_accounts'], true) ?? [];
                                                                 foreach ($connectedAccounts as $account): 
-                                                                    $isChecked = in_array($account['id'], $selectedTargets);
+                                                                    $isChecked = in_array((int)$account['id'], $selectedTargets, true);
                                                                 ?>
                                                                     <div class="form-check">
                                                                         <input class="form-check-input" type="checkbox" name="target_accounts[]" value="<?= (int)$account['id'] ?>" id="edit_acc_<?= $feed['id'] ?>_<?= $account['id'] ?>" <?= $isChecked ? 'checked' : '' ?>>
@@ -424,6 +470,30 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                                 <?php endforeach; ?>
                                                             </div>
                                                         </div>
+
+                                                        <!-- Target Mailing Lists (Edit Modal) -->
+                                                        <?php if (!empty($mailingLists)): ?>
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                    <i class="bi bi-envelope-paper"></i> <?= __('mailing_lists') ?>
+                                                                </label>
+                                                                <div class="border rounded p-2 bg-light d-flex flex-wrap gap-2" style="max-height: 150px; overflow-y: auto;">
+                                                                    <?php 
+                                                                    foreach ($mailingLists as $list): 
+                                                                        $isMlChecked = in_array('ml_' . $list['id'], $selectedTargets, true);
+                                                                    ?>
+                                                                        <div class="form-check border rounded px-2 py-1 bg-white shadow-sm">
+                                                                            <input class="form-check-input" type="checkbox" name="target_mailing_lists[]" value="<?= (int)$list['id'] ?>" id="edit_ml_<?= $feed['id'] ?>_<?= $list['id'] ?>" <?= $isMlChecked ? 'checked' : '' ?>>
+                                                                            <label class="form-check-label" for="edit_ml_<?= $feed['id'] ?>_<?= $list['id'] ?>">
+                                                                                <span class="badge bg-warning text-dark" style="font-size: 0.65em;">Mailing List</span>
+                                                                                <strong><?= htmlspecialchars($list['name']) ?></strong>
+                                                                            </label>
+                                                                        </div>
+                                                                    <?php endforeach; ?>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
+
                                                     </div>
 
                                                     <div class="modal-footer">
