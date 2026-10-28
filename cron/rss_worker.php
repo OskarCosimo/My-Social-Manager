@@ -8,6 +8,8 @@ if (!defined('BASE_PATH')) {
 require_once BASE_PATH . 'app/Core/Config.php';
 require_once BASE_PATH . 'app/Models/RssFeed.php';
 require_once BASE_PATH . 'app/Models/UsageManager.php';
+require_once BASE_PATH . 'app/Models/MailingList.php';
+require_once BASE_PATH . 'app/Core/Mailer.php';
 require_once BASE_PATH . 'app/Core/Database.php';
 
 // Allow execution either via CLI or via internal PHP cron runner
@@ -141,32 +143,90 @@ foreach ($feeds as $feed) {
 
         $postContent = $item['title'] . "\n\n" . $item['link'];
         
-        foreach ($targetAccounts as $accountId) {
-            if (!$randomRepostEnabled) {
-                $stmt = $db->prepare("SELECT id FROM posts WHERE social_account_id = ? AND (source_link = ? OR content LIKE ?)");
-                $searchString = "%" . $item['link'] . "%";
-                $stmt->execute([$accountId, $item['link'], $searchString]);
-                if ($stmt->fetch()) {
+        foreach ($targetAccounts as $target) {
+            // Handle Mailing List Target
+            if (is_string($target) && str_starts_with($target, 'ml_')) {
+                $listId = (int)substr($target, 3);
+
+                // Duplicate check for mailing list
+                if (!$randomRepostEnabled) {
+                    $chkStmt = $db->prepare("SELECT id FROM posts WHERE user_id = ? AND source_link = ? AND is_rss = 1 AND content LIKE ?");
+                    $chkStmt->execute([$feed['user_id'], $item['link'], "%[ML:{$listId}]%"]);
+                    if ($chkStmt->fetch()) {
+                        continue;
+                    }
+                }
+
+                $subscribers = MailingList::getActiveSubscribers($listId);
+                $listInfo = MailingList::getById($listId, (int)$feed['user_id']);
+
+                if (empty($subscribers)) {
                     continue;
                 }
+
+                if (!UsageManager::canSendEmails((int)$feed['user_id'], count($subscribers))) {
+                    echo " - Warning: Not enough email quota for user {$feed['user_id']} to send to list #{$listId}.\n";
+                    continue;
+                }
+
+                $subject = ($listInfo ? $listInfo['name'] : 'RSS Update') . ': ' . $item['title'];
+                $htmlBody = "<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>";
+                $htmlBody .= "<h2>" . htmlspecialchars($item['title']) . "</h2>";
+                $htmlBody .= "<p><a href='" . htmlspecialchars($item['link']) . "' target='_blank'>" . htmlspecialchars($item['link']) . "</a></p>";
+                $htmlBody .= "</div>";
+
+                $sentCount = 0;
+                foreach ($subscribers as $subscriberEmail) {
+                    if (Mailer::send($subscriberEmail, $subject, $htmlBody)) {
+                        $sentCount++;
+                    }
+                }
+
+                if ($sentCount > 0) {
+                    UsageManager::incrementEmailUsage((int)$feed['user_id'], $sentCount);
+
+                    // Track in posts table for deduplication and statistics
+                    $trackStmt = $db->prepare("
+                        INSERT INTO posts (user_id, social_account_id, content, status, scheduled_for, scheduled_at, published_at, source_link, is_rss) 
+                        VALUES (?, NULL, ?, 'published', NOW(), NOW(), NOW(), ?, 1)
+                    ");
+                    $trackStmt->execute([
+                        $feed['user_id'],
+                        "[ML:{$listId}] " . $postContent,
+                        $item['link']
+                    ]);
+                    $addedPosts++;
+                }
+
+            } else {
+                // Handle Social Account Target
+                $accountId = (int)$target;
+                if (!$randomRepostEnabled) {
+                    $stmt = $db->prepare("SELECT id FROM posts WHERE social_account_id = ? AND (source_link = ? OR content LIKE ?)");
+                    $searchString = "%" . $item['link'] . "%";
+                    $stmt->execute([$accountId, $item['link'], $searchString]);
+                    if ($stmt->fetch()) {
+                        continue;
+                    }
+                }
+
+                $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
+
+                $insertStmt = $db->prepare("
+                    INSERT INTO posts (user_id, social_account_id, content, status, scheduled_for, scheduled_at, source_link, is_rss) 
+                    VALUES (?, ?, ?, 'scheduled', ?, ?, ?, 1)
+                ");
+                $insertStmt->execute([
+                    $feed['user_id'], 
+                    $accountId, 
+                    $postContent, 
+                    $scheduledDate, 
+                    $scheduledDate, 
+                    $item['link']
+                ]);
+                
+                $addedPosts++;
             }
-
-            $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
-
-            $insertStmt = $db->prepare("
-                INSERT INTO posts (user_id, social_account_id, content, status, scheduled_for, scheduled_at, source_link, is_rss) 
-                VALUES (?, ?, ?, 'scheduled', ?, ?, ?, 1)
-            ");
-            $insertStmt->execute([
-                $feed['user_id'], 
-                $accountId, 
-                $postContent, 
-                $scheduledDate, 
-                $scheduledDate, 
-                $item['link']
-            ]);
-            
-            $addedPosts++;
         }
 
         $currentPublishTime += ($intervalHours * 3600);
