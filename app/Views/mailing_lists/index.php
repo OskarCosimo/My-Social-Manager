@@ -146,7 +146,7 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold"><?= __('price_field') ?></label>
-                                <input type="number" step="0.01" min="0.01" name="price" class="form-control form-control-sm" value="5.00">
+                                <input type="number" step="0.01" min="0" name="price" class="form-control form-control-sm" value="5.00">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold"><?= __('currency_field') ?></label>
@@ -251,13 +251,13 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
             </div>
         </div>
 
-        <!-- EDIT MODALS (PLACED OUTSIDE TABLE FOR VALID HTML DOM & SUBMISSION) -->
+        <!-- EDIT MODALS (PLACED OUTSIDE TABLE FOR VALID HTML DOM) -->
         <?php if (!empty($lists)): ?>
             <?php foreach ($lists as $list): ?>
                 <div class="modal fade" id="editListModal_<?= $list['id'] ?>" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-lg text-start">
                         <div class="modal-content">
-                            <form action="/mailinglist/update" method="POST">
+                            <form action="/mailinglist/update" method="POST" id="editListForm_<?= $list['id'] ?>">
                                 <input type="hidden" name="list_id" value="<?= (int)$list['id'] ?>">
 
                                 <div class="modal-header">
@@ -314,7 +314,7 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label small fw-bold"><?= __('price_field') ?></label>
-                                                <input type="number" step="0.01" min="0.01" name="price" class="form-control form-control-sm" value="<?= number_format($list['price'] ?? 5.00, 2, '.', '') ?>">
+                                                <input type="number" step="0.01" min="0" name="price" class="form-control form-control-sm" value="<?= (!empty($list['price']) && (float)$list['price'] > 0) ? number_format((float)$list['price'], 2, '.', '') : '5.00' ?>">
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label small fw-bold"><?= __('currency_field') ?></label>
@@ -343,7 +343,7 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
 
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= __('cancel') ?></button>
-                                    <button type="submit" class="btn btn-primary fw-bold"><?= __('save_changes') ?></button>
+                                    <button type="submit" form="editListForm_<?= $list['id'] ?>" class="btn btn-primary fw-bold"><?= __('save_changes') ?></button>
                                 </div>
                             </form>
                         </div>
@@ -363,29 +363,18 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
         const paidOptions = document.getElementById('paid_options');
         const stripeCred = document.getElementById('stripe_cred');
         const paypalCred = document.getElementById('paypal_cred');
-        
-        const stripeInput = document.getElementById('creator_stripe_account_id');
-        const paypalInput = document.getElementById('creator_paypal_email');
 
         if (isPaid) {
             paidOptions.style.display = 'flex';
             if (gateway === 'stripe') {
                 stripeCred.style.display = 'block';
                 paypalCred.style.display = 'none';
-                
-                stripeInput.setAttribute('required', 'required');
-                paypalInput.removeAttribute('required');
             } else {
                 stripeCred.style.display = 'none';
                 paypalCred.style.display = 'block';
-                
-                paypalInput.setAttribute('required', 'required');
-                stripeInput.removeAttribute('required');
             }
         } else {
             paidOptions.style.display = 'none';
-            stripeInput.removeAttribute('required');
-            paypalInput.removeAttribute('required');
         }
     }
 
@@ -396,29 +385,18 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
         const paidOptions = document.getElementById('edit_paid_options_' + listId);
         const stripeCred = document.getElementById('edit_stripe_cred_' + listId);
         const paypalCred = document.getElementById('edit_paypal_cred_' + listId);
-        
-        const stripeInput = document.getElementById('edit_creator_stripe_account_id_' + listId);
-        const paypalInput = document.getElementById('edit_creator_paypal_email_' + listId);
 
         if (isPaid) {
             paidOptions.style.display = 'flex';
             if (gateway === 'stripe') {
                 stripeCred.style.display = 'block';
                 paypalCred.style.display = 'none';
-                
-                stripeInput.setAttribute('required', 'required');
-                paypalInput.removeAttribute('required');
             } else {
                 stripeCred.style.display = 'none';
                 paypalCred.style.display = 'block';
-                
-                paypalInput.setAttribute('required', 'required');
-                stripeInput.removeAttribute('required');
             }
         } else {
             paidOptions.style.display = 'none';
-            stripeInput.removeAttribute('required');
-            paypalInput.removeAttribute('required');
         }
     }
 </script>
