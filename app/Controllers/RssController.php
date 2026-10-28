@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Models/RssFeed.php';
 require_once __DIR__ . '/../Models/SocialAccount.php';
 require_once __DIR__ . '/../Models/Group.php';
 require_once __DIR__ . '/../Models/UsageManager.php';
+require_once __DIR__ . '/../Models/MailingList.php';
 
 class RssController {
 
@@ -23,6 +24,9 @@ class RssController {
         $groupModel = new \App\Models\Group($db);
         $groups = $groupModel->getUserGroups($userId);
 
+        // Fetch user mailing lists
+        $mailingLists = MailingList::getUserLists($userId);
+
         // Fetch dynamic plan limits directly from DB
         $limits = UsageManager::getUserLimits($userId);
 
@@ -38,11 +42,25 @@ class RssController {
         $userId = (int)$_SESSION['user_id'];
         $feedUrl = filter_var($_POST['feed_url'] ?? '', FILTER_SANITIZE_URL);
         $targetAccounts = $_POST['target_accounts'] ?? [];
+        $targetMailingLists = $_POST['target_mailing_lists'] ?? [];
 
         $intervalHours       = max(1, min(24, (int)($_POST['post_interval_hours'] ?? 1)));
         $onlyNewItems        = isset($_POST['only_new_items']) ? 1 : 0;
         $randomRepostEnabled = isset($_POST['random_repost_enabled']) ? 1 : 0;
         $randomRepostLimit   = max(10, min(100, (int)($_POST['random_repost_limit'] ?? 10)));
+
+        // Merge social accounts and mailing lists into target_accounts
+        $mergedTargets = [];
+        foreach ($targetAccounts as $accId) {
+            if (!empty($accId)) {
+                $mergedTargets[] = (int)$accId;
+            }
+        }
+        foreach ($targetMailingLists as $mlId) {
+            if (!empty($mlId)) {
+                $mergedTargets[] = 'ml_' . (int)$mlId;
+            }
+        }
 
         // Check user's current number of feeds
         $existingFeeds = RssFeed::getUserFeeds($userId);
@@ -61,13 +79,13 @@ class RssController {
 
         if (empty($feedUrl) || !filter_var($feedUrl, FILTER_VALIDATE_URL)) {
             $_SESSION['error'] = "Invalid RSS Feed URL.";
-        } elseif (empty($targetAccounts)) {
-            $_SESSION['error'] = "You must select at least one social account.";
+        } elseif (empty($mergedTargets)) {
+            $_SESSION['error'] = "You must select at least one social account or mailing list.";
         } else {
             RssFeed::add(
                 $userId, 
                 $feedUrl, 
-                $targetAccounts, 
+                $mergedTargets, 
                 $intervalHours, 
                 $onlyNewItems, 
                 $randomRepostEnabled, 
@@ -90,11 +108,25 @@ class RssController {
         $feedId = (int)($_POST['feed_id'] ?? 0);
         $feedUrl = filter_var($_POST['feed_url'] ?? '', FILTER_SANITIZE_URL);
         $targetAccounts = $_POST['target_accounts'] ?? [];
+        $targetMailingLists = $_POST['target_mailing_lists'] ?? [];
 
         $intervalHours       = max(1, min(24, (int)($_POST['post_interval_hours'] ?? 1)));
         $onlyNewItems        = isset($_POST['only_new_items']) ? 1 : 0;
         $randomRepostEnabled = isset($_POST['random_repost_enabled']) ? 1 : 0;
         $randomRepostLimit   = max(10, min(100, (int)($_POST['random_repost_limit'] ?? 10)));
+
+        // Merge social accounts and mailing lists
+        $mergedTargets = [];
+        foreach ($targetAccounts as $accId) {
+            if (!empty($accId)) {
+                $mergedTargets[] = (int)$accId;
+            }
+        }
+        foreach ($targetMailingLists as $mlId) {
+            if (!empty($mlId)) {
+                $mergedTargets[] = 'ml_' . (int)$mlId;
+            }
+        }
 
         $feed = RssFeed::getById($feedId, $userId);
 
@@ -102,14 +134,14 @@ class RssController {
             $_SESSION['error'] = "RSS Feed not found or unauthorized.";
         } elseif (empty($feedUrl) || !filter_var($feedUrl, FILTER_VALIDATE_URL)) {
             $_SESSION['error'] = "Invalid RSS Feed URL.";
-        } elseif (empty($targetAccounts)) {
-            $_SESSION['error'] = "You must select at least one social account.";
+        } elseif (empty($mergedTargets)) {
+            $_SESSION['error'] = "You must select at least one social account or mailing list.";
         } else {
             RssFeed::update(
                 $feedId, 
                 $userId, 
                 $feedUrl, 
-                $targetAccounts, 
+                $mergedTargets, 
                 $intervalHours, 
                 $onlyNewItems, 
                 $randomRepostEnabled, 
