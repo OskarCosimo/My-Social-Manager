@@ -85,7 +85,23 @@ try {
 
     // Migration: Encrypt mailing list subscriber emails at rest and add deterministic HMAC blind index
     if (migration_table_exists($pdo, 'mailing_list_subscribers')) {
-        // 1. Add email_hash column and expand email column to TEXT if not present
+
+        // 1. Drop legacy unique key on (list_id, email) FIRST so MySQL allows modifying email to TEXT
+        $stmtIdx = $pdo->prepare("
+            SELECT COUNT(*) FROM information_schema.statistics 
+            WHERE table_schema = DATABASE() 
+              AND table_name = 'mailing_list_subscribers' 
+              AND index_name = 'unique_subscription' 
+              AND column_name = 'email'
+        ");
+        $stmtIdx->execute();
+        $isOldIndex = (bool)$stmtIdx->fetchColumn();
+
+        if ($isOldIndex) {
+            $pdo->exec("ALTER TABLE `mailing_list_subscribers` DROP INDEX `unique_subscription`");
+        }
+
+        // 2. Add email_hash column and expand email column to TEXT
         if (!migration_column_exists($pdo, 'mailing_list_subscribers', 'email_hash')) {
             $pdo->exec("
                 ALTER TABLE `mailing_list_subscribers` 
@@ -94,7 +110,7 @@ try {
             ");
         }
 
-        // 2. Encrypt existing plain emails and calculate email_hash for unmigrated rows
+        // 3. Encrypt existing plain emails and calculate email_hash for unmigrated rows
         $stmt = $pdo->query("SELECT `id`, `email` FROM `mailing_list_subscribers` WHERE `email_hash` IS NULL OR `email_hash` = ''");
         $unhashedSubscribers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -110,22 +126,7 @@ try {
             }
         }
 
-        // 3. Drop legacy unique key on (list_id, email) if still present
-        $stmtIdx = $pdo->prepare("
-            SELECT COUNT(*) FROM information_schema.statistics 
-            WHERE table_schema = DATABASE() 
-              AND table_name = 'mailing_list_subscribers' 
-              AND index_name = 'unique_subscription' 
-              AND column_name = 'email'
-        ");
-        $stmtIdx->execute();
-        $isOldIndex = (bool)$stmtIdx->fetchColumn();
-
-        if ($isOldIndex) {
-            $pdo->exec("ALTER TABLE `mailing_list_subscribers` DROP INDEX `unique_subscription`");
-        }
-
-        // 4. Create unique key on (list_id, email_hash)
+        // 4. Create new unique index on (list_id, email_hash)
         if (!migration_index_exists($pdo, 'mailing_list_subscribers', 'unique_subscription')) {
             $pdo->exec("ALTER TABLE `mailing_list_subscribers` ADD UNIQUE KEY `unique_subscription` (`list_id`, `email_hash`)");
         }
