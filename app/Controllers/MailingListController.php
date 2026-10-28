@@ -161,6 +161,78 @@ class MailingListController {
         exit;
     }
 
+    public function update(): void {
+        if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /mailinglists');
+            exit;
+        }
+
+        $userId = (int)$_SESSION['user_id'];
+        $listId = (int)($_POST['list_id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $requireConfirmation = isset($_POST['require_confirmation']) && $_POST['require_confirmation'] === '1';
+
+        $isPaid = isset($_POST['is_paid']) && $_POST['is_paid'] === '1';
+        $paymentGateway = $_POST['payment_gateway'] ?? 'stripe';
+        $paymentType = $_POST['payment_type'] ?? 'one_time';
+        $billingPeriod = $_POST['billing_period'] ?? 'monthly';
+        $price = (float)($_POST['price'] ?? 0.00);
+        $currency = trim($_POST['currency'] ?? 'EUR');
+
+        $creatorStripeId = trim($_POST['creator_stripe_account_id'] ?? '');
+        $creatorPaypalEmail = trim($_POST['creator_paypal_email'] ?? '');
+
+        if ($listId <= 0 || empty($name)) {
+            $_SESSION['error'] = "Invalid mailing list data or list name is empty.";
+            header('Location: /mailinglists');
+            exit;
+        }
+
+        $existingList = MailingList::getById($listId, $userId);
+        if (!$existingList) {
+            $_SESSION['error'] = "Mailing list not found or unauthorized.";
+            header('Location: /mailinglists');
+            exit;
+        }
+
+        if ($isPaid) {
+            if ($price <= 0) {
+                $_SESSION['error'] = "Price must be greater than zero for paid mailing lists.";
+                header('Location: /mailinglists');
+                exit;
+            }
+
+            if ($paymentGateway === 'stripe') {
+                if (empty($creatorStripeId) || !preg_match('/^acct_[a-zA-Z0-9]+$/', $creatorStripeId)) {
+                    $_SESSION['error'] = "Invalid Stripe Connected Account ID. It must start with 'acct_'.";
+                    header('Location: /mailinglists');
+                    exit;
+                }
+            }
+
+            if ($paymentGateway === 'paypal' && (empty($creatorPaypalEmail) || !filter_var($creatorPaypalEmail, FILTER_VALIDATE_EMAIL))) {
+                $_SESSION['error'] = "A valid PayPal Email address is required for paid mailing lists using PayPal.";
+                header('Location: /mailinglists');
+                exit;
+            }
+
+            $db = Database::getInstance();
+            if ($paymentGateway === 'stripe') {
+                $stmt = $db->prepare("UPDATE users SET creator_stripe_account_id = ? WHERE id = ?");
+                $stmt->execute([$creatorStripeId, $userId]);
+            } elseif ($paymentGateway === 'paypal') {
+                $stmt = $db->prepare("UPDATE users SET creator_paypal_email = ? WHERE id = ?");
+                $stmt->execute([$creatorPaypalEmail, $userId]);
+            }
+        }
+
+        MailingList::update($listId, $userId, $name, $requireConfirmation, $isPaid, $paymentGateway, $paymentType, $billingPeriod, $price, $currency);
+        $_SESSION['success'] = "Mailing list updated successfully!";
+
+        header('Location: /mailinglists');
+        exit;
+    }
+
     public function delete(): void {
         if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: /mailinglists');
