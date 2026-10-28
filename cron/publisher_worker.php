@@ -9,6 +9,8 @@ require_once BASE_PATH . 'app/Core/Config.php';
 require_once BASE_PATH . 'app/Core/Database.php';
 require_once BASE_PATH . 'app/Core/SocialPluginInterface.php';
 require_once BASE_PATH . 'app/Models/UsageManager.php';
+require_once BASE_PATH . 'app/Models/MailingList.php';
+require_once BASE_PATH . 'app/Core/Mailer.php';
 
 // Allow execution either via CLI or via internal PHP cron runner
 if (php_sapi_name() !== 'cli' && !defined('INTERNAL_CRON_EXEC')) {
@@ -21,10 +23,11 @@ echo "[START] Publisher Worker started at " . date('Y-m-d H:i:s') . "\n";
 
 $db = Database::getInstance();
 
+// Use LEFT JOIN to support posts with NULL social_account_id (Mailing List campaigns)
 $stmt = $db->prepare("
     SELECT p.*, s.plugin_id AS network_type, s.access_token, s.refresh_token, s.platform_user_id, s.platform_name
     FROM posts p
-    JOIN social_accounts s ON p.social_account_id = s.id
+    LEFT JOIN social_accounts s ON p.social_account_id = s.id
     WHERE p.status = 'scheduled' 
       AND p.scheduled_for <= NOW()
     ORDER BY p.scheduled_for ASC
@@ -41,10 +44,63 @@ if (empty($posts)) {
 echo "Found " . count($posts) . " posts to process.\n";
 
 foreach ($posts as $post) {
+
+    // 1. Handle Mailing List Post
+    if (empty($post['social_account_id']) && !empty($post['source_link']) && str_starts_with($post['source_link'], 'mailing_list:')) {
+        $listId = (int)str_replace('mailing_list:', '', $post['source_link']);
+        echo "Processing post ID [{$post['id']}] for Mailing List [{$listId}]\n";
+
+        try {
+            $subscribers = MailingList::getActiveSubscribers($listId);
+            $listInfo = MailingList::getById($listId, (int)$post['user_id']);
+
+            if (!empty($subscribers)) {
+                if (!UsageManager::canSendEmails((int)$post['user_id'], count($subscribers))) {
+                    $failStmt = $db->prepare("UPDATE posts SET status = 'failed', error_log = 'Email quota exceeded' WHERE id = ?");
+                    $failStmt->execute([$post['id']]);
+                    echo " - Error: Monthly email limit exceeded for user ID {$post['user_id']}.\n";
+                    continue;
+                }
+
+                $subject = ($listInfo ? $listInfo['name'] : 'Campaign Update');
+                $htmlBody = "<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>";
+                $htmlBody .= nl2br(htmlspecialchars($post['content']));
+                $htmlBody .= "</div>";
+
+                $sentCount = 0;
+                foreach ($subscribers as $subscriberEmail) {
+                    if (Mailer::send($subscriberEmail, $subject, $htmlBody)) {
+                        $sentCount++;
+                    }
+                }
+
+                if ($sentCount > 0) {
+                    UsageManager::incrementEmailUsage((int)$post['user_id'], $sentCount);
+                }
+            }
+
+            $doneStmt = $db->prepare("UPDATE posts SET status = 'published', published_at = NOW(), error_log = NULL WHERE id = ?");
+            $doneStmt->execute([$post['id']]);
+            echo " - Success: Post ID {$post['id']} sent to Mailing List #{$listId} successfully.\n";
+
+        } catch (Exception $e) {
+            $failStmt = $db->prepare("UPDATE posts SET status = 'failed', error_log = ? WHERE id = ?");
+            $failStmt->execute([$e->getMessage(), $post['id']]);
+            echo " - Exception: " . $e->getMessage() . "\n";
+        }
+
+        continue;
+    }
+
+    // 2. Handle Social Account Post
     echo "Processing post ID [{$post['id']}] for network plugin [{$post['network_type']}]\n";
 
     try {
-        $rawNetwork = strtolower(trim($post['network_type']));
+        $rawNetwork = strtolower(trim($post['network_type'] ?? ''));
+        if (empty($rawNetwork)) {
+            throw new Exception("Missing network plugin type for post ID {$post['id']}");
+        }
+
         $pascalNetwork = str_replace(' ', '', ucwords(str_replace(['_', '-'], ' ', $rawNetwork)));
         $pluginClassName = $pascalNetwork . 'Plugin';
         
