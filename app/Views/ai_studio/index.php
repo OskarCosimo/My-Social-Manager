@@ -139,7 +139,7 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                     <div class="card shadow-sm border-0 mb-4">
                         <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
                             <h5 class="fw-bold text-secondary mb-0">
-                                🎯 <?= __('ai_step2_title') ?? 'Step 2: Target Accounts' ?>
+                                🎯 <?= __('ai_step2_title') ?? 'Step 2: Target Accounts & Mailing Lists' ?>
                             </h5>
                         </div>
                         <div class="card-body p-4">
@@ -168,18 +168,8 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                 </div>
                             <?php endif; ?>
 
-                            <?php if (empty($accounts)): ?>
-                                <div class="alert alert-warning border-warning shadow-sm mb-0">
-                                    <p class="mb-2 small">
-                                        <strong><?= __('no_accounts_found') ?? 'No accounts found!' ?></strong><br>
-                                        <?= __('no_accounts_compose') ?? 'No social accounts connected. Please connect an account first.' ?>
-                                    </p>
-                                    <a href="/accounts" class="btn btn-sm btn-primary fw-bold d-inline-flex align-items-center gap-1">
-                                        <i class="bi bi-link-45deg"></i> <?= __('connect_now') ?? 'Connect Now' ?>
-                                    </a>
-                                </div>
-                            <?php else: ?>
-                                <div class="table-responsive bg-light border rounded p-2 shadow-sm">
+                            <?php if (!empty($accounts)): ?>
+                                <div class="table-responsive bg-light border rounded p-2 shadow-sm mb-3">
                                     <table class="table table-hover align-middle mb-0 dt-table w-100" id="ai-accounts-table">
                                         <thead class="table-light">
                                             <tr>
@@ -207,6 +197,30 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                     </table>
                                 </div>
                             <?php endif; ?>
+
+                            <?php if (!empty($mailingLists)): ?>
+                                <hr class="text-muted opacity-25">
+                                <div class="mt-3">
+                                    <label class="form-label fw-semibold text-secondary d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-envelope-paper"></i> <?= __('mailing_lists') ?>
+                                    </label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <?php foreach ($mailingLists as $list): ?>
+                                            <div class="form-check border rounded px-3 py-2 bg-white shadow-sm">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="target_mailing_lists[]" 
+                                                       value="<?= $list['id'] ?>" 
+                                                       id="ai_ml_<?= $list['id'] ?>">
+                                                <label class="form-check-label d-flex align-items-center gap-2" for="ai_ml_<?= $list['id'] ?>">
+                                                    <span class="badge bg-warning text-dark">Mailing List</span>
+                                                    <?= htmlspecialchars($list['name']) ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
                         </div>
                     </div>
                 </div>
@@ -257,7 +271,7 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                             </div>
 
                             <div class="d-grid border-top pt-4">
-                                <button type="submit" class="btn btn-success btn-lg fw-bold shadow d-inline-flex align-items-center justify-content-center gap-2" <?= (empty($accounts) || $aiCreditsBalance <= 0) ? 'disabled' : '' ?>>
+                                <button type="submit" class="btn btn-success btn-lg fw-bold shadow d-inline-flex align-items-center justify-content-center gap-2" <?= ((empty($accounts) && empty($mailingLists)) || $aiCreditsBalance <= 0) ? 'disabled' : '' ?>>
                                     <span>🚀</span> <?= __('start_ai_campaign_btn') ?? 'Start AI Campaign' ?>
                                 </button>
                                 <?php if ($aiCreditsBalance <= 0): ?>
@@ -304,7 +318,7 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                 <tr>
                                     <th>#</th>
                                     <th><?= __('instructions_prompt') ?? 'Prompt Instructions' ?></th>
-                                    <th><?= __('accounts') ?? 'Accounts' ?></th>
+                                    <th><?= __('accounts') ?? 'Accounts & Lists' ?></th>
                                     <th><?= __('rules_frequency') ?? 'Rules' ?></th>
                                     <th><?= __('posts_progress') ?? 'Progress & Scheduled' ?></th>
                                     <th><?= __('status') ?? 'Status' ?></th>
@@ -317,7 +331,8 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                     <?php
                                         $campSettings = $camp['schedule_settings'] ?? [];
                                         $accountsList = $camp['selected_accounts'] ?? [];
-                                        $statusClass = 'bg-secondary';
+                                        $mlsList      = $campSettings['target_mailing_lists'] ?? [];
+                                        $statusClass  = 'bg-secondary';
                                         if ($camp['status'] === 'active')    $statusClass = 'bg-success';
                                         if ($camp['status'] === 'paused')    $statusClass = 'bg-warning text-dark';
                                         if ($camp['status'] === 'completed') $statusClass = 'bg-info text-dark';
@@ -336,9 +351,16 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light text-dark border">
-                                                <i class="bi bi-share me-1 text-primary"></i> <?= count($accountsList) ?> <?= __('accounts') ?? 'Accounts' ?>
-                                            </span>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <span class="badge bg-light text-dark border">
+                                                    <i class="bi bi-share me-1 text-primary"></i> <?= count($accountsList) ?> <?= __('accounts') ?? 'Accounts' ?>
+                                                </span>
+                                                <?php if (!empty($mlsList)): ?>
+                                                    <span class="badge bg-warning text-dark border">
+                                                        <i class="bi bi-envelope-paper me-1"></i> <?= count($mlsList) ?> Lists
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                         <td class="small">
                                             <div><strong><?= (int)($campSettings['total_posts'] ?? 1) ?></strong> <?= __('total_posts_short') ?? 'posts' ?></div>
@@ -391,6 +413,7 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                                         data-start="<?= htmlspecialchars($campSettings['start_time'] ?? '09:00') ?>"
                                                         data-end="<?= htmlspecialchars($campSettings['end_time'] ?? '18:00') ?>"
                                                         data-unique="<?= !empty($campSettings['unique_posts']) ? '1' : '0' ?>"
+                                                        data-mailinglists="<?= htmlspecialchars(json_encode($mlsList), ENT_QUOTES, 'UTF-8') ?>"
                                                         title="<?= __('edit_campaign') ?? 'Edit Campaign' ?>">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
@@ -416,7 +439,7 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
     </main>
 </div>
 
-<!-- MODAL: BUY AI CREDITS (ONE-TIME TOP-UP VIA STRIPE OR PAYPAL) -->
+<!-- MODAL: BUY AI CREDITS -->
 <div class="modal fade" id="buyCreditsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow">
@@ -449,7 +472,6 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                     <label class="form-label fw-bold text-dark mb-2"><?= __('select_payment_method') ?? 'Choose Payment Method:' ?></label>
                     
                     <div class="d-flex gap-3">
-                        <!-- Stripe Option Form -->
                         <form action="/billing/buy-credits/stripe" method="POST" class="flex-grow-1" id="stripeCreditForm">
                             <input type="hidden" name="credits" id="stripe_credits_val" value="<?= (int)($aiPacks[0]['credits'] ?? 100) ?>">
                             <input type="hidden" name="price" id="stripe_price_val" value="<?= number_format((float)($aiPacks[0]['price'] ?? 5.00), 2, '.', '') ?>">
@@ -458,7 +480,6 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                             </button>
                         </form>
 
-                        <!-- PayPal Option Form -->
                         <form action="/billing/buy-credits/paypal" method="POST" class="flex-grow-1" id="paypalCreditForm">
                             <input type="hidden" name="credits" id="paypal_credits_val" value="<?= (int)($aiPacks[0]['credits'] ?? 100) ?>">
                             <input type="hidden" name="price" id="paypal_price_val" value="<?= number_format((float)($aiPacks[0]['price'] ?? 5.00), 2, '.', '') ?>">
@@ -514,7 +535,7 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                             <tr>
                                 <th style="width: 35px;" class="text-center">✓</th>
                                 <th style="width: 60px;">#</th>
-                                <th style="width: 150px;"><?= __('account') ?? 'Account' ?></th>
+                                <th style="width: 150px;"><?= __('account') ?? 'Destination' ?></th>
                                 <th style="width: 160px;"><?= __('scheduled_for') ?? 'Scheduled For' ?></th>
                                 <th><?= __('post_content') ?? 'Content' ?></th>
                                 <th style="width: 70px;" class="text-end"><?= __('actions') ?? 'Action' ?></th>
@@ -561,6 +582,28 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                             </label>
                         </div>
                     </div>
+
+                    <?php if (!empty($mailingLists)): ?>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-envelope-paper"></i> <?= __('mailing_lists') ?>
+                            </label>
+                            <div class="d-flex flex-wrap gap-2 border rounded p-2 bg-light">
+                                <?php foreach ($mailingLists as $list): ?>
+                                    <div class="form-check border rounded px-3 py-2 bg-white shadow-sm">
+                                        <input class="form-check-input edit-ml-chk" type="checkbox" 
+                                               name="target_mailing_lists[]" 
+                                               value="<?= $list['id'] ?>" 
+                                               id="edit_ai_ml_<?= $list['id'] ?>">
+                                        <label class="form-check-label d-flex align-items-center gap-2" for="edit_ai_ml_<?= $list['id'] ?>">
+                                            <span class="badge bg-warning text-dark">Mailing List</span>
+                                            <?= htmlspecialchars($list['name']) ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
@@ -654,6 +697,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_status').value      = this.dataset.status;
             document.getElementById('edit_unique_posts').checked = (this.dataset.unique === '1');
 
+            // Set mailing lists checkboxes in edit modal
+            const selectedMls = JSON.parse(this.dataset.mailinglists || '[]');
+            document.querySelectorAll('.edit-ml-chk').forEach(chk => {
+                chk.checked = selectedMls.includes(parseInt(chk.value));
+            });
+
             if (editModal) {
                 editModal.show();
             }
@@ -707,7 +756,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 let html = '';
                 data.posts.forEach(post => {
                     const cleanContent = post.content ? post.content.replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
-                    const platform = post.platform_name ? post.platform_name : (post.plugin_id ? post.plugin_id.toUpperCase() : 'Social');
+                    let platform = post.platform_name ? post.platform_name : (post.plugin_id ? post.plugin_id.toUpperCase() : 'Social');
+                    if (!post.platform_name && post.source_link && post.source_link.startsWith('mailing_list:')) {
+                        platform = '<span class="text-warning fw-bold">Mailing List</span>';
+                    }
 
                     html += `
                         <tr id="modal-post-row-${post.id}">
@@ -717,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td class="fw-bold">#${post.id}</td>
                             <td>
                                 <span class="badge bg-light text-dark border">
-                                    <i class="bi bi-share me-1 text-primary"></i> ${platform}
+                                    <i class="bi bi-send me-1 text-primary"></i> ${platform}
                                 </span>
                             </td>
                             <td class="small fw-semibold text-muted">
@@ -944,21 +996,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const form = $(this);
-        const checkedInputs = dt.$('input[name="accounts[]"]:checked');
-        
-        $('.dt-hidden-inputs').remove();
-        
-        checkedInputs.each(function() {
-            if (!$.contains(document, this)) {
-                form.append(
-                    $('<input>')
-                        .attr('type', 'hidden')
-                        .attr('name', 'accounts[]')
-                        .val($(this).val())
-                        .addClass('dt-hidden-inputs')
-                );
-            }
-        });
+        if (dt) {
+            const checkedInputs = dt.$('input[name="accounts[]"]:checked');
+            $('.dt-hidden-inputs').remove();
+            
+            checkedInputs.each(function() {
+                if (!$.contains(document, this)) {
+                    form.append(
+                        $('<input>')
+                            .attr('type', 'hidden')
+                            .attr('name', 'accounts[]')
+                            .val($(this).val())
+                            .addClass('dt-hidden-inputs')
+                    );
+                }
+            });
+        }
         
         localStorage.removeItem(storageKey);
     });
