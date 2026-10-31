@@ -11,6 +11,7 @@ require_once BASE_PATH . 'app/Core/SocialPluginInterface.php';
 require_once BASE_PATH . 'app/Models/UsageManager.php';
 require_once BASE_PATH . 'app/Models/MailingList.php';
 require_once BASE_PATH . 'app/Core/Mailer.php';
+require_once BASE_PATH . 'app/Services/MediaFallbackService.php';
 
 // Allow execution either via CLI or via internal PHP cron runner
 if (php_sapi_name() !== 'cli' && !defined('INTERNAL_CRON_EXEC')) {
@@ -137,6 +138,18 @@ foreach ($posts as $post) {
                 }
                 if (empty($mediaUrlsArray) && !empty($post['media_url'])) {
                     $mediaUrlsArray = [$post['media_url']];
+                }
+
+                // Automatic fallback for image-mandated networks (e.g. Instagram, Pinterest)
+                if (empty($mediaUrlsArray) && MediaFallbackService::isMediaRequired($rawNetwork)) {
+                    $fallbackMedia = MediaFallbackService::resolvePostMedia($post, $rawNetwork);
+                    if (!empty($fallbackMedia)) {
+                        $mediaUrlsArray = $fallbackMedia;
+                        // Persist fallback image into the posts record
+                        $updStmt = $db->prepare("UPDATE posts SET media_urls = ? WHERE id = ?");
+                        $updStmt->execute([json_encode($mediaUrlsArray), $post['id']]);
+                        echo " - Applied fallback media attachment for post #{$post['id']}: {$mediaUrlsArray[0]}\n";
+                    }
                 }
 
                 $cleanContent = $post['content'];
