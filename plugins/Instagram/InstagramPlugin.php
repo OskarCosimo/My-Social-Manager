@@ -35,6 +35,11 @@ class InstagramPlugin implements SocialPluginInterface {
                 'type' => 'password',
                 'label' => 'Facebook App Secret',
                 'placeholder' => 'Enter App Secret'
+            ],
+            'default_image' => [
+                'type' => 'text',
+                'label' => 'Default Fallback Image URL (for text-only posts)',
+                'placeholder' => 'https://example.com/default-instagram.jpg or /public/assets/...'
             ]
         ];
     }
