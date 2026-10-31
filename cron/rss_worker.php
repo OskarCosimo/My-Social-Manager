@@ -123,8 +123,29 @@ foreach ($feeds as $feed) {
             $link = trim((string)$item->id);
         }
 
+        // Extract media attachment from RSS enclosure or Media RSS namespace
+        $mediaUrl = null;
+        if (isset($item->enclosure) && isset($item->enclosure['url'])) {
+            $encType = (string)($item->enclosure['type'] ?? '');
+            if (empty($encType) || str_starts_with($encType, 'image/')) {
+                $mediaUrl = trim((string)$item->enclosure['url']);
+            }
+        }
+        if (!$mediaUrl) {
+            $mediaNs = $item->children('http://search.yahoo.com/mrss/');
+            if (isset($mediaNs->content) && isset($mediaNs->content->attributes()->url)) {
+                $mediaUrl = trim((string)$mediaNs->content->attributes()->url);
+            } elseif (isset($mediaNs->thumbnail) && isset($mediaNs->thumbnail->attributes()->url)) {
+                $mediaUrl = trim((string)$mediaNs->thumbnail->attributes()->url);
+            }
+        }
+
         if (!empty($title) && !empty($link)) {
-            $parsedItems[] = ['title' => $title, 'link' => $link];
+            $parsedItems[] = [
+                'title'     => $title, 
+                'link'      => $link,
+                'media_url' => $mediaUrl
+            ];
         }
     }
 
@@ -142,6 +163,7 @@ foreach ($feeds as $feed) {
         }
 
         $postContent = $item['title'] . "\n\n" . $item['link'];
+        $mediaUrlsJson = !empty($item['media_url']) ? json_encode([$item['media_url']]) : null;
         
         foreach ($targetAccounts as $target) {
             // Handle Mailing List Target
@@ -173,6 +195,9 @@ foreach ($feeds as $feed) {
                 $htmlBody = "<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>";
                 $htmlBody .= "<h2>" . htmlspecialchars($item['title']) . "</h2>";
                 $htmlBody .= "<p><a href='" . htmlspecialchars($item['link']) . "' target='_blank'>" . htmlspecialchars($item['link']) . "</a></p>";
+                if (!empty($item['media_url'])) {
+                    $htmlBody .= "<p><img src='" . htmlspecialchars($item['media_url']) . "' style='max-width: 100%; border-radius: 8px;' /></p>";
+                }
                 $htmlBody .= "</div>";
 
                 $sentCount = 0;
@@ -187,12 +212,13 @@ foreach ($feeds as $feed) {
 
                     // Track in posts table for deduplication and statistics
                     $trackStmt = $db->prepare("
-                        INSERT INTO posts (user_id, social_account_id, content, status, scheduled_for, scheduled_at, published_at, source_link, is_rss) 
-                        VALUES (?, NULL, ?, 'published', NOW(), NOW(), NOW(), ?, 1)
+                        INSERT INTO posts (user_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, published_at, source_link, is_rss) 
+                        VALUES (?, NULL, ?, ?, 'published', NOW(), NOW(), NOW(), ?, 1)
                     ");
                     $trackStmt->execute([
                         $feed['user_id'],
                         "[ML:{$listId}] " . $postContent,
+                        $mediaUrlsJson,
                         $item['link']
                     ]);
                     $addedPosts++;
@@ -213,13 +239,14 @@ foreach ($feeds as $feed) {
                 $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
 
                 $insertStmt = $db->prepare("
-                    INSERT INTO posts (user_id, social_account_id, content, status, scheduled_for, scheduled_at, source_link, is_rss) 
-                    VALUES (?, ?, ?, 'scheduled', ?, ?, ?, 1)
+                    INSERT INTO posts (user_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, source_link, is_rss) 
+                    VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?, 1)
                 ");
                 $insertStmt->execute([
                     $feed['user_id'], 
                     $accountId, 
-                    $postContent, 
+                    $postContent,
+                    $mediaUrlsJson,
                     $scheduledDate, 
                     $scheduledDate, 
                     $item['link']
