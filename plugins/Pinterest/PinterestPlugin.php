@@ -35,6 +35,11 @@ class PinterestPlugin implements SocialPluginInterface {
                 'type' => 'password',
                 'label' => 'Pinterest App Secret',
                 'placeholder' => 'Enter App Secret'
+            ],
+            'default_image' => [
+                'type' => 'text',
+                'label' => 'Default Fallback Image URL (for text-only posts)',
+                'placeholder' => 'https://example.com/default-pinterest.jpg or /public/assets/...'
             ]
         ];
     }
@@ -160,7 +165,7 @@ class PinterestPlugin implements SocialPluginInterface {
         ];
     }
 
-    public function publishPost(string $content, array $mediaUrls, string $accessToken): array {
+    public function publishPost(string $content, array $mediaUrls, string $accessToken, ?string $sourceLink = null): array {
         if (empty($mediaUrls)) {
             return ['success' => false, 'error' => 'Pinterest requires at least one image URL.'];
         }
@@ -169,14 +174,25 @@ class PinterestPlugin implements SocialPluginInterface {
         $boardsRes = $this->curlGet(self::API_BASE . '/boards', $accessToken);
         $boardId = $boardsRes['items'][0]['id'] ?? null;
 
+        if (!$boardId) {
+            return ['success' => false, 'error' => 'No Pinterest board found for this account.'];
+        }
+
+        $plainDescription = trim(html_entity_decode(strip_tags($content)));
+
         $data = [
             'board_id' => $boardId,
             'media_source' => [
                 'source_type' => 'image_url',
                 'url' => $mediaUrls[0]
             ],
-            'description' => $content
+            'description' => $plainDescription
         ];
+
+        // Attach outbound link to the Pinterest Pin if provided
+        if (!empty($sourceLink)) {
+            $data['link'] = $sourceLink;
+        }
 
         $ch = curl_init(self::API_BASE . '/pins');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
