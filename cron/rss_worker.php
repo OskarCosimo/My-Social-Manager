@@ -142,6 +142,26 @@ foreach ($feeds as $feed) {
             continue;
         }
 
+        // Extract feed description / summary / content
+        $description = '';
+        if (isset($item->description)) {
+            $description = (string)$item->description;
+        } elseif (isset($item->summary)) {
+            $description = (string)$item->summary;
+        }
+
+        // Look up content:encoded namespace if available and description is empty
+        if (empty($description)) {
+            $contentNs = $item->children('http://purl.org/rss/1.0/modules/content/');
+            if (isset($contentNs->encoded)) {
+                $description = (string)$contentNs->encoded;
+            }
+        }
+
+        // Clean description for social networks and plain text fallback
+        $cleanDescription = html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $cleanDescription = preg_replace('/\s+/', ' ', trim($cleanDescription));
+
         // Extract media attachment from RSS enclosure or Media RSS namespace
         $mediaUrl = null;
         if (isset($item->enclosure) && isset($item->enclosure['url'])) {
@@ -161,10 +181,11 @@ foreach ($feeds as $feed) {
 
         if (!empty($title) && !empty($link)) {
             $parsedItems[] = [
-                'title'     => $title, 
-                'link'      => $link,
-                'media_url' => $mediaUrl,
-                'pub_date'  => $itemPubDate
+                'title'       => $title, 
+                'link'        => $link,
+                'description' => $cleanDescription,
+                'media_url'   => $mediaUrl,
+                'pub_date'    => $itemPubDate
             ];
         }
     }
@@ -188,12 +209,22 @@ foreach ($feeds as $feed) {
             break;
         }
 
-        $postContent = $item['title'] . "\n\n" . $item['link'];
+        // Build social post content (including description snippet if present)
+        $descSnippet = !empty($item['description']) ? mb_substr($item['description'], 0, 300) . (mb_strlen($item['description']) > 300 ? '...' : '') . "\n\n" : '';
+        $socialPostContent = $item['title'] . "\n\n" . $descSnippet . $item['link'];
+
+        // Build rich email payload stored as structured JSON for mailing lists
+        $mailingListPayload = json_encode([
+            'title'       => $item['title'],
+            'description' => $item['description'],
+            'link'        => $item['link']
+        ], JSON_UNESCAPED_UNICODE);
+
         $mediaUrlsJson = !empty($item['media_url']) ? json_encode([$item['media_url']]) : null;
         $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
 
         foreach ($targetAccounts as $target) {
-            // Handle Mailing List Target: schedule via publisher_worker instead of instant sending
+            // Handle Mailing List Target
             if (is_string($target) && str_starts_with($target, 'ml_')) {
                 $listId = (int)substr($target, 3);
                 $mlSourceIdentifier = "mailing_list:{$listId}";
@@ -205,12 +236,13 @@ foreach ($feeds as $feed) {
                         WHERE user_id = ? 
                           AND source_link = ? 
                           AND is_rss = 1 
-                          AND content LIKE ?
+                          AND (content LIKE ? OR content LIKE ?)
                     ");
                     $chkStmt->execute([
                         $feed['user_id'], 
                         $mlSourceIdentifier, 
-                        "%" . $item['link'] . "%"
+                        "%" . $item['link'] . "%",
+                        "%" . addcslashes($item['link'], '/') . "%"
                     ]);
                     if ($chkStmt->fetch()) {
                         continue;
@@ -223,7 +255,7 @@ foreach ($feeds as $feed) {
                 ");
                 $insertStmt->execute([
                     $feed['user_id'],
-                    $postContent,
+                    $mailingListPayload,
                     $mediaUrlsJson,
                     $scheduledDate,
                     $scheduledDate,
@@ -251,7 +283,7 @@ foreach ($feeds as $feed) {
                 $insertStmt->execute([
                     $feed['user_id'], 
                     $accountId, 
-                    $postContent,
+                    $socialPostContent,
                     $mediaUrlsJson,
                     $scheduledDate, 
                     $scheduledDate, 
