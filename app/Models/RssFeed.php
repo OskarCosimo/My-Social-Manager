@@ -1,5 +1,5 @@
-<?php
 // app/Models/RssFeed.php
+<?php
 
 require_once __DIR__ . '/../Core/Database.php';
 
@@ -18,6 +18,10 @@ class RssFeed {
         int $randomRepostLimit = 10
     ): bool {
         $db = Database::getInstance();
+        
+        // If "only new items" is selected, initialize last_checked to NOW() so existing items are ignored
+        $lastChecked = ($onlyNewItems === 1) ? date('Y-m-d H:i:s') : null;
+
         $stmt = $db->prepare("
             INSERT INTO rss_feeds (
                 user_id, 
@@ -26,8 +30,9 @@ class RssFeed {
                 post_interval_hours, 
                 only_new_items, 
                 random_repost_enabled, 
-                random_repost_limit
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                random_repost_limit,
+                last_checked
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
         return $stmt->execute([
             $userId, 
@@ -36,7 +41,8 @@ class RssFeed {
             $intervalHours, 
             $onlyNewItems, 
             $randomRepostEnabled, 
-            $randomRepostLimit
+            $randomRepostLimit,
+            $lastChecked
         ]);
     }
 
@@ -54,16 +60,33 @@ class RssFeed {
         int $randomRepostLimit
     ): bool {
         $db = Database::getInstance();
-        $stmt = $db->prepare("
-            UPDATE rss_feeds 
-            SET feed_url = ?, 
-                target_accounts = ?, 
-                post_interval_hours = ?, 
-                only_new_items = ?, 
-                random_repost_enabled = ?, 
-                random_repost_limit = ? 
-            WHERE id = ? AND user_id = ?
-        ");
+
+        // If only_new_items is toggled on, update last_checked to NOW() to prevent past items blast
+        if ($onlyNewItems === 1) {
+            $stmt = $db->prepare("
+                UPDATE rss_feeds 
+                SET feed_url = ?, 
+                    target_accounts = ?, 
+                    post_interval_hours = ?, 
+                    only_new_items = ?, 
+                    random_repost_enabled = ?, 
+                    random_repost_limit = ?,
+                    last_checked = NOW()
+                WHERE id = ? AND user_id = ?
+            ");
+        } else {
+            $stmt = $db->prepare("
+                UPDATE rss_feeds 
+                SET feed_url = ?, 
+                    target_accounts = ?, 
+                    post_interval_hours = ?, 
+                    only_new_items = ?, 
+                    random_repost_enabled = ?, 
+                    random_repost_limit = ?
+                WHERE id = ? AND user_id = ?
+            ");
+        }
+
         return $stmt->execute([
             $url, 
             json_encode($targetAccounts), 
