@@ -1,5 +1,5 @@
-<?php
 // cron/rss_worker.php
+<?php
 
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__) . '/');
@@ -55,7 +55,10 @@ foreach ($feeds as $feed) {
     }
 
     $xmlContext = stream_context_create([
-        'http' => ['timeout' => 15, 'user_agent' => 'MySocialManager/1.0']
+        'http' => [
+            'timeout'    => 15, 
+            'user_agent' => 'Mozilla/5.0 (compatible; MySocialManager/1.0; +https://myetv.tv)'
+        ]
     ]);
     
     $rssData = @file_get_contents($feed['feed_url'], false, $xmlContext);
@@ -98,19 +101,22 @@ foreach ($feeds as $feed) {
     $randomRepostEnabled = !empty($feed['random_repost_enabled']);
     $randomRepostLimit   = max(10, (int)($feed['random_repost_limit'] ?? 10));
     $isFirstCheck        = empty($feed['last_checked']);
+    $lastCheckedTs       = !empty($feed['last_checked']) ? strtotime($feed['last_checked']) : 0;
 
-    $addedPosts = 0;
-    $currentPublishTime = time();
-
+    // If "only new items" is active on absolute first check, skip and initialize timestamp
     if ($onlyNewItems && $isFirstCheck) {
-        echo " - 'Only new items' active on first check. Ignoring current items.\n";
+        echo " - 'Only new items' active on first check. Ignoring current items and initializing check timestamp.\n";
         RssFeed::updateLastChecked($feed['id']);
         continue;
     }
 
+    $addedPosts = 0;
+    $currentPublishTime = time();
+
     $parsedItems = [];
     foreach ($rawItems as $item) {
-        $title = isset($item->title) ? trim((string)$item->title) : '';
+        // Clean title entities and encoding
+        $title = isset($item->title) ? html_entity_decode(trim((string)$item->title), ENT_QUOTES | ENT_HTML5, 'UTF-8') : '';
         $link = '';
         if (isset($item->link)) {
             if (isset($item->link['href'])) {
@@ -121,6 +127,19 @@ foreach ($feeds as $feed) {
         }
         if (empty($link) && isset($item->id)) {
             $link = trim((string)$item->id);
+        }
+
+        // Parse pubDate / updated timestamp
+        $itemPubDate = null;
+        if (isset($item->pubDate)) {
+            $itemPubDate = strtotime((string)$item->pubDate);
+        } elseif (isset($item->updated)) {
+            $itemPubDate = strtotime((string)$item->updated);
+        }
+
+        // Filter out old items if onlyNewItems is active
+        if ($onlyNewItems && $lastCheckedTs > 0 && $itemPubDate && $itemPubDate <= $lastCheckedTs) {
+            continue;
         }
 
         // Extract media attachment from RSS enclosure or Media RSS namespace
@@ -144,9 +163,16 @@ foreach ($feeds as $feed) {
             $parsedItems[] = [
                 'title'     => $title, 
                 'link'      => $link,
-                'media_url' => $mediaUrl
+                'media_url' => $mediaUrl,
+                'pub_date'  => $itemPubDate
             ];
         }
+    }
+
+    if (empty($parsedItems)) {
+        echo " - No qualifying items to publish.\n";
+        RssFeed::updateLastChecked($feed['id']);
+        continue;
     }
 
     $itemsToProcess = $parsedItems;
@@ -164,65 +190,47 @@ foreach ($feeds as $feed) {
 
         $postContent = $item['title'] . "\n\n" . $item['link'];
         $mediaUrlsJson = !empty($item['media_url']) ? json_encode([$item['media_url']]) : null;
-        
+        $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
+
         foreach ($targetAccounts as $target) {
-            // Handle Mailing List Target
+            // Handle Mailing List Target: schedule via publisher_worker instead of instant sending
             if (is_string($target) && str_starts_with($target, 'ml_')) {
                 $listId = (int)substr($target, 3);
+                $mlSourceIdentifier = "mailing_list:{$listId}";
 
                 // Duplicate check for mailing list
                 if (!$randomRepostEnabled) {
-                    $chkStmt = $db->prepare("SELECT id FROM posts WHERE user_id = ? AND source_link = ? AND is_rss = 1 AND content LIKE ?");
-                    $chkStmt->execute([$feed['user_id'], $item['link'], "%[ML:{$listId}]%"]);
+                    $chkStmt = $db->prepare("
+                        SELECT id FROM posts 
+                        WHERE user_id = ? 
+                          AND source_link = ? 
+                          AND is_rss = 1 
+                          AND content LIKE ?
+                    ");
+                    $chkStmt->execute([
+                        $feed['user_id'], 
+                        $mlSourceIdentifier, 
+                        "%" . $item['link'] . "%"
+                    ]);
                     if ($chkStmt->fetch()) {
                         continue;
                     }
                 }
 
-                $subscribers = MailingList::getActiveSubscribers($listId);
-                $listInfo = MailingList::getById($listId, (int)$feed['user_id']);
+                $insertStmt = $db->prepare("
+                    INSERT INTO posts (user_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, source_link, is_rss) 
+                    VALUES (?, NULL, ?, ?, 'scheduled', ?, ?, ?, 1)
+                ");
+                $insertStmt->execute([
+                    $feed['user_id'],
+                    $postContent,
+                    $mediaUrlsJson,
+                    $scheduledDate,
+                    $scheduledDate,
+                    $mlSourceIdentifier
+                ]);
 
-                if (empty($subscribers)) {
-                    continue;
-                }
-
-                if (!UsageManager::canSendEmails((int)$feed['user_id'], count($subscribers))) {
-                    echo " - Warning: Not enough email quota for user {$feed['user_id']} to send to list #{$listId}.\n";
-                    continue;
-                }
-
-                $subject = ($listInfo ? $listInfo['name'] : 'RSS Update') . ': ' . $item['title'];
-                $htmlBody = "<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>";
-                $htmlBody .= "<h2>" . htmlspecialchars($item['title']) . "</h2>";
-                $htmlBody .= "<p><a href='" . htmlspecialchars($item['link']) . "' target='_blank'>" . htmlspecialchars($item['link']) . "</a></p>";
-                if (!empty($item['media_url'])) {
-                    $htmlBody .= "<p><img src='" . htmlspecialchars($item['media_url']) . "' style='max-width: 100%; border-radius: 8px;' /></p>";
-                }
-                $htmlBody .= "</div>";
-
-                $sentCount = 0;
-                foreach ($subscribers as $subscriberEmail) {
-                    if (Mailer::send($subscriberEmail, $subject, $htmlBody)) {
-                        $sentCount++;
-                    }
-                }
-
-                if ($sentCount > 0) {
-                    UsageManager::incrementEmailUsage((int)$feed['user_id'], $sentCount);
-
-                    // Track in posts table for deduplication and statistics
-                    $trackStmt = $db->prepare("
-                        INSERT INTO posts (user_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, published_at, source_link, is_rss) 
-                        VALUES (?, NULL, ?, ?, 'published', NOW(), NOW(), NOW(), ?, 1)
-                    ");
-                    $trackStmt->execute([
-                        $feed['user_id'],
-                        "[ML:{$listId}] " . $postContent,
-                        $mediaUrlsJson,
-                        $item['link']
-                    ]);
-                    $addedPosts++;
-                }
+                $addedPosts++;
 
             } else {
                 // Handle Social Account Target
@@ -235,8 +243,6 @@ foreach ($feeds as $feed) {
                         continue;
                     }
                 }
-
-                $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
 
                 $insertStmt = $db->prepare("
                     INSERT INTO posts (user_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, source_link, is_rss) 
@@ -256,6 +262,7 @@ foreach ($feeds as $feed) {
             }
         }
 
+        // Advance schedule time for the next item based on feed interval
         $currentPublishTime += ($intervalHours * 3600);
     }
 
