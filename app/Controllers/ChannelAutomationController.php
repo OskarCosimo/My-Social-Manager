@@ -15,11 +15,11 @@ class ChannelAutomationController {
         'instagram', 
         'linkedin_pages', 
         'tumblr', 
-        'wordpress',
-        'twitch',
-        'medium',
-        'myetv',
-        'threads',
+        'wordpress', 
+        'twitch', 
+        'medium', 
+        'myetv', 
+        'threads', 
         'devto'
     ];
 
@@ -65,6 +65,9 @@ class ChannelAutomationController {
         $randomRepostEnabled = isset($_POST['random_repost_enabled']) ? 1 : 0;
         $randomRepostLimit   = max(10, min(100, (int)($_POST['random_repost_limit'] ?? 10)));
 
+        $filterKeywords      = !empty($_POST['filter_keywords']) ? trim($_POST['filter_keywords']) : null;
+        $filterPlaylistId    = !empty($_POST['filter_playlist_id']) ? $this->resolveYoutubePlaylistId($_POST['filter_playlist_id']) : null;
+
         $sourceAccountId = null;
         $sourceIdentifier = null;
         $sourceTitle = '';
@@ -105,7 +108,7 @@ class ChannelAutomationController {
             $sourceTitle = ucfirst(str_replace('_', ' ', $account['plugin_id'])) . " - " . $account['platform_name'];
             $sourceIdentifier = (string)$account['platform_user_id'];
 
-            // ANTI-LOOP: Filter out the source account from the target accounts list
+            // ANTI-LOOP: Filter out the source account from target accounts
             $targetAccounts = array_filter($targetAccounts, function($id) use ($sourceAccountId) {
                 return (int)$id !== $sourceAccountId;
             });
@@ -127,10 +130,12 @@ class ChannelAutomationController {
             $intervalHours,
             $onlyNewItems,
             $randomRepostEnabled,
-            $randomRepostLimit
+            $randomRepostLimit,
+            $filterKeywords,
+            $filterPlaylistId
         );
 
-        $_SESSION['success'] = "Channel automation added successfully! Anti-loop guards are active.";
+        $_SESSION['success'] = "Channel automation added successfully! Anti-loop guards and filters are active.";
         header('Location: /channel-automations');
         exit;
     }
@@ -146,6 +151,9 @@ class ChannelAutomationController {
         $onlyNewItems        = isset($_POST['only_new_items']) ? 1 : 0;
         $randomRepostEnabled = isset($_POST['random_repost_enabled']) ? 1 : 0;
         $randomRepostLimit   = max(10, min(100, (int)($_POST['random_repost_limit'] ?? 10)));
+
+        $filterKeywords      = !empty($_POST['filter_keywords']) ? trim($_POST['filter_keywords']) : null;
+        $filterPlaylistId    = !empty($_POST['filter_playlist_id']) ? $this->resolveYoutubePlaylistId($_POST['filter_playlist_id']) : null;
 
         $existing = ChannelAutomation::getById($id, $userId);
         if (!$existing) {
@@ -174,7 +182,9 @@ class ChannelAutomationController {
             $intervalHours,
             $onlyNewItems,
             $randomRepostEnabled,
-            $randomRepostLimit
+            $randomRepostLimit,
+            $filterKeywords,
+            $filterPlaylistId
         );
 
         $_SESSION['success'] = "Channel automation updated successfully.";
@@ -196,6 +206,28 @@ class ChannelAutomationController {
 
         header('Location: /channel-automations');
         exit;
+    }
+
+    /**
+     * Resolve YouTube Playlist ID from a URL or raw ID
+     */
+    private function resolveYoutubePlaylistId(string $input): ?string {
+        $input = trim($input);
+        if (empty($input)) {
+            return null;
+        }
+
+        // Match playlist parameter in URL: list=PL... or list=UU...
+        if (preg_match('/[?&]list=([a-zA-Z0-9_-]+)/i', $input, $matches)) {
+            return $matches[1];
+        }
+
+        // Direct ID match (typically starts with PL, UU, FL, RD, OLAK)
+        if (preg_match('/^[a-zA-Z0-9_-]{10,}$/', $input)) {
+            return $input;
+        }
+
+        return $input;
     }
 
     /**
@@ -233,32 +265,27 @@ class ChannelAutomationController {
             'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language: en-US,en;q=0.9',
-            'Cookie: SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg;' // Bypasses Google European Cookie Consent screen
+            'Cookie: SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg;'
         ]);
         
         $html = curl_exec($ch);
         $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);
 
-        // Check if redirect ended directly on a /channel/UC... URL
         if ($finalUrl && preg_match('/(?:youtube\.com\/channel\/)(UC[a-zA-Z0-9_-]{22})/i', $finalUrl, $m)) {
             return $m[1];
         }
 
         if (!empty($html)) {
-            // Pattern A: Canonical link tag
             if (preg_match('/<link\s+rel="canonical"\s+href="https:\/\/www\.youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})"/i', $html, $m)) {
                 return $m[1];
             }
-            // Pattern B: Meta itemprop channelId or identifier
             if (preg_match('/<meta\s+itemprop="(?:channelId|identifier)"\s+content="(UC[a-zA-Z0-9_-]{22})"/i', $html, $m)) {
                 return $m[1];
             }
-            // Pattern C: JSON attributes (browseId, externalId, channelId)
             if (preg_match('/"(?:browseId|externalId|channelId)":"(UC[a-zA-Z0-9_-]{22})"/i', $html, $m)) {
                 return $m[1];
             }
-            // Pattern D: Any /channel/UC reference
             if (preg_match('/\/channel\/(UC[a-zA-Z0-9_-]{22})["\/]/i', $html, $m)) {
                 return $m[1];
             }
