@@ -160,7 +160,7 @@ require_once __DIR__ . '/../partials/header.php';
                                     <label class="form-label fw-bold text-dark"><?= __('select_source_account') ?? 'Select Source Account to Monitor' ?></label>
                                     <select name="source_account_id" id="source_account_id" class="form-select form-select-lg shadow-sm border-secondary-subtle" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
                                         <?php if (empty($sourceAccounts)): ?>
-                                            <option value=""><?= __('no_accounts_available') ?? 'No compatible accounts connected' ?></option>
+                                            <option value="" data-plugin=""><?= __('no_accounts_available') ?? 'No compatible accounts connected' ?></option>
                                         <?php else: ?>
                                             <?php foreach ($sourceAccounts as $acc): ?>
                                                 <option value="<?= (int)$acc['id'] ?>" data-plugin="<?= htmlspecialchars($acc['plugin_id']) ?>">
@@ -195,8 +195,8 @@ require_once __DIR__ . '/../partials/header.php';
                                     </select>
                                 </div>
 
-                                <!-- Filter Keywords / Tags -->
-                                <div class="col-md-4">
+                                <!-- Filter Keywords / Tags (Available for all sources) -->
+                                <div class="col-md-4" id="keywords_wrapper">
                                     <label for="filter_keywords" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-funnel"></i> <?= __('filter_keywords_label') ?? 'Filter Words or Tags (Optional)' ?>
                                     </label>
@@ -204,8 +204,8 @@ require_once __DIR__ . '/../partials/header.php';
                                     <small class="text-muted"><?= __('filter_keywords_hint') ?? 'Comma-separated. Broadcasts only posts matching at least one keyword/tag.' ?></small>
                                 </div>
 
-                                <!-- YouTube Playlist ID Filter (Only active/visible for YouTube) -->
-                                <div class="col-md-4" id="playlist_wrapper">
+                                <!-- YouTube Playlist ID Filter (Strictly visible only for YouTube) -->
+                                <div class="col-md-4 d-none" id="playlist_wrapper">
                                     <label for="filter_playlist_id" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist (Optional)' ?>
                                     </label>
@@ -345,6 +345,9 @@ require_once __DIR__ . '/../partials/header.php';
                             </thead>
                             <tbody>
                                 <?php foreach ($automations as $auto): ?>
+                                    <?php 
+                                        $isAutoYoutube = ($auto['source_type'] === 'youtube_url' || ($auto['source_plugin_id'] ?? '') === 'youtube');
+                                    ?>
                                     <tr>
                                         <td>
                                             <span class="fw-bold text-dark d-block">
@@ -471,22 +474,25 @@ require_once __DIR__ . '/../partials/header.php';
                                                             </select>
                                                         </div>
 
-                                                        <!-- Content Filters (Keywords & Playlist) -->
+                                                        <!-- Content Filters (Keywords & YouTube Playlist) -->
                                                         <div class="row g-2 mb-3">
-                                                            <div class="col-md-6">
+                                                            <div class="<?= $isAutoYoutube ? 'col-md-6' : 'col-12' ?>">
                                                                 <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
                                                                     <i class="bi bi-funnel"></i> <?= __('filter_keywords_label') ?? 'Filter Words or Tags' ?>
                                                                 </label>
                                                                 <input type="text" name="filter_keywords" class="form-control" value="<?= htmlspecialchars($auto['filter_keywords'] ?? '') ?>" placeholder="e.g. podcast, update, #promo">
                                                                 <small class="text-muted"><?= __('filter_keywords_hint') ?? 'Comma-separated. Leave empty to allow all.' ?></small>
                                                             </div>
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
-                                                                    <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist ID' ?>
-                                                                </label>
-                                                                <input type="text" name="filter_playlist_id" class="form-control" value="<?= htmlspecialchars($auto['filter_playlist_id'] ?? '') ?>" placeholder="https://www.youtube.com/playlist?list=PL... or PL ID">
-                                                                <small class="text-muted"><?= __('youtube_playlist_hint') ?? 'Import only from this specific playlist.' ?></small>
-                                                            </div>
+                                                            
+                                                            <?php if ($isAutoYoutube): ?>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                        <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist (Optional)' ?>
+                                                                    </label>
+                                                                    <input type="text" name="filter_playlist_id" class="form-control" value="<?= htmlspecialchars($auto['filter_playlist_id'] ?? '') ?>" placeholder="https://www.youtube.com/playlist?list=PL... or PL ID">
+                                                                    <small class="text-muted"><?= __('youtube_playlist_hint') ?? 'Import only from this specific playlist.' ?></small>
+                                                                </div>
+                                                            <?php endif; ?>
                                                         </div>
 
                                                         <!-- Automation Rules -->
@@ -572,6 +578,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const sourceTypeSelect = document.getElementById('source_type_select');
     const sourceAccountWrapper = document.getElementById('source_account_wrapper');
     const youtubeUrlWrapper = document.getElementById('youtube_url_wrapper');
+    const sourceAccountId = document.getElementById('source_account_id');
+    const playlistWrapper = document.getElementById('playlist_wrapper');
+
+    /**
+     * Updates visibility of YouTube playlist input based on current source platform
+     */
+    function updatePlaylistVisibility() {
+        if (!playlistWrapper) return;
+
+        let isYoutube = false;
+        if (sourceTypeSelect && sourceTypeSelect.value === 'youtube_url') {
+            isYoutube = true;
+        } else if (sourceAccountId && sourceAccountId.selectedOptions.length > 0) {
+            const plugin = sourceAccountId.selectedOptions[0].getAttribute('data-plugin');
+            if (plugin === 'youtube') {
+                isYoutube = true;
+            }
+        }
+
+        if (isYoutube) {
+            playlistWrapper.classList.remove('d-none');
+        } else {
+            playlistWrapper.classList.add('d-none');
+            const playlistInput = document.getElementById('filter_playlist_id');
+            if (playlistInput) playlistInput.value = '';
+        }
+    }
 
     if (sourceTypeSelect) {
         sourceTypeSelect.addEventListener('change', function() {
@@ -582,8 +615,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 sourceAccountWrapper.classList.remove('d-none');
                 youtubeUrlWrapper.classList.add('d-none');
             }
+            updatePlaylistVisibility();
         });
     }
+
+    if (sourceAccountId) {
+        sourceAccountId.addEventListener('change', updatePlaylistVisibility);
+    }
+
+    // Run initial check on page load
+    updatePlaylistVisibility();
 
     const groupSelect = document.getElementById('group-select');
     if (groupSelect) {
