@@ -163,7 +163,7 @@ require_once __DIR__ . '/../partials/header.php';
                                             <option value=""><?= __('no_accounts_available') ?? 'No compatible accounts connected' ?></option>
                                         <?php else: ?>
                                             <?php foreach ($sourceAccounts as $acc): ?>
-                                                <option value="<?= (int)$acc['id'] ?>">
+                                                <option value="<?= (int)$acc['id'] ?>" data-plugin="<?= htmlspecialchars($acc['plugin_id']) ?>">
                                                     <?= htmlspecialchars($acc['platform_name']) ?> (<?= htmlspecialchars(ucfirst(str_replace('_', ' ', $acc['plugin_id']))) ?>)
                                                 </option>
                                             <?php endforeach; ?>
@@ -180,6 +180,7 @@ require_once __DIR__ . '/../partials/header.php';
                                 </div>
                             </div>
 
+                            <!-- Interval & Content Filters Box -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-4">
                                     <label for="post_interval_hours" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
@@ -192,6 +193,24 @@ require_once __DIR__ . '/../partials/header.php';
                                             </option>
                                         <?php endfor; ?>
                                     </select>
+                                </div>
+
+                                <!-- Filter Keywords / Tags -->
+                                <div class="col-md-4">
+                                    <label for="filter_keywords" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-funnel"></i> <?= __('filter_keywords_label') ?? 'Filter Words or Tags (Optional)' ?>
+                                    </label>
+                                    <input type="text" name="filter_keywords" id="filter_keywords" class="form-control shadow-sm border-secondary-subtle" placeholder="e.g. podcast, update, #promo" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <small class="text-muted"><?= __('filter_keywords_hint') ?? 'Comma-separated. Broadcasts only posts matching at least one keyword/tag.' ?></small>
+                                </div>
+
+                                <!-- YouTube Playlist ID Filter (Only active/visible for YouTube) -->
+                                <div class="col-md-4" id="playlist_wrapper">
+                                    <label for="filter_playlist_id" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist (Optional)' ?>
+                                    </label>
+                                    <input type="text" name="filter_playlist_id" id="filter_playlist_id" class="form-control shadow-sm border-secondary-subtle" placeholder="https://www.youtube.com/playlist?list=PL... or PL ID" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <small class="text-muted"><?= __('youtube_playlist_hint') ?? 'Only import videos from this specific YouTube playlist.' ?></small>
                                 </div>
                             </div>
 
@@ -318,8 +337,8 @@ require_once __DIR__ . '/../partials/header.php';
                             <thead class="table-light">
                                 <tr>
                                     <th style="width: 25%;"><?= __('monitored_source_header') ?? 'Monitored Source' ?></th>
-                                    <th style="width: 20%;"><?= __('interval_rules_header') ?? 'Interval & Rules' ?></th>
-                                    <th style="width: 35%;"><?= __('target_accounts_header') ?? 'Target Accounts' ?></th>
+                                    <th style="width: 25%;"><?= __('interval_rules_header') ?? 'Interval & Rules' ?></th>
+                                    <th style="width: 30%;"><?= __('target_accounts_header') ?? 'Target Accounts' ?></th>
                                     <th style="width: 10%;"><?= __('last_checked_header') ?? 'Last Checked' ?></th>
                                     <th class="text-end" style="width: 10%;"><?= __('actions') ?? 'Actions' ?></th>
                                 </tr>
@@ -334,12 +353,19 @@ require_once __DIR__ . '/../partials/header.php';
                                             <span class="badge bg-secondary text-uppercase" style="font-size: 0.7em;">
                                                 <?= htmlspecialchars($auto['source_type'] === 'youtube_url' ? (__('youtube_public') ?? 'YouTube Public') : str_replace('_', ' ', $auto['source_plugin_id'] ?? 'Social')) ?>
                                             </span>
+                                            
+                                            <!-- Optional Playlist Badge -->
+                                            <?php if (!empty($auto['filter_playlist_id'])): ?>
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle d-inline-block mt-1" style="font-size: 0.7em;">
+                                                    <i class="bi bi-collection-play me-1"></i>PL: <?= htmlspecialchars($auto['filter_playlist_id']) ?>
+                                                </span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle fw-bold mb-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-clock"></i> <?= str_replace('{count}', (int)$auto['post_interval_hours'], __('every_hours_badge') ?? "Every " . (int)$auto['post_interval_hours'] . "h") ?>
                                             </span>
-                                            <div>
+                                            <div class="mb-1">
                                                 <?php if (!empty($auto['only_new_items'])): ?>
                                                     <span class="badge bg-success text-white"><?= __('only_new_badge') ?? 'Only New' ?></span>
                                                 <?php endif; ?>
@@ -347,6 +373,15 @@ require_once __DIR__ . '/../partials/header.php';
                                                     <span class="badge bg-warning text-dark"><?= __('repost') ?? 'Repost' ?></span>
                                                 <?php endif; ?>
                                             </div>
+
+                                            <!-- Keyword Filter Badge -->
+                                            <?php if (!empty($auto['filter_keywords'])): ?>
+                                                <div class="mt-1">
+                                                    <span class="badge bg-info text-dark" title="<?= htmlspecialchars($auto['filter_keywords']) ?>">
+                                                        <i class="bi bi-funnel"></i> <?= htmlspecialchars(mb_strimwidth($auto['filter_keywords'], 0, 25, '...')) ?>
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <div class="d-flex flex-wrap gap-1">
@@ -436,6 +471,24 @@ require_once __DIR__ . '/../partials/header.php';
                                                             </select>
                                                         </div>
 
+                                                        <!-- Content Filters (Keywords & Playlist) -->
+                                                        <div class="row g-2 mb-3">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                    <i class="bi bi-funnel"></i> <?= __('filter_keywords_label') ?? 'Filter Words or Tags' ?>
+                                                                </label>
+                                                                <input type="text" name="filter_keywords" class="form-control" value="<?= htmlspecialchars($auto['filter_keywords'] ?? '') ?>" placeholder="e.g. podcast, update, #promo">
+                                                                <small class="text-muted"><?= __('filter_keywords_hint') ?? 'Comma-separated. Leave empty to allow all.' ?></small>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                    <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist ID' ?>
+                                                                </label>
+                                                                <input type="text" name="filter_playlist_id" class="form-control" value="<?= htmlspecialchars($auto['filter_playlist_id'] ?? '') ?>" placeholder="https://www.youtube.com/playlist?list=PL... or PL ID">
+                                                                <small class="text-muted"><?= __('youtube_playlist_hint') ?? 'Import only from this specific playlist.' ?></small>
+                                                            </div>
+                                                        </div>
+
                                                         <!-- Automation Rules -->
                                                         <div class="bg-light p-3 rounded border mb-3">
                                                             <h6 class="fw-bold text-secondary mb-3 d-inline-flex align-items-center gap-1">
@@ -464,7 +517,7 @@ require_once __DIR__ . '/../partials/header.php';
                                                                             <option value="<?= $num ?>" <?= ((int)($auto['random_repost_limit'] ?? 10) === $num) ? 'selected' : '' ?>>
                                                                                 <?= str_replace('{count}', $num, __('pool_of_x_items') ?? "Pool of {$num} items") ?>
                                                                             </option>
-                                                                        <?php endforeach; ?>
+                                                                        <?php endfor; ?>
                                                                     </select>
                                                                 </div>
                                                             </div>
@@ -479,7 +532,6 @@ require_once __DIR__ . '/../partials/header.php';
                                                                 <?php 
                                                                 $selectedTargets = json_decode($auto['target_accounts'], true) ?? [];
                                                                 foreach ($connectedAccounts as $account): 
-                                                                    // Anti-loop: don't show the source account in targets
                                                                     if (!empty($auto['source_account_id']) && (int)$account['id'] === (int)$auto['source_account_id']) continue;
                                                                     $isChecked = in_array((int)$account['id'], array_map('intval', $selectedTargets), true);
                                                                 ?>
