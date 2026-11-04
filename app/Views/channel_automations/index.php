@@ -517,7 +517,7 @@ require_once __DIR__ . '/../partials/header.php';
                                                                             <option value="<?= $num ?>" <?= ((int)($auto['random_repost_limit'] ?? 10) === $num) ? 'selected' : '' ?>>
                                                                                 <?= str_replace('{count}', $num, __('pool_of_x_items') ?? "Pool of {$num} items") ?>
                                                                             </option>
-                                                                        <?php endfor; ?>
+                                                                        <?php endforeach; ?>
                                                                     </select>
                                                                 </div>
                                                             </div>
