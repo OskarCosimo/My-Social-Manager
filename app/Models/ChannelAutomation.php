@@ -18,7 +18,9 @@ class ChannelAutomation {
         int $intervalHours = 1,
         int $onlyNewItems = 0,
         int $randomRepostEnabled = 0,
-        int $randomRepostLimit = 10
+        int $randomRepostLimit = 10,
+        ?string $filterKeywords = null,
+        ?string $filterPlaylistId = null
     ): bool {
         $db = Database::getInstance();
         $stmt = $db->prepare("
@@ -32,8 +34,10 @@ class ChannelAutomation {
                 post_interval_hours,
                 only_new_items,
                 random_repost_enabled,
-                random_repost_limit
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                random_repost_limit,
+                filter_keywords,
+                filter_playlist_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         return $stmt->execute([
@@ -46,7 +50,9 @@ class ChannelAutomation {
             $intervalHours,
             $onlyNewItems,
             $randomRepostEnabled,
-            $randomRepostLimit
+            $randomRepostLimit,
+            $filterKeywords,
+            $filterPlaylistId
         ]);
     }
 
@@ -60,7 +66,9 @@ class ChannelAutomation {
         int $intervalHours,
         int $onlyNewItems,
         int $randomRepostEnabled,
-        int $randomRepostLimit
+        int $randomRepostLimit,
+        ?string $filterKeywords = null,
+        ?string $filterPlaylistId = null
     ): bool {
         $db = Database::getInstance();
         $stmt = $db->prepare("
@@ -69,7 +77,9 @@ class ChannelAutomation {
                 post_interval_hours = ?,
                 only_new_items = ?,
                 random_repost_enabled = ?,
-                random_repost_limit = ?
+                random_repost_limit = ?,
+                filter_keywords = ?,
+                filter_playlist_id = ?
             WHERE id = ? AND user_id = ?
         ");
 
@@ -79,6 +89,8 @@ class ChannelAutomation {
             $onlyNewItems,
             $randomRepostEnabled,
             $randomRepostLimit,
+            $filterKeywords,
+            $filterPlaylistId,
             $id,
             $userId
         ]);
