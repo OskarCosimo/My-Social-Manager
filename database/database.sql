@@ -104,6 +104,8 @@ CREATE TABLE `channel_automations` (
   `only_new_items` tinyint(1) NOT NULL DEFAULT '0',
   `random_repost_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `random_repost_limit` int NOT NULL DEFAULT '10',
+  `filter_keywords` varchar(500) DEFAULT NULL,
+  `filter_playlist_id` varchar(255) DEFAULT NULL,
   `last_checked` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -136,7 +138,8 @@ CREATE TABLE `mailing_lists` (
 CREATE TABLE `mailing_list_subscribers` (
   `id` int NOT NULL AUTO_INCREMENT,
   `list_id` int NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_bin NOT NULL,
+  `email` text COLLATE utf8mb4_bin NOT NULL,
+  `email_hash` varchar(64) COLLATE utf8mb4_bin DEFAULT NULL,
   `subscribed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `is_confirmed` tinyint(1) NOT NULL DEFAULT '1',
   `confirmation_token` varchar(64) COLLATE utf8mb4_bin DEFAULT NULL,
@@ -145,7 +148,7 @@ CREATE TABLE `mailing_list_subscribers` (
   `gateway_subscription_id` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
   `expires_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_subscription` (`list_id`,`email`),
+  UNIQUE KEY `unique_subscription` (`list_id`,`email_hash`),
   CONSTRAINT `mailing_list_subscribers_ibfk_1` FOREIGN KEY (`list_id`) REFERENCES `mailing_lists` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
@@ -209,6 +212,7 @@ CREATE TABLE `posts` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `source_link` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
   `is_rss` tinyint(1) NOT NULL DEFAULT '0',
+  `is_channel_automation` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `fk_posts_campaign` (`campaign_id`),
