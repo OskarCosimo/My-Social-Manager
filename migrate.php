@@ -80,9 +80,9 @@ function migration_table_exists(PDO $pdo, string $table): bool {
 try {
     // =========================================================================
     // INCREMENTAL MIGRATIONS LOGIC
-    // Append version checks and idempotent schema changes below
     // =========================================================================
 
+    // v.1.0.0
     // Migration: Encrypt mailing list subscriber emails at rest and add deterministic HMAC blind index
     if (migration_table_exists($pdo, 'mailing_list_subscribers')) {
 
@@ -129,6 +129,18 @@ try {
         // 4. Create new unique index on (list_id, email_hash)
         if (!migration_index_exists($pdo, 'mailing_list_subscribers', 'unique_subscription')) {
             $pdo->exec("ALTER TABLE `mailing_list_subscribers` ADD UNIQUE KEY `unique_subscription` (`list_id`, `email_hash`)");
+        }
+    }
+
+    // v.1.0.1
+    // Migration: Add keyword/tag filter and YouTube playlist filter support to channel automations
+    if (migration_table_exists($pdo, 'channel_automations')) {
+        if (!migration_column_exists($pdo, 'channel_automations', 'filter_keywords')) {
+            $pdo->exec("ALTER TABLE `channel_automations` ADD COLUMN `filter_keywords` VARCHAR(500) DEFAULT NULL AFTER `random_repost_limit`");
+        }
+
+        if (!migration_column_exists($pdo, 'channel_automations', 'filter_playlist_id')) {
+            $pdo->exec("ALTER TABLE `channel_automations` ADD COLUMN `filter_playlist_id` VARCHAR(255) DEFAULT NULL AFTER `filter_keywords`");
         }
     }
 
