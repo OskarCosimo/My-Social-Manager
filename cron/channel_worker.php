@@ -48,18 +48,23 @@ if (!function_exists('fetchSafeYoutubeFeed')) {
  * Direct channel parser (Tier 3 fallback when official RSS is 404 or down)
  */
 if (!function_exists('fetchYoutubeVideosDirect')) {
-    function fetchYoutubeVideosDirect(string $channelIdentifier, string $sourceTitle = ''): array {
-        $target = $channelIdentifier;
-        if (empty($target) || !str_starts_with($target, 'UC')) {
-            $cleanTitle = preg_replace('/^YouTube:\s*/i', '', $sourceTitle);
-            if (!empty($cleanTitle)) {
-                $target = $cleanTitle;
+    function fetchYoutubeVideosDirect(string $channelIdentifier, string $sourceTitle = '', ?string $playlistId = null): array {
+        // If specific playlist is requested, fetch directly from playlist URL
+        if (!empty($playlistId)) {
+            $url = "https://www.youtube.com/playlist?list=" . urlencode($playlistId);
+        } else {
+            $target = $channelIdentifier;
+            if (empty($target) || !str_starts_with($target, 'UC')) {
+                $cleanTitle = preg_replace('/^YouTube:\s*/i', '', $sourceTitle);
+                if (!empty($cleanTitle)) {
+                    $target = $cleanTitle;
+                }
             }
-        }
 
-        $url = str_starts_with($target, 'UC')
-            ? "https://www.youtube.com/channel/{$target}"
-            : (str_starts_with($target, '@') ? "https://www.youtube.com/{$target}" : "https://www.youtube.com/@" . ltrim($target, '/'));
+            $url = str_starts_with($target, 'UC')
+                ? "https://www.youtube.com/channel/{$target}"
+                : (str_starts_with($target, '@') ? "https://www.youtube.com/{$target}" : "https://www.youtube.com/@" . ltrim($target, '/'));
+        }
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -185,13 +190,15 @@ if (!function_exists('resolveYoutubeChannelIdWorker')) {
  */
 if (!function_exists('fetchYoutubeHybrid')) {
     function fetchYoutubeHybrid(array $auto, PDO $db): array {
+        $playlistId = !empty($auto['filter_playlist_id']) ? trim($auto['filter_playlist_id']) : null;
         $channelId = $auto['source_identifier'];
+
         if (empty($channelId) && !empty($auto['source_platform_user_id'])) {
             $channelId = $auto['source_platform_user_id'];
         }
 
-        // Auto-heal non-UC identifiers
-        if (!empty($channelId) && !preg_match('/^UC[a-zA-Z0-9_-]{22}$/', $channelId)) {
+        // Auto-heal non-UC identifiers when not strictly using a playlist
+        if (empty($playlistId) && !empty($channelId) && !preg_match('/^UC[a-zA-Z0-9_-]{22}$/', $channelId)) {
             $resolvedId = resolveYoutubeChannelIdWorker($channelId);
             if ($resolvedId) {
                 $channelId = $resolvedId;
@@ -200,12 +207,17 @@ if (!function_exists('fetchYoutubeHybrid')) {
             }
         }
 
-        if (empty($channelId)) {
+        if (empty($channelId) && empty($playlistId)) {
             return [];
         }
 
-        // --- TIER 1: Official RSS Feed (Preferred, zero bot detection footprint) ---
-        $feedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=" . urlencode($channelId);
+        // --- TIER 1: Official RSS Feed (Supports both channel_id and playlist_id) ---
+        if (!empty($playlistId)) {
+            $feedUrl = "https://www.youtube.com/feeds/videos.xml?playlist_id=" . urlencode($playlistId);
+        } else {
+            $feedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=" . urlencode($channelId);
+        }
+
         $httpCode = 0;
         $xmlData = fetchSafeYoutubeFeed($feedUrl, $httpCode);
 
@@ -244,7 +256,8 @@ if (!function_exists('fetchYoutubeHybrid')) {
                 }
 
                 if (!empty($rssItems)) {
-                    echo "   * [TIER 1 - RSS] Successfully fetched " . count($rssItems) . " videos via official feed.\n";
+                    $sourceTypeLabel = !empty($playlistId) ? "playlist [{$playlistId}]" : "channel";
+                    echo "   * [TIER 1 - RSS] Successfully fetched " . count($rssItems) . " videos via official feed ({$sourceTypeLabel}).\n";
                     return $rssItems;
                 }
             }
@@ -256,8 +269,9 @@ if (!function_exists('fetchYoutubeHybrid')) {
             $accessToken = is_array($tokenData) ? ($tokenData['token'] ?? '') : $auto['source_access_token'];
 
             if (!empty($accessToken)) {
-                $uploadsPlaylistId = 'UU' . substr($channelId, 2);
-                $apiUrl = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={$uploadsPlaylistId}&maxResults=15";
+                $targetPlaylist = !empty($playlistId) ? $playlistId : ('UU' . substr($channelId, 2));
+                $apiUrl = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=" . urlencode($targetPlaylist) . "&maxResults=15";
+                
                 $ch = curl_init($apiUrl);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 10);
@@ -290,8 +304,8 @@ if (!function_exists('fetchYoutubeHybrid')) {
 
         // --- TIER 3: Direct Web Scraper Fallback (Only when RSS is 404 or down) ---
         echo "   * [TIER 3 - FALLBACK] Official RSS returned {$httpCode}. Falling back to direct page parsing...\n";
-        $directItems = fetchYoutubeVideosDirect($channelId, $auto['source_title'] ?? '');
-        echo "   * [TIER 3 - FALLBACK] Retrieved " . count($directItems) . " videos/shorts directly.\n";
+        $directItems = fetchYoutubeVideosDirect($channelId ?? '', $auto['source_title'] ?? '', $playlistId);
+        echo "   * [TIER 3 - FALLBACK] Retrieved " . count($directItems) . " videos directly.\n";
 
         return $directItems;
     }
@@ -691,6 +705,35 @@ foreach ($automations as $auto) {
 
     if (empty($items)) {
         echo " - No items found for source.\n\n";
+        continue;
+    }
+
+    // ==========================================
+    // KEYWORD & TAG FILTERING
+    // ==========================================
+    if (!empty($auto['filter_keywords'])) {
+        $rawKeywords = explode(',', $auto['filter_keywords']);
+        $keywords = array_filter(array_map('trim', $rawKeywords));
+
+        if (!empty($keywords)) {
+            $items = array_values(array_filter($items, function($item) use ($keywords) {
+                $titleLower = mb_strtolower($item['title'] ?? '', 'UTF-8');
+                foreach ($keywords as $kw) {
+                    $kwLower = mb_strtolower($kw, 'UTF-8');
+                    if ($kwLower !== '' && str_contains($titleLower, $kwLower)) {
+                        return true;
+                    }
+                }
+                return false;
+            }));
+
+            echo "   * [FILTER] Retained " . count($items) . " items matching keyword/tag filter: [{$auto['filter_keywords']}].\n";
+        }
+    }
+
+    if (empty($items)) {
+        echo " - No items matched filtering criteria.\n\n";
+        ChannelAutomation::updateLastChecked($auto['id']);
         continue;
     }
 
