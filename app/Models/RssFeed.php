@@ -1,6 +1,5 @@
-// app/Models/RssFeed.php
 <?php
-
+// app/Models/RssFeed.php
 require_once __DIR__ . '/../Core/Database.php';
 
 class RssFeed {
