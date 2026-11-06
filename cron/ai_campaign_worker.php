@@ -182,103 +182,149 @@ foreach ($activeCampaigns as $campaign) {
             . "- Do NOT include image tags, placeholders like <image>, <image|>, or special tokens." . "\n"
             . "- Emojis and hashtags are allowed.";
 
+        // Ensure prompt contains valid UTF-8
+        $aiPrompt = mb_convert_encoding($aiPrompt, 'UTF-8', 'UTF-8');
+
         $generatedText = '';
         $temperature = $isUniqueContent ? 0.85 : 0.7;
 
         // Call configured AI provider
         if (Config::AI_PROVIDER === 'openai-chat') {
-            $payload = json_encode([
+            $requestPayload = [
                 'model'       => Config::OPENAI_MODEL,
                 'messages'    => [
                     ['role' => 'user', 'content' => $aiPrompt]
                 ],
                 'stream'      => false,
-                'temperature' => $temperature,
+                'temperature' => (float)$temperature,
                 'max_tokens'  => 1024
-            ]);
+            ];
 
-            $headers = ['Content-Type: application/json'];
+            $payload = json_encode(
+                $requestPayload,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+            );
+
+            if ($payload === false) {
+                echo "JSON encode error: " . json_last_error_msg() . "\n";
+                break;
+            }
+
+            // Explicitly disable 100-continue and pass Content-Length to prevent empty bodies on Python/FastAPI servers
+            $headers = [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+                'Expect:'
+            ];
+
             if (!empty(Config::OPENAI_API_KEY)) {
                 $headers[] = 'Authorization: Bearer ' . Config::OPENAI_API_KEY;
             }
 
             $ch = curl_init(Config::OPENAI_ENDPOINT);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr  = curl_error($ch);
             curl_close($ch);
 
             if ($httpCode === 200 && $response) {
                 $responseData = json_decode($response, true);
                 $generatedText = trim($responseData['choices'][0]['message']['content'] ?? '');
             } else {
-                echo "OpenAI Chat API failed for campaign {$campaign['id']}. HTTP: $httpCode\n";
+                echo "OpenAI Chat API failed for campaign {$campaign['id']}. HTTP: $httpCode. Error: $curlErr. Response: $response\n";
                 break;
             }
 
         } elseif (Config::AI_PROVIDER === 'ollama') {
-            $payload = json_encode([
+            $requestPayload = [
                 'model'   => Config::OLLAMA_MODEL,
                 'prompt'  => $aiPrompt,
                 'stream'  => false,
                 'options' => [
                     'num_ctx'     => 2048,
-                    'temperature' => $temperature
+                    'temperature' => (float)$temperature
                 ]
-            ]);
+            ];
+
+            $payload = json_encode(
+                $requestPayload,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+            );
+
+            $headers = [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+                'Expect:'
+            ];
 
             $ch = curl_init(Config::OLLAMA_ENDPOINT);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr  = curl_error($ch);
             curl_close($ch);
 
             if ($httpCode === 200 && $response) {
                 $responseData = json_decode($response, true);
                 $generatedText = trim($responseData['response'] ?? '');
             } else {
-                echo "Ollama API failed for campaign {$campaign['id']}. HTTP: $httpCode\n";
+                echo "Ollama API failed for campaign {$campaign['id']}. HTTP: $httpCode. Error: $curlErr. Response: $response\n";
                 break;
             }
 
         } elseif (Config::AI_PROVIDER === 'gemini') {
             $geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . Config::GEMINI_API_KEY;
             
-            $payload = json_encode([
+            $requestPayload = [
                 'contents' => [
                     ['parts' => [['text' => $aiPrompt]]]
                 ],
                 'generationConfig' => [
-                    'temperature' => $temperature
+                    'temperature' => (float)$temperature
                 ]
-            ]);
+            ];
+
+            $payload = json_encode(
+                $requestPayload,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+            );
+
+            $headers = [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+                'Expect:'
+            ];
 
             $ch = curl_init($geminiEndpoint);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 60); 
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 120); 
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr  = curl_error($ch);
             curl_close($ch);
 
             if ($httpCode === 200 && $response) {
                 $responseData = json_decode($response, true);
                 $generatedText = trim($responseData['candidates'][0]['content']['parts'][0]['text'] ?? '');
             } else {
-                echo "Gemini API failed for campaign {$campaign['id']}. HTTP: $httpCode\n";
+                echo "Gemini API failed for campaign {$campaign['id']}. HTTP: $httpCode. Error: $curlErr. Response: $response\n";
                 break;
             }
         }
@@ -292,15 +338,17 @@ foreach ($activeCampaigns as $campaign) {
         }
 
         // Insert into database for each selected social account
-        foreach ($campaign['selected_accounts'] as $accountId) {
-            $insertStmt->execute([
-                $userId,
-                $campaign['id'],
-                (int)$accountId,
-                $cleanedPost,
-                $scheduledDate,
-                null
-            ]);
+        if (!empty($campaign['selected_accounts'])) {
+            foreach ($campaign['selected_accounts'] as $accountId) {
+                $insertStmt->execute([
+                    $userId,
+                    $campaign['id'],
+                    (int)$accountId,
+                    $cleanedPost,
+                    $scheduledDate,
+                    null
+                ]);
+            }
         }
 
         // Insert into database for each selected mailing list
