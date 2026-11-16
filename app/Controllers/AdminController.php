@@ -438,6 +438,97 @@ class AdminController {
         exit;
     }
 
+    /**
+     * Save Privacy Policy & Terms and Conditions configuration (internal content or external URLs)
+     */
+    public function saveLegalSettings(): void {
+        $allowedModes = ['disabled', 'internal', 'external'];
+
+        $privacyMode = trim((string)($_POST['privacy_mode'] ?? 'disabled'));
+        if (!in_array($privacyMode, $allowedModes, true)) {
+            $privacyMode = 'disabled';
+        }
+
+        $termsMode = trim((string)($_POST['terms_mode'] ?? 'disabled'));
+        if (!in_array($termsMode, $allowedModes, true)) {
+            $termsMode = 'disabled';
+        }
+
+        // Decode base64-encoded fields (used by JS to prevent ModSecurity WAF false positives on URLs/HTML)
+        $getField = function(string $fieldName): string {
+            $b64Key = $fieldName . '_b64';
+            if (isset($_POST[$b64Key])) {
+                $decoded = base64_decode((string)$_POST[$b64Key], true);
+                if ($decoded !== false) {
+                    return trim($decoded);
+                }
+            }
+            return trim((string)($_POST[$fieldName] ?? ''));
+        };
+
+        $privacyUrl     = $getField('privacy_url');
+        $privacyContent = $getField('privacy_content');
+        $termsUrl       = $getField('terms_url');
+        $termsContent   = $getField('terms_content');
+
+        // Validate external URLs if external mode is selected
+        if ($privacyMode === 'external') {
+            if (!$this->isValidHttpUrl($privacyUrl)) {
+                $_SESSION['error'] = __('invalid_privacy_url') ?: "Please enter a valid http:// or https:// URL for the external Privacy Policy.";
+                header('Location: /admin#legal');
+                exit;
+            }
+        }
+
+        if ($termsMode === 'external') {
+            if (!$this->isValidHttpUrl($termsUrl)) {
+                $_SESSION['error'] = __('invalid_terms_url') ?: "Please enter a valid http:// or https:// URL for the external Terms & Conditions.";
+                header('Location: /admin#legal');
+                exit;
+            }
+        }
+
+        // Strip potentially dangerous script/iframe tags from stored HTML content as defense-in-depth
+        $privacyContent = $this->sanitizeLegalHtml($privacyContent);
+        $termsContent   = $this->sanitizeLegalHtml($termsContent);
+
+        SystemSetting::save('privacy_mode', $privacyMode);
+        SystemSetting::save('privacy_url', $privacyUrl);
+        SystemSetting::save('privacy_content', $privacyContent);
+        SystemSetting::save('terms_mode', $termsMode);
+        SystemSetting::save('terms_url', $termsUrl);
+        SystemSetting::save('terms_content', $termsContent);
+
+        $_SESSION['success'] = __('legal_settings_saved') ?: "Privacy Policy & Terms settings saved successfully.";
+        header('Location: /admin#legal');
+        exit;
+    }
+
+    /**
+     * Validate that a URL is a properly formatted HTTP or HTTPS URL
+     */
+    private function isValidHttpUrl(string $url): bool {
+        if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https'], true);
+    }
+
+    /**
+     * Remove dangerous executable tags from custom legal HTML content
+     */
+    private function sanitizeLegalHtml(string $html): string {
+        if ($html === '') {
+            return '';
+        }
+        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+        $html = preg_replace('/<iframe\b[^>]*>(.*?)<\/iframe>/is', '', $html);
+        $html = preg_replace('/<object\b[^>]*>(.*?)<\/object>/is', '', $html);
+        $html = preg_replace('/<embed\b[^>]*>/is', '', $html);
+        return trim((string)$html);
+    }
+
     public function saveAiSettings(): void {
         $aiProvider = trim((string)($_POST['ai_provider'] ?? 'openai-chat'));
         $allowedProviders = ['openai-chat', 'ollama', 'gemini'];
