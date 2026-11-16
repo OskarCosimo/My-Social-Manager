@@ -98,6 +98,11 @@ setTimeout(window.checkAdminHash, 50);
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="legal-tab" data-tab-id="legal" onclick="showAdminTab('legal', this)">
+                    <i class="bi bi-file-earmark-text text-primary"></i> <?= __('admin_tab_legal') ?? 'Privacy & Terms' ?>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="auth-tab" data-tab-id="auth" onclick="showAdminTab('auth', this)">
                     <i class="bi bi-shield-check text-success"></i> <?= __('admin_tab_security') ?>
                 </button>
@@ -298,6 +303,107 @@ setTimeout(window.checkAdminHash, 50);
 
                             <button type="submit" class="btn btn-primary w-100 fw-bold">
                                 <i class="bi bi-floppy me-1"></i> <?= __('save_branding_settings') ?? 'Save Branding Settings' ?>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal & Privacy Policy Tab -->
+            <div class="tab-pane fade" id="legal" role="tabpanel" style="display: none;">
+                <?php
+                    $privacyMode    = $sysSettings['privacy_mode'] ?? 'disabled';
+                    $privacyUrl     = $sysSettings['privacy_url'] ?? '';
+                    $privacyContent = $sysSettings['privacy_content'] ?? '';
+
+                    $termsMode      = $sysSettings['terms_mode'] ?? 'disabled';
+                    $termsUrl       = $sysSettings['terms_url'] ?? '';
+                    $termsContent   = $sysSettings['terms_content'] ?? '';
+                ?>
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-text text-primary"></i> <?= __('legal_pages_config') ?? 'Privacy Policy & Terms and Conditions' ?>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-4">
+                            <?= __('legal_pages_desc') ?? 'Configure Privacy Policy and Terms & Conditions links displayed in the website footer. For each document, you can choose to host a custom page internally or link to an external URL.' ?>
+                        </p>
+
+                        <!-- ID legalSettingsForm used by JS to base64-encode URLs/HTML to bypass ModSecurity CRS false positives -->
+                        <form id="legalSettingsForm" action="/admin/settings/legal" method="POST">
+
+                            <!-- Privacy Policy Section -->
+                            <div class="border rounded p-3 mb-4 bg-light">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                    <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                                        <i class="bi bi-shield-lock text-primary"></i> <?= __('privacy_policy') ?? 'Privacy Policy' ?>
+                                    </h6>
+                                    <?php if ($privacyMode === 'internal'): ?>
+                                        <a href="/privacy-policy" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2 small">
+                                            <i class="bi bi-box-arrow-up-right"></i> <?= __('view_page') ?? 'View Page' ?> (/privacy-policy)
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold" for="privacy_mode"><?= __('legal_display_mode') ?? 'Display Mode' ?></label>
+                                    <select name="privacy_mode" id="privacy_mode" class="form-select form-select-sm" style="max-width: 340px;">
+                                        <option value="disabled" <?= $privacyMode === 'disabled' ? 'selected' : '' ?>><?= __('legal_mode_disabled') ?? 'Disabled (Hidden from footer)' ?></option>
+                                        <option value="internal" <?= $privacyMode === 'internal' ? 'selected' : '' ?>><?= __('legal_mode_internal') ?? 'Internal Page (/privacy-policy)' ?></option>
+                                        <option value="external" <?= $privacyMode === 'external' ? 'selected' : '' ?>><?= __('legal_mode_external') ?? 'External Document Link (URL)' ?></option>
+                                    </select>
+                                </div>
+
+                                <div id="privacy_external_box" class="mb-2" style="<?= $privacyMode === 'external' ? '' : 'display:none;' ?>">
+                                    <label class="form-label small fw-bold" for="privacy_url"><?= __('external_document_url') ?? 'External Document URL' ?></label>
+                                    <input type="url" name="privacy_url" id="privacy_url" class="form-control form-control-sm" placeholder="https://example.com/privacy-policy" value="<?= htmlspecialchars($privacyUrl) ?>">
+                                    <div class="form-text small"><?= __('external_url_help') ?? 'Enter the full https:// URL of your existing Privacy Policy document.' ?></div>
+                                </div>
+
+                                <div id="privacy_internal_box" class="mb-2" style="<?= $privacyMode === 'internal' ? '' : 'display:none;' ?>">
+                                    <label class="form-label small fw-bold" for="privacy_content"><?= __('internal_page_content') ?? 'Internal Page Content (Plain Text or HTML)' ?></label>
+                                    <textarea name="privacy_content" id="privacy_content" class="form-control font-monospace bg-white" rows="10" placeholder="<h2>Privacy Policy</h2>&#10;<p>Write your Privacy Policy here...</p>"><?= htmlspecialchars($privacyContent) ?></textarea>
+                                    <div class="form-text small"><?= __('internal_content_help') ?? 'Supports both plain text (line breaks preserved automatically) and standard HTML tags (&lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;a&gt;, &lt;strong&gt;). Accessible at /privacy-policy.' ?></div>
+                                </div>
+                            </div>
+
+                            <!-- Terms and Conditions Section -->
+                            <div class="border rounded p-3 mb-4 bg-light">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                    <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                                        <i class="bi bi-file-check text-success"></i> <?= __('terms_and_conditions') ?? 'Terms and Conditions' ?>
+                                    </h6>
+                                    <?php if ($termsMode === 'internal'): ?>
+                                        <a href="/terms-and-conditions" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2 small">
+                                            <i class="bi bi-box-arrow-up-right"></i> <?= __('view_page') ?? 'View Page' ?> (/terms-and-conditions)
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold" for="terms_mode"><?= __('legal_display_mode') ?? 'Display Mode' ?></label>
+                                    <select name="terms_mode" id="terms_mode" class="form-select form-select-sm" style="max-width: 340px;">
+                                        <option value="disabled" <?= $termsMode === 'disabled' ? 'selected' : '' ?>><?= __('legal_mode_disabled') ?? 'Disabled (Hidden from footer)' ?></option>
+                                        <option value="internal" <?= $termsMode === 'internal' ? 'selected' : '' ?>><?= __('legal_mode_internal') ?? 'Internal Page (/terms-and-conditions)' ?></option>
+                                        <option value="external" <?= $termsMode === 'external' ? 'selected' : '' ?>><?= __('legal_mode_external') ?? 'External Document Link (URL)' ?></option>
+                                    </select>
+                                </div>
+
+                                <div id="terms_external_box" class="mb-2" style="<?= $termsMode === 'external' ? '' : 'display:none;' ?>">
+                                    <label class="form-label small fw-bold" for="terms_url"><?= __('external_document_url') ?? 'External Document URL' ?></label>
+                                    <input type="url" name="terms_url" id="terms_url" class="form-control form-control-sm" placeholder="https://example.com/terms-and-conditions" value="<?= htmlspecialchars($termsUrl) ?>">
+                                    <div class="form-text small"><?= __('external_url_help') ?? 'Enter the full https:// URL of your existing Terms & Conditions document.' ?></div>
+                                </div>
+
+                                <div id="terms_internal_box" class="mb-2" style="<?= $termsMode === 'internal' ? '' : 'display:none;' ?>">
+                                    <label class="form-label small fw-bold" for="terms_content"><?= __('internal_page_content') ?? 'Internal Page Content (Plain Text or HTML)' ?></label>
+                                    <textarea name="terms_content" id="terms_content" class="form-control font-monospace bg-white" rows="10" placeholder="<h2>Terms and Conditions</h2>&#10;<p>Write your Terms and Conditions here...</p>"><?= htmlspecialchars($termsContent) ?></textarea>
+                                    <div class="form-text small"><?= __('internal_content_help') ?? 'Supports both plain text (line breaks preserved automatically) and standard HTML tags (&lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;a&gt;, &lt;strong&gt;). Accessible at /terms-and-conditions.' ?></div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">
+                                <i class="bi bi-floppy me-1"></i> <?= __('save_legal_settings') ?? 'Save Privacy & Terms Settings' ?>
                             </button>
                         </form>
                     </div>
@@ -1386,7 +1492,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 3. Batch translation controls
+    // 3. Legal & Privacy settings mode toggle + ModSecurity WAF bypass on submit
+    function toggleLegalMode(prefix) {
+        var modeSelect = document.getElementById(prefix + '_mode');
+        var externalBox = document.getElementById(prefix + '_external_box');
+        var internalBox = document.getElementById(prefix + '_internal_box');
+        if (!modeSelect || !externalBox || !internalBox) return;
+
+        var mode = modeSelect.value;
+        externalBox.style.display = (mode === 'external') ? 'block' : 'none';
+        internalBox.style.display = (mode === 'internal') ? 'block' : 'none';
+    }
+
+    ['privacy', 'terms'].forEach(function(prefix) {
+        var selectEl = document.getElementById(prefix + '_mode');
+        if (selectEl) {
+            toggleLegalMode(prefix);
+            selectEl.addEventListener('change', function() {
+                toggleLegalMode(prefix);
+            });
+        }
+    });
+
+    var legalForm = document.getElementById('legalSettingsForm');
+    if (legalForm) {
+        legalForm.addEventListener('submit', function() {
+            var encodedFields = ['privacy_url', 'privacy_content', 'terms_url', 'terms_content'];
+            encodedFields.forEach(function(fieldName) {
+                var input = legalForm.querySelector('[name="' + fieldName + '"]');
+                if (input && !input.disabled) {
+                    var hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = fieldName + '_b64';
+                    hiddenInput.value = btoa(unescape(encodeURIComponent(input.value)));
+                    legalForm.appendChild(hiddenInput);
+                    input.disabled = true;
+                }
+            });
+        });
+    }
+
+    // 4. Batch translation controls
     var checkboxes = document.querySelectorAll('.lang-checkbox');
     var selectedCountSpan = document.getElementById('selected-lang-count');
     var btnSelectAll = document.getElementById('btn-select-all-langs');
