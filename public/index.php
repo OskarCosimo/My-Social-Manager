@@ -59,8 +59,12 @@ $router->post('/auth/2fa/toggle', ['AuthController', 'toggle2FA']);
 $router->get('/auth/bridge-approval', ['AuthController', 'showBridgeApproval']);
 $router->post('/auth/bridge-approval', ['AuthController', 'approveBridge']);
 
-// Protected Dashboard Route (Placeholder)
+// Public Landing & Legal Pages Routes
 $router->get('/', ['HomeController', 'index']);
+$router->get('/privacy-policy', ['HomeController', 'privacyPolicy']);
+$router->get('/terms-and-conditions', ['HomeController', 'terms']);
+
+// Protected Dashboard Route
 $router->get('/dashboard', ['DashboardController', 'index']);
 
 // Social Accounts Management
@@ -106,6 +110,7 @@ $router->post('/admin/settings/payments', ['AdminController', 'savePaymentSettin
 $router->post('/admin/settings/branding', ['AdminController', 'saveBrandingSettings']);
 $router->post('/admin/settings/ai', ['AdminController', 'saveAiSettings']);
 $router->post('/admin/settings/languages', ['AdminController', 'saveEnabledLanguages']);
+$router->post('/admin/settings/legal', ['AdminController', 'saveLegalSettings']);
 
 // Admin Billing & Subscription Plans Routes
 $router->get('/admin/billing', ['AdminBillingController', 'index']);
