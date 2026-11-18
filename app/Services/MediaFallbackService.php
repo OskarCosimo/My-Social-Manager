@@ -4,6 +4,7 @@
 require_once __DIR__ . '/../Core/Config.php';
 require_once __DIR__ . '/../Core/Database.php';
 require_once __DIR__ . '/../Models/PluginSetting.php';
+require_once __DIR__ . '/../Models/SocialAccount.php';
 
 class MediaFallbackService {
 
