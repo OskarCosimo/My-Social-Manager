@@ -6,7 +6,34 @@ require_once __DIR__ . '/../Core/Database.php';
 class ChannelAutomation {
 
     /**
-     * Add a new channel automation rule
+     * Ensure database schema has AI caption columns on channel_automations table
+     */
+    private static function ensureAiColumns(): void {
+        static $checked = false;
+        if ($checked) return;
+
+        $db = Database::getInstance();
+        $columns = [
+            "ALTER TABLE channel_automations ADD COLUMN ai_enabled TINYINT(1) NOT NULL DEFAULT 0",
+            "ALTER TABLE channel_automations ADD COLUMN ai_prompt TEXT NULL",
+            "ALTER TABLE channel_automations ADD COLUMN ai_detail_level VARCHAR(20) NOT NULL DEFAULT 'medium'",
+            "ALTER TABLE channel_automations ADD COLUMN ai_max_tokens INT NOT NULL DEFAULT 350",
+            "ALTER TABLE channel_automations ADD COLUMN ai_max_chars INT NOT NULL DEFAULT 0"
+        ];
+
+        foreach ($columns as $sql) {
+            try {
+                $db->exec($sql);
+            } catch (Exception $e) {
+                // Column already exists
+            }
+        }
+
+        $checked = true;
+    }
+
+    /**
+     * Add a new channel automation rule with optional AI caption settings
      */
     public static function add(
         int $userId,
@@ -20,8 +47,14 @@ class ChannelAutomation {
         int $randomRepostEnabled = 0,
         int $randomRepostLimit = 10,
         ?string $filterKeywords = null,
-        ?string $filterPlaylistId = null
+        ?string $filterPlaylistId = null,
+        int $aiEnabled = 0,
+        ?string $aiPrompt = null,
+        string $aiDetailLevel = 'medium',
+        int $aiMaxTokens = 350,
+        int $aiMaxChars = 0
     ): bool {
+        self::ensureAiColumns();
         $db = Database::getInstance();
         $stmt = $db->prepare("
             INSERT INTO channel_automations (
@@ -36,8 +69,13 @@ class ChannelAutomation {
                 random_repost_enabled,
                 random_repost_limit,
                 filter_keywords,
-                filter_playlist_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                filter_playlist_id,
+                ai_enabled,
+                ai_prompt,
+                ai_detail_level,
+                ai_max_tokens,
+                ai_max_chars
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         return $stmt->execute([
@@ -52,7 +90,12 @@ class ChannelAutomation {
             $randomRepostEnabled,
             $randomRepostLimit,
             $filterKeywords,
-            $filterPlaylistId
+            $filterPlaylistId,
+            $aiEnabled,
+            $aiPrompt,
+            $aiDetailLevel,
+            $aiMaxTokens,
+            $aiMaxChars
         ]);
     }
 
@@ -68,8 +111,14 @@ class ChannelAutomation {
         int $randomRepostEnabled,
         int $randomRepostLimit,
         ?string $filterKeywords = null,
-        ?string $filterPlaylistId = null
+        ?string $filterPlaylistId = null,
+        int $aiEnabled = 0,
+        ?string $aiPrompt = null,
+        string $aiDetailLevel = 'medium',
+        int $aiMaxTokens = 350,
+        int $aiMaxChars = 0
     ): bool {
+        self::ensureAiColumns();
         $db = Database::getInstance();
         $stmt = $db->prepare("
             UPDATE channel_automations 
@@ -79,7 +128,12 @@ class ChannelAutomation {
                 random_repost_enabled = ?,
                 random_repost_limit = ?,
                 filter_keywords = ?,
-                filter_playlist_id = ?
+                filter_playlist_id = ?,
+                ai_enabled = ?,
+                ai_prompt = ?,
+                ai_detail_level = ?,
+                ai_max_tokens = ?,
+                ai_max_chars = ?
             WHERE id = ? AND user_id = ?
         ");
 
@@ -91,6 +145,11 @@ class ChannelAutomation {
             $randomRepostLimit,
             $filterKeywords,
             $filterPlaylistId,
+            $aiEnabled,
+            $aiPrompt,
+            $aiDetailLevel,
+            $aiMaxTokens,
+            $aiMaxChars,
             $id,
             $userId
         ]);
@@ -100,6 +159,7 @@ class ChannelAutomation {
      * Get automation record by ID ensuring user ownership
      */
     public static function getById(int $id, int $userId): ?array {
+        self::ensureAiColumns();
         $db = Database::getInstance();
         $stmt = $db->prepare("SELECT * FROM channel_automations WHERE id = ? AND user_id = ?");
         $stmt->execute([$id, $userId]);
@@ -111,6 +171,7 @@ class ChannelAutomation {
      * Get all automations for a given user
      */
     public static function getUserAutomations(int $userId): array {
+        self::ensureAiColumns();
         $db = Database::getInstance();
         $stmt = $db->prepare("
             SELECT ca.*, sa.platform_name, sa.plugin_id AS source_plugin_id
@@ -127,6 +188,7 @@ class ChannelAutomation {
      * Get all active records across the platform for the cron worker
      */
     public static function getAllForCron(): array {
+        self::ensureAiColumns();
         $db = Database::getInstance();
         $stmt = $db->query("
             SELECT ca.*, sa.platform_name, sa.plugin_id AS source_plugin_id, sa.access_token AS source_access_token, sa.platform_user_id AS source_platform_user_id
