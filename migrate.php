@@ -144,6 +144,44 @@ try {
         }
     }
 
+    // v.1.0.2
+    // Migration: Add AI captioning configuration columns to rss_feeds and channel_automations
+    if (migration_table_exists($pdo, 'rss_feeds')) {
+        if (!migration_column_exists($pdo, 'rss_feeds', 'ai_enabled')) {
+            $pdo->exec("ALTER TABLE `rss_feeds` ADD COLUMN `ai_enabled` TINYINT(1) NOT NULL DEFAULT 0 AFTER `random_repost_limit`");
+        }
+        if (!migration_column_exists($pdo, 'rss_feeds', 'ai_prompt')) {
+            $pdo->exec("ALTER TABLE `rss_feeds` ADD COLUMN `ai_prompt` TEXT COLLATE utf8mb4_bin NULL AFTER `ai_enabled`");
+        }
+        if (!migration_column_exists($pdo, 'rss_feeds', 'ai_detail_level')) {
+            $pdo->exec("ALTER TABLE `rss_feeds` ADD COLUMN `ai_detail_level` VARCHAR(20) COLLATE utf8mb4_bin NOT NULL DEFAULT 'medium' AFTER `ai_prompt`");
+        }
+        if (!migration_column_exists($pdo, 'rss_feeds', 'ai_max_tokens')) {
+            $pdo->exec("ALTER TABLE `rss_feeds` ADD COLUMN `ai_max_tokens` INT NOT NULL DEFAULT 350 AFTER `ai_detail_level`");
+        }
+        if (!migration_column_exists($pdo, 'rss_feeds', 'ai_max_chars')) {
+            $pdo->exec("ALTER TABLE `rss_feeds` ADD COLUMN `ai_max_chars` INT NOT NULL DEFAULT 0 AFTER `ai_max_tokens`");
+        }
+    }
+
+    if (migration_table_exists($pdo, 'channel_automations')) {
+        if (!migration_column_exists($pdo, 'channel_automations', 'ai_enabled')) {
+            $pdo->exec("ALTER TABLE `channel_automations` ADD COLUMN `ai_enabled` TINYINT(1) NOT NULL DEFAULT 0 AFTER `filter_playlist_id`");
+        }
+        if (!migration_column_exists($pdo, 'channel_automations', 'ai_prompt')) {
+            $pdo->exec("ALTER TABLE `channel_automations` ADD COLUMN `ai_prompt` TEXT COLLATE utf8mb4_bin NULL AFTER `ai_enabled`");
+        }
+        if (!migration_column_exists($pdo, 'channel_automations', 'ai_detail_level')) {
+            $pdo->exec("ALTER TABLE `channel_automations` ADD COLUMN `ai_detail_level` VARCHAR(20) COLLATE utf8mb4_bin NOT NULL DEFAULT 'medium' AFTER `ai_prompt`");
+        }
+        if (!migration_column_exists($pdo, 'channel_automations', 'ai_max_tokens')) {
+            $pdo->exec("ALTER TABLE `channel_automations` ADD COLUMN `ai_max_tokens` INT NOT NULL DEFAULT 350 AFTER `ai_detail_level`");
+        }
+        if (!migration_column_exists($pdo, 'channel_automations', 'ai_max_chars')) {
+            $pdo->exec("ALTER TABLE `channel_automations` ADD COLUMN `ai_max_chars` INT NOT NULL DEFAULT 0 AFTER `ai_max_tokens`");
+        }
+    }
+
     if (php_sapi_name() === 'cli') {
         echo "Database migrations executed successfully.\n";
     }
