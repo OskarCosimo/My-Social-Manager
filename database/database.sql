@@ -233,6 +233,7 @@ CREATE TABLE `rss_feeds` (
   `target_accounts` json NOT NULL,
   `post_interval_hours` int NOT NULL DEFAULT '1',
   `only_new_items` tinyint(1) NOT NULL DEFAULT '0',
+  `only_new_after` datetime DEFAULT NULL,
   `random_repost_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `random_repost_limit` int NOT NULL DEFAULT '10',
   `ai_enabled` tinyint(1) NOT NULL DEFAULT '0',
