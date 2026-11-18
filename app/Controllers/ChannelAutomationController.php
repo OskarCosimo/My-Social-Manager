@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Models/ChannelAutomation.php';
 require_once __DIR__ . '/../Models/SocialAccount.php';
 require_once __DIR__ . '/../Models/Group.php';
 require_once __DIR__ . '/../Models/UsageManager.php';
+require_once __DIR__ . '/../Services/AiContentService.php';
 require_once __DIR__ . '/../Core/Database.php';
 
 class ChannelAutomationController {
@@ -44,6 +45,36 @@ class ChannelAutomationController {
     }
 
     /**
+     * Extract and normalize AI caption settings from POST payload
+     */
+    private function extractAiSettings(array $post): array {
+        $aiEnabled = isset($post['ai_enabled']) ? 1 : 0;
+        $aiPrompt = !empty($post['ai_prompt']) ? trim((string)$post['ai_prompt']) : null;
+
+        $detailLevel = $post['ai_detail_level'] ?? 'medium';
+        if (!in_array($detailLevel, ['light', 'medium', 'detailed'], true)) {
+            $detailLevel = 'medium';
+        }
+
+        $defaults = AiContentService::getDetailLevelConfig($detailLevel);
+        $maxTokens = (int)($post['ai_max_tokens'] ?? $defaults['tokens']);
+        if ($maxTokens <= 0) {
+            $maxTokens = $defaults['tokens'];
+        }
+        $maxTokens = max(50, min(4096, $maxTokens));
+
+        $maxChars = max(0, (int)($post['ai_max_chars'] ?? 0));
+
+        return [
+            'ai_enabled'      => $aiEnabled,
+            'ai_prompt'       => $aiPrompt,
+            'ai_detail_level' => $detailLevel,
+            'ai_max_tokens'   => $maxTokens,
+            'ai_max_chars'    => $maxChars
+        ];
+    }
+
+    /**
      * Add a new channel automation
      */
     public function add(): void {
@@ -67,6 +98,8 @@ class ChannelAutomationController {
 
         $filterKeywords      = !empty($_POST['filter_keywords']) ? trim($_POST['filter_keywords']) : null;
         $filterPlaylistId    = !empty($_POST['filter_playlist_id']) ? $this->resolveYoutubePlaylistId($_POST['filter_playlist_id']) : null;
+
+        $aiSettings = $this->extractAiSettings($_POST);
 
         $sourceAccountId = null;
         $sourceIdentifier = null;
@@ -132,7 +165,12 @@ class ChannelAutomationController {
             $randomRepostEnabled,
             $randomRepostLimit,
             $filterKeywords,
-            $filterPlaylistId
+            $filterPlaylistId,
+            $aiSettings['ai_enabled'],
+            $aiSettings['ai_prompt'],
+            $aiSettings['ai_detail_level'],
+            $aiSettings['ai_max_tokens'],
+            $aiSettings['ai_max_chars']
         );
 
         $_SESSION['success'] = "Channel automation added successfully! Anti-loop guards and filters are active.";
@@ -154,6 +192,8 @@ class ChannelAutomationController {
 
         $filterKeywords      = !empty($_POST['filter_keywords']) ? trim($_POST['filter_keywords']) : null;
         $filterPlaylistId    = !empty($_POST['filter_playlist_id']) ? $this->resolveYoutubePlaylistId($_POST['filter_playlist_id']) : null;
+
+        $aiSettings = $this->extractAiSettings($_POST);
 
         $existing = ChannelAutomation::getById($id, $userId);
         if (!$existing) {
@@ -184,7 +224,12 @@ class ChannelAutomationController {
             $randomRepostEnabled,
             $randomRepostLimit,
             $filterKeywords,
-            $filterPlaylistId
+            $filterPlaylistId,
+            $aiSettings['ai_enabled'],
+            $aiSettings['ai_prompt'],
+            $aiSettings['ai_detail_level'],
+            $aiSettings['ai_max_tokens'],
+            $aiSettings['ai_max_chars']
         );
 
         $_SESSION['success'] = "Channel automation updated successfully.";
