@@ -58,7 +58,8 @@ foreach ($feeds as $feed) {
     $xmlContext = stream_context_create([
         'http' => [
             'timeout'    => 15, 
-            'user_agent' => 'Mozilla/5.0 (compatible; MySocialManager/1.0; +https://myetv.tv)'
+            'user_agent' => 'Mozilla/5.0 (compatible; MySocialManager/1.0; +https://myetv.tv)',
+            'header'     => "Cache-Control: no-cache\r\nPragma: no-cache\r\n"
         ]
     ]);
     
@@ -101,8 +102,6 @@ foreach ($feeds as $feed) {
     $onlyNewItems        = !empty($feed['only_new_items']);
     $randomRepostEnabled = !empty($feed['random_repost_enabled']);
     $randomRepostLimit   = max(10, (int)($feed['random_repost_limit'] ?? 10));
-    $isFirstCheck        = empty($feed['last_checked']);
-    $lastCheckedTs       = !empty($feed['last_checked']) ? strtotime($feed['last_checked']) : 0;
 
     // Optional AI captioning configuration
     $aiEnabled     = !empty($feed['ai_enabled']);
@@ -111,11 +110,21 @@ foreach ($feeds as $feed) {
     $aiMaxTokens   = (int)($feed['ai_max_tokens'] ?? 350);
     $aiMaxChars    = max(0, (int)($feed['ai_max_chars'] ?? 0));
 
-    // If "only new items" is active on absolute first check, skip and initialize timestamp
-    if ($onlyNewItems && $isFirstCheck) {
-        echo " - 'Only new items' active on first check. Ignoring current items and initializing check timestamp.\n";
-        RssFeed::updateLastChecked($feed['id']);
-        continue;
+    // Determine fixed baseline cutoff for "only new items" (separate from last_checked)
+    $onlyNewCutoffTs = 0;
+    if ($onlyNewItems) {
+        if (!empty($feed['only_new_after'])) {
+            $onlyNewCutoffTs = strtotime($feed['only_new_after']);
+        } elseif (!empty($feed['last_checked'])) {
+            // Migrate legacy feed once so future checks don't keep moving the cutoff
+            RssFeed::setOnlyNewAfter((int)$feed['id'], $feed['last_checked']);
+            $onlyNewCutoffTs = strtotime($feed['last_checked']);
+        } else {
+            echo " - 'Only new items' active on first check. Ignoring current items and initializing cutoff timestamp.\n";
+            RssFeed::setOnlyNewAfter((int)$feed['id'], gmdate('Y-m-d H:i:s'));
+            RssFeed::updateLastChecked($feed['id']);
+            continue;
+        }
     }
 
     $addedPosts = 0;
@@ -145,8 +154,8 @@ foreach ($feeds as $feed) {
             $itemPubDate = strtotime((string)$item->updated);
         }
 
-        // Filter out old items if onlyNewItems is active
-        if ($onlyNewItems && $lastCheckedTs > 0 && $itemPubDate && $itemPubDate <= $lastCheckedTs) {
+        // Filter out old items published before the feed's fixed only_new_after cutoff
+        if ($onlyNewItems && $onlyNewCutoffTs > 0 && $itemPubDate && $itemPubDate <= $onlyNewCutoffTs) {
             continue;
         }
 
