@@ -1,5 +1,5 @@
-// cron/publisher_worker.php
 <?php
+// cron/publisher_worker.php
 
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__) . '/');
@@ -63,7 +63,6 @@ foreach ($posts as $post) {
                     continue;
                 }
 
-                // Check if content is structured JSON from RSS worker
                 $postData = json_decode($post['content'], true);
                 if (is_array($postData) && isset($postData['title'])) {
                     $itemTitle = $postData['title'];
@@ -78,22 +77,18 @@ foreach ($posts as $post) {
                 $listName = $listInfo ? $listInfo['name'] : 'Mailing List';
                 $subject = $listName . ': ' . $itemTitle;
 
-                // Build rich HTML email body
                 $htmlBody = "<div style='font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e8ed; border-radius: 8px;'>";
                 $htmlBody .= "<h2 style='color: #111; margin-top: 0;'>" . htmlspecialchars($itemTitle, ENT_QUOTES | ENT_HTML5, 'UTF-8') . "</h2>";
 
-                // Enclosure or media image attachment
                 $mediaUrls = !empty($post['media_urls']) ? json_decode($post['media_urls'], true) : [];
                 if (!empty($mediaUrls) && is_array($mediaUrls) && !empty($mediaUrls[0])) {
                     $htmlBody .= "<p style='margin: 15px 0;'><img src='" . htmlspecialchars($mediaUrls[0], ENT_QUOTES | ENT_HTML5, 'UTF-8') . "' style='max-width: 100%; height: auto; border-radius: 6px; display: block;' /></p>";
                 }
 
-                // Article description
                 if (!empty($itemDesc)) {
                     $htmlBody .= "<div style='margin: 15px 0; font-size: 15px; color: #444;'>" . nl2br(htmlspecialchars($itemDesc, ENT_QUOTES | ENT_HTML5, 'UTF-8')) . "</div>";
                 }
 
-                // Call to action button / direct link
                 if (!empty($itemLink)) {
                     $htmlBody .= "<p style='margin-top: 25px;'><a href='" . htmlspecialchars($itemLink, ENT_QUOTES | ENT_HTML5, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' style='background-color: #0d6efd; color: #ffffff; padding: 10px 18px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;'>Read Article</a></p>";
                 }
@@ -115,7 +110,6 @@ foreach ($posts as $post) {
             $doneStmt = $db->prepare("UPDATE posts SET status = 'published', published_at = NOW(), error_log = NULL WHERE id = ?");
             $doneStmt->execute([$post['id']]);
 
-            // Track RSS quota usage
             if (!empty($post['is_rss']) && (int)$post['is_rss'] === 1) {
                 UsageManager::incrementRssPostUsage($post['user_id']);
             }
@@ -178,15 +172,25 @@ foreach ($posts as $post) {
                     $mediaUrlsArray = [$post['media_url']];
                 }
 
-                // Automatic fallback for image-mandated networks (e.g. Instagram, Pinterest)
-                if (empty($mediaUrlsArray) && MediaFallbackService::isMediaRequired($rawNetwork)) {
-                    $fallbackMedia = MediaFallbackService::resolvePostMedia($post, $rawNetwork);
-                    if (!empty($fallbackMedia)) {
-                        $mediaUrlsArray = $fallbackMedia;
-                        // Persist fallback image into the posts record
-                        $updStmt = $db->prepare("UPDATE posts SET media_urls = ? WHERE id = ?");
-                        $updStmt->execute([json_encode($mediaUrlsArray), $post['id']]);
-                        echo " - Applied fallback media attachment for post #{$post['id']}: {$mediaUrlsArray[0]}\n";
+                // Automatic fallback for media-mandated networks (Images: Instagram, Pinterest | Videos: YouTube, TikTok)
+                if (MediaFallbackService::isMediaRequired($rawNetwork)) {
+                    $needsFallback = empty($mediaUrlsArray);
+
+                    // For video networks (YouTube, TikTok), ensure the attached media is actually a video file
+                    if (!$needsFallback && MediaFallbackService::isVideoRequired($rawNetwork)) {
+                        if (!MediaFallbackService::isVideoUrl($mediaUrlsArray[0])) {
+                            $needsFallback = true;
+                        }
+                    }
+
+                    if ($needsFallback) {
+                        $fallbackMedia = MediaFallbackService::resolvePostMedia($post, $rawNetwork);
+                        if (!empty($fallbackMedia)) {
+                            $mediaUrlsArray = $fallbackMedia;
+                            $updStmt = $db->prepare("UPDATE posts SET media_urls = ? WHERE id = ?");
+                            $updStmt->execute([json_encode($mediaUrlsArray), $post['id']]);
+                            echo " - Applied fallback media attachment for post #{$post['id']}: {$mediaUrlsArray[0]}\n";
+                        }
                     }
                 }
 
@@ -246,7 +250,6 @@ foreach ($posts as $post) {
             $doneStmt = $db->prepare("UPDATE posts SET status = 'published', published_at = NOW(), error_log = NULL WHERE id = ?");
             $doneStmt->execute([$post['id']]);
 
-            // Track usage quota based on origin
             if (!empty($post['is_channel_automation']) && (int)$post['is_channel_automation'] === 1) {
                 UsageManager::incrementChannelPostUsage($post['user_id']);
             } elseif (!empty($post['is_rss']) && (int)$post['is_rss'] === 1) {
