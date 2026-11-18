@@ -9,6 +9,7 @@ require_once BASE_PATH . 'app/Core/Config.php';
 require_once BASE_PATH . 'app/Core/Database.php';
 require_once BASE_PATH . 'app/Models/ChannelAutomation.php';
 require_once BASE_PATH . 'app/Models/UsageManager.php';
+require_once BASE_PATH . 'app/Services/AiContentService.php';
 
 // Allow execution either via CLI or via internal PHP cron runner
 if (php_sapi_name() !== 'cli' && !defined('INTERNAL_CRON_EXEC')) {
@@ -742,6 +743,13 @@ foreach ($automations as $auto) {
     $randomRepostLimit   = max(10, (int)($auto['random_repost_limit'] ?? 10));
     $isFirstCheck        = empty($auto['last_checked']);
 
+    // Optional AI captioning configuration
+    $aiEnabled     = !empty($auto['ai_enabled']);
+    $aiPrompt      = trim((string)($auto['ai_prompt'] ?? ''));
+    $aiDetailLevel = (string)($auto['ai_detail_level'] ?? 'medium');
+    $aiMaxTokens   = (int)($auto['ai_max_tokens'] ?? 350);
+    $aiMaxChars    = max(0, (int)($auto['ai_max_chars'] ?? 0));
+
     if ($onlyNewItems && $isFirstCheck) {
         echo " - 'Only new items' active on first check. Skipping initial sync.\n";
         ChannelAutomation::updateLastChecked($auto['id']);
@@ -787,9 +795,10 @@ foreach ($automations as $auto) {
             } catch (\PDOException $e) {}
         }
 
-        $postContent = $item['title'] . "\n\n" . $item['link'];
         $itemHost = parse_url($item['link'], PHP_URL_HOST);
 
+        // Pre-filter eligible target accounts before invoking AI generation
+        $eligibleAccounts = [];
         foreach ($targetAccounts as $accountId) {
             // Never re-target the exact same account as the source
             if (!empty($auto['source_account_id']) && (int)$accountId === (int)$auto['source_account_id']) {
@@ -831,8 +840,48 @@ foreach ($automations as $auto) {
                 }
             }
 
-            $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
+            $eligibleAccounts[] = (int)$accountId;
+        }
 
+        if (empty($eligibleAccounts)) {
+            continue;
+        }
+
+        // Generate post content (AI caption or default title + link)
+        if ($aiEnabled) {
+            if (!UsageManager::canGenerateAi((int)$auto['user_id'])) {
+                echo " - Skipped AI generation: User ID {$auto['user_id']} has insufficient AI credits.\n";
+                break;
+            }
+
+            $aiRes = AiContentService::generateCaption([
+                'user_prompt'       => $aiPrompt,
+                'item_title'        => $item['title'],
+                'item_description'  => '',
+                'item_link'         => $item['link'],
+                'detail_level'      => $aiDetailLevel,
+                'max_tokens'        => $aiMaxTokens,
+                'max_chars'         => $aiMaxChars,
+                'include_link'      => true,
+                'temperature'       => 0.75,
+                'fetch_web_context' => true
+            ]);
+
+            if (!$aiRes['success'] || empty($aiRes['text'])) {
+                echo " - AI generation failed for item [{$item['title']}]: " . ($aiRes['error'] ?? 'Empty output') . "\n";
+                continue;
+            }
+
+            UsageManager::incrementAiUsage((int)$auto['user_id'], 1);
+            $postContent = $aiRes['text'];
+        } else {
+            $postContent = $item['title'] . "\n\n" . $item['link'];
+        }
+
+        $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
+        $dbSourceLink  = mb_substr($item['link'], 0, 255);
+
+        foreach ($eligibleAccounts as $accountId) {
             try {
                 $insertStmt = $db->prepare("
                     INSERT INTO posts (user_id, social_account_id, content, status, scheduled_for, scheduled_at, source_link, is_rss, is_channel_automation) 
@@ -844,7 +893,7 @@ foreach ($automations as $auto) {
                     $postContent,
                     $scheduledDate,
                     $scheduledDate,
-                    $item['link']
+                    $dbSourceLink
                 ]);
             } catch (\PDOException $e) {
                 $insertStmtFallback = $db->prepare("
@@ -857,7 +906,7 @@ foreach ($automations as $auto) {
                     $postContent,
                     $scheduledDate,
                     $scheduledDate,
-                    $item['link']
+                    $dbSourceLink
                 ]);
             }
 
