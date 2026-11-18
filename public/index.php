@@ -71,6 +71,7 @@ $router->get('/dashboard', ['DashboardController', 'index']);
 $router->get('/accounts', ['AccountController', 'index']);
 $router->post('/accounts/disconnect', ['AccountController', 'disconnect']);
 $router->post('/accounts/verify-token', ['AccountController', 'verifyToken']);
+$router->post('/accounts/save-default-media', ['AccountController', 'saveDefaultMedia']);
 
 // --- AI Studio Routes ---
 $router->get('/ai-studio', ['AiStudioController', 'index']);
