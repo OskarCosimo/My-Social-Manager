@@ -48,6 +48,7 @@ require_once __DIR__ . '/../partials/header.php';
     .stat-card { transition: transform 0.2s ease; border-radius: 12px; }
     .stat-card:hover { transform: translateY(-3px); }
     .progress { height: 8px; border-radius: 4px; }
+    .cursor-pointer { cursor: pointer; }
 </style>
 
 <div class="d-flex main-wrapper bg-light">
@@ -195,7 +196,7 @@ require_once __DIR__ . '/../partials/header.php';
                                     </select>
                                 </div>
 
-                                <!-- Filter Keywords / Tags (Available for all sources) -->
+                                <!-- Filter Keywords / Tags -->
                                 <div class="col-md-4" id="keywords_wrapper">
                                     <label for="filter_keywords" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-funnel"></i> <?= __('filter_keywords_label') ?? 'Filter Words or Tags (Optional)' ?>
@@ -204,7 +205,7 @@ require_once __DIR__ . '/../partials/header.php';
                                     <small class="text-muted"><?= __('filter_keywords_hint') ?? 'Comma-separated. Broadcasts only posts matching at least one keyword/tag.' ?></small>
                                 </div>
 
-                                <!-- YouTube Playlist ID Filter (Strictly visible only for YouTube) -->
+                                <!-- YouTube Playlist ID Filter -->
                                 <div class="col-md-4 d-none" id="playlist_wrapper">
                                     <label for="filter_playlist_id" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist (Optional)' ?>
@@ -242,6 +243,55 @@ require_once __DIR__ . '/../partials/header.php';
                                                 <option value="<?= $num ?>"><?= str_replace('{count}', $num, __('pool_of_x_items') ?? "Pool of {$num} items") ?></option>
                                             <?php endforeach; ?>
                                         </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AI Captioning & Link Explanation Section -->
+                            <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-4">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="ch_ai_enabled" value="1" data-target="#ch_ai_options" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <label class="form-check-label fw-bold text-dark cursor-pointer d-inline-flex align-items-center gap-2" for="ch_ai_enabled">
+                                        <span>✨</span> <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
+                                    </label>
+                                    <div class="form-text text-muted small mt-1">
+                                        <?= __('ai_automation_enable_hint') ?? 'Uses 1 AI credit per generated item. The AI analyzes the video/article link and creates a compelling caption before appending the link.' ?>
+                                    </div>
+                                </div>
+
+                                <div id="ch_ai_options" class="mt-3 pt-3 border-top border-primary-subtle d-none">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-dark">
+                                            <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
+                                        </label>
+                                        <textarea name="ai_prompt" class="form-control shadow-sm" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Write an engaging hook summarizing this video or post, mention key takeaways, and invite users to watch/read.') ?>" <?= $isAutomationLimitReached ? 'disabled' : '' ?>></textarea>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                                <?= __('ai_detail_level_label') ?? 'Detail / Reasoning Level' ?>
+                                            </label>
+                                            <select name="ai_detail_level" class="form-select shadow-sm ai-detail-select" data-token-input="#ch_ai_max_tokens" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                                <option value="light"><?= __('ai_level_light') ?? 'Light (Brief & Punchy)' ?></option>
+                                                <option value="medium" selected><?= __('ai_level_medium') ?? 'Medium (Balanced)' ?></option>
+                                                <option value="detailed"><?= __('ai_level_detailed') ?? 'Detailed (In-Depth)' ?></option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                                <?= __('ai_max_tokens_label') ?? 'Max Tokens (Manual)' ?>
+                                            </label>
+                                            <input type="number" name="ai_max_tokens" id="ch_ai_max_tokens" class="form-control shadow-sm" value="350" min="50" max="4096" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                            <div class="form-text small text-muted"><?= __('ai_max_tokens_hint') ?? 'Suggested: 150 / 350 / 750' ?></div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                                <?= __('ai_max_chars_label') ?? 'Max Characters (Social Limit)' ?>
+                                            </label>
+                                            <input type="number" name="ai_max_chars" class="form-control shadow-sm" value="0" min="0" max="10000" placeholder="0 = Unlimited" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                            <div class="form-text small text-muted"><?= __('ai_max_chars_hint') ?? 'e.g. 280 for X, 0 = no cap' ?></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -368,12 +418,17 @@ require_once __DIR__ . '/../partials/header.php';
                                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle fw-bold mb-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-clock"></i> <?= str_replace('{count}', (int)$auto['post_interval_hours'], __('every_hours_badge') ?? "Every " . (int)$auto['post_interval_hours'] . "h") ?>
                                             </span>
-                                            <div class="mb-1">
+                                            <div class="d-flex flex-wrap gap-1 mb-1">
                                                 <?php if (!empty($auto['only_new_items'])): ?>
                                                     <span class="badge bg-success text-white"><?= __('only_new_badge') ?? 'Only New' ?></span>
                                                 <?php endif; ?>
                                                 <?php if (!empty($auto['random_repost_enabled'])): ?>
                                                     <span class="badge bg-warning text-dark"><?= __('repost') ?? 'Repost' ?></span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($auto['ai_enabled'])): ?>
+                                                    <span class="badge text-white d-inline-flex align-items-center gap-1" style="background-color: #6f42c1;" title="<?= htmlspecialchars($auto['ai_prompt'] ?? '') ?>">
+                                                        <i class="bi bi-stars"></i> AI (<?= htmlspecialchars(ucfirst($auto['ai_detail_level'] ?? 'medium')) ?> • <?= (int)($auto['ai_max_tokens'] ?? 350) ?>t<?= !empty($auto['ai_max_chars']) ? ' / ' . (int)$auto['ai_max_chars'] . 'c' : '' ?>)
+                                                    </span>
                                                 <?php endif; ?>
                                             </div>
 
@@ -529,6 +584,46 @@ require_once __DIR__ . '/../partials/header.php';
                                                             </div>
                                                         </div>
 
+                                                        <!-- AI Captioning Options (Edit Modal) -->
+                                                        <?php $autoAiActive = !empty($auto['ai_enabled']); ?>
+                                                        <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-3">
+                                                            <div class="form-check form-switch mb-0">
+                                                                <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="edit_ch_ai_enabled_<?= $auto['id'] ?>" value="1" data-target="#edit_ch_ai_options_<?= $auto['id'] ?>" <?= $autoAiActive ? 'checked' : '' ?>>
+                                                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="edit_ch_ai_enabled_<?= $auto['id'] ?>">
+                                                                    ✨ <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
+                                                                </label>
+                                                            </div>
+
+                                                            <div id="edit_ch_ai_options_<?= $auto['id'] ?>" class="mt-3 pt-3 border-top border-primary-subtle <?= $autoAiActive ? '' : 'd-none' ?>">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-bold text-dark">
+                                                                        <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
+                                                                    </label>
+                                                                    <textarea name="ai_prompt" class="form-control" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Explain this link or video clearly...') ?>"><?= htmlspecialchars($auto['ai_prompt'] ?? '') ?></textarea>
+                                                                </div>
+
+                                                                <div class="row g-2">
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_detail_level_label') ?? 'Detail Level' ?></label>
+                                                                        <select name="ai_detail_level" class="form-select ai-detail-select" data-token-input="#edit_ch_ai_tokens_<?= $auto['id'] ?>">
+                                                                            <?php $currLvl = $auto['ai_detail_level'] ?? 'medium'; ?>
+                                                                            <option value="light" <?= $currLvl === 'light' ? 'selected' : '' ?>><?= __('ai_level_light') ?? 'Light (Brief)' ?></option>
+                                                                            <option value="medium" <?= $currLvl === 'medium' ? 'selected' : '' ?>><?= __('ai_level_medium') ?? 'Medium (Balanced)' ?></option>
+                                                                            <option value="detailed" <?= $currLvl === 'detailed' ? 'selected' : '' ?>><?= __('ai_level_detailed') ?? 'Detailed (In-Depth)' ?></option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_tokens_label') ?? 'Max Tokens' ?></label>
+                                                                        <input type="number" name="ai_max_tokens" id="edit_ch_ai_tokens_<?= $auto['id'] ?>" class="form-control" value="<?= (int)($auto['ai_max_tokens'] ?? 350) ?>" min="50" max="4096">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_chars_label') ?? 'Max Characters' ?></label>
+                                                                        <input type="number" name="ai_max_chars" class="form-control" value="<?= (int)($auto['ai_max_chars'] ?? 0) ?>" min="0" max="10000">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
                                                         <!-- Target Accounts Selection (Anti-loop excludes source account) -->
                                                         <div class="mb-3">
                                                             <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
@@ -575,6 +670,29 @@ require_once __DIR__ . '/../partials/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+    const detailTokenDefaults = { light: 150, medium: 350, detailed: 750 };
+
+    // Toggle AI options panel visibility
+    document.querySelectorAll('.ai-toggle-switch').forEach(sw => {
+        sw.addEventListener('change', function() {
+            const target = document.querySelector(this.dataset.target);
+            if (target) {
+                target.classList.toggle('d-none', !this.checked);
+            }
+        });
+    });
+
+    // Update suggested max_tokens when detail level changes
+    document.querySelectorAll('.ai-detail-select').forEach(sel => {
+        sel.addEventListener('change', function() {
+            const tokenInput = document.querySelector(this.dataset.tokenInput);
+            if (tokenInput) {
+                tokenInput.value = detailTokenDefaults[this.value] || 350;
+            }
+        });
+    });
+
     const sourceTypeSelect = document.getElementById('source_type_select');
     const sourceAccountWrapper = document.getElementById('source_account_wrapper');
     const youtubeUrlWrapper = document.getElementById('youtube_url_wrapper');
