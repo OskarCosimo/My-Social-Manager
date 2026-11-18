@@ -2,9 +2,6 @@
 // app/Views/accounts/index.php
 if (!isset($_SESSION['user_id'])) exit;
 
-/**
- * Helper function to calculate progress percentage
- */
 function getProgressPercent(int $used, int $max): int {
     if ($max <= 0) return 100;
     return (int)min(100, round(($used / $max) * 100));
@@ -16,7 +13,6 @@ $maxAccounts     = (int)($limits['max_accounts'] ?? 1);
 $accountsPercent = getProgressPercent($currentAccounts, $maxAccounts);
 $isLimitReached  = ($maxAccounts > 0 && $currentAccounts >= $maxAccounts);
 
-// Count expired or expiring accounts to show a top banner
 $expiredCount = 0;
 $expiringCount = 0;
 foreach ($connectedAccounts ?? [] as $acc) {
@@ -27,7 +23,6 @@ foreach ($connectedAccounts ?? [] as $acc) {
 require_once __DIR__ . '/../partials/header.php'; 
 ?>
 
-<!-- Main flex wrapper to align sidebar and content side-by-side -->
 <div class="d-flex main-wrapper">
     
     <?php 
@@ -35,10 +30,8 @@ require_once __DIR__ . '/../partials/header.php';
     require __DIR__ . '/../partials/sidebar.php'; 
     ?>
 
-    <!-- Main content area taking up the remaining full width -->
     <main class="content-area w-100 p-4">
         
-        <!-- Header & Plan Info Badge -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <h1 class="h2 m-0 fw-bold text-dark d-inline-flex align-items-center gap-2">
                 <i class="bi bi-share text-primary"></i> <?= __('social_accounts') ?>
@@ -65,7 +58,6 @@ require_once __DIR__ . '/../partials/header.php';
             <?php unset($_SESSION['success']); ?>
         <?php endif; ?>
 
-        <!-- Warning banner if any token is expired or expiring soon -->
         <?php if ($expiredCount > 0): ?>
             <div class="alert alert-danger shadow-sm d-flex align-items-center mb-4 border-0" role="alert">
                 <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
@@ -82,7 +74,6 @@ require_once __DIR__ . '/../partials/header.php';
             </div>
         <?php endif; ?>
 
-        <!-- Social Accounts Progress Bar Card -->
         <div class="card stat-card shadow-sm border-0 mb-4 position-relative overflow-hidden">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -140,6 +131,11 @@ require_once __DIR__ . '/../partials/header.php';
                                             <tr id="account-row-<?= (int)$account['id'] ?>">
                                                 <td>
                                                     <strong class="d-block"><?= htmlspecialchars($account['platform_name'] ?? '') ?></strong>
+                                                    <?php if (!empty($account['default_media'])): ?>
+                                                        <span class="badge bg-info-subtle text-info border border-info-subtle mt-1" style="font-size: 0.7rem;" title="<?= htmlspecialchars($account['default_media']) ?>">
+                                                            <i class="bi <?= $account['is_video_network'] ? 'bi-camera-video' : 'bi-image' ?>"></i> Custom <?= $account['is_video_network'] ? 'Video' : 'Image' ?> Set
+                                                        </span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-secondary text-uppercase" title="<?= __('platform_user_id_label', ['id' => htmlspecialchars($account['platform_user_id'] ?? '')]) ?: ('ID: ' . htmlspecialchars($account['platform_user_id'] ?? '')) ?>">
@@ -175,13 +171,29 @@ require_once __DIR__ . '/../partials/header.php';
                                                 </td>
                                                 <td class="text-end">
                                                     <div class="d-flex justify-content-end gap-1">
-                                                        <!-- Live test token button if supported by plugin -->
+                                                        
+                                                        <!-- Custom Fallback Media Button (for Video or Image mandated platforms) -->
+                                                        <?php if (!empty($account['supports_media_fallback'])): ?>
+                                                            <button type="button" 
+                                                                    class="btn btn-sm btn-outline-info btn-account-media d-inline-flex align-items-center gap-1"
+                                                                    data-account-id="<?= (int)$account['id'] ?>"
+                                                                    data-account-name="<?= htmlspecialchars($account['platform_name'] ?? '') ?>"
+                                                                    data-plugin-id="<?= htmlspecialchars($account['plugin_id'] ?? '') ?>"
+                                                                    data-is-video="<?= $account['is_video_network'] ? '1' : '0' ?>"
+                                                                    data-current-media="<?= htmlspecialchars($account['default_media'] ?? '') ?>"
+                                                                    data-global-default="<?= htmlspecialchars($account['global_admin_default'] ?? '') ?>"
+                                                                    title="Configure Default Fallback <?= $account['is_video_network'] ? 'Video' : 'Image' ?>">
+                                                                <i class="bi <?= $account['is_video_network'] ? 'bi-camera-reels' : 'bi-image' ?>"></i>
+                                                            </button>
+                                                        <?php endif; ?>
+
+                                                        <!-- Live test token button -->
                                                         <?php if (!empty($account['supports_live_check'])): ?>
                                                             <button type="button" 
                                                                     class="btn btn-sm btn-outline-secondary btn-check-token d-inline-flex align-items-center gap-1" 
                                                                     data-account-id="<?= (int)$account['id'] ?>" 
                                                                     title="<?= __('check_token') ?>">
-                                                                <i class="bi bi-arrow-repeat"></i> <?= __('check_token') ?>
+                                                                <i class="bi bi-arrow-repeat"></i>
                                                             </button>
                                                         <?php endif; ?>
 
@@ -189,7 +201,7 @@ require_once __DIR__ . '/../partials/header.php';
                                                         <a href="/plugin/auth?id=<?= urlencode($account['plugin_id']) ?>" 
                                                            class="btn btn-sm d-inline-flex align-items-center gap-1 <?= in_array($account['status_badge'], ['expired', 'expiring']) ? 'btn-warning' : 'btn-outline-primary' ?>" 
                                                            title="<?= __('reconnect') ?>">
-                                                            <i class="bi bi-link-45deg"></i> <?= __('reconnect') ?>
+                                                            <i class="bi bi-link-45deg"></i>
                                                         </a>
 
                                                         <!-- Disconnect button -->
@@ -237,9 +249,76 @@ require_once __DIR__ . '/../partials/header.php';
     </main>
 </div>
 
-<!-- AJAX handler for live token checking -->
+<!-- Modal: Account Custom Fallback Media -->
+<div class="modal fade" id="accountMediaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <form action="/accounts/save-default-media" method="POST">
+                <input type="hidden" name="account_id" id="modal_account_id">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-sliders text-warning"></i> Fallback Media Configuration
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        Configure a custom fallback media file for <strong id="modal_account_name" class="text-dark"></strong>.
+                        If specified, this file overrides the system admin default whenever a post or RSS article has no media attached.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small" id="modal_media_label">Default Media URL / Path</label>
+                        <div class="input-group">
+                            <input type="text" name="default_media" id="modal_default_media" class="form-control" placeholder="https://example.com/file.mp4 or /public/assets/...">
+                            <button type="button" class="btn btn-outline-primary fw-bold" id="btn-browse-fm" data-bs-toggle="modal" data-bs-target="#fileManagerModal">
+                                <i class="bi bi-folder2-open"></i> Browse
+                            </button>
+                        </div>
+                        <div class="form-text small" id="modal_media_hint">Enter a direct URL or pick a file from your File Manager.</div>
+                    </div>
+
+                    <div class="p-3 bg-light border rounded mb-2">
+                        <span class="small fw-bold text-secondary d-block mb-1">Global Admin Fallback:</span>
+                        <div class="text-truncate font-monospace small" id="modal_global_default" style="max-width: 100%;">
+                            <span class="text-muted">None configured in Admin</span>
+                        </div>
+                        <small class="text-muted d-block mt-1">If the field above is empty, this platform default will be used automatically.</small>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-danger btn-sm me-auto" id="btn-clear-media">Clear Override</button>
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for File Manager Iframe -->
+<div class="modal fade" id="fileManagerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="height: 85vh;">
+        <div class="modal-content h-100 shadow-lg border-0">
+            <div class="modal-header bg-dark text-white border-0">
+                <h5 class="modal-title fw-bold d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-folder2-open text-warning"></i> File Manager
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 h-100 bg-light">
+                <iframe src="/filemanager/standalone" style="width:100%; height:100%; border:none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // 1. Live token verification
     document.querySelectorAll('.btn-check-token').forEach(button => {
         button.addEventListener('click', function () {
             const accountId = this.getAttribute('data-account-id');
@@ -275,6 +354,66 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.innerHTML = originalHtml;
             });
         });
+    });
+
+    // 2. Account custom media fallback modal logic
+    const mediaModal = new bootstrap.Modal(document.getElementById('accountMediaModal'));
+    const inputAccountId = document.getElementById('modal_account_id');
+    const inputDefaultMedia = document.getElementById('modal_default_media');
+    const labelAccountName = document.getElementById('modal_account_name');
+    const labelMedia = document.getElementById('modal_media_label');
+    const hintMedia = document.getElementById('modal_media_hint');
+    const labelGlobalDefault = document.getElementById('modal_global_default');
+    const btnClearMedia = document.getElementById('btn-clear-media');
+
+    document.querySelectorAll('.btn-account-media').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const accId = this.getAttribute('data-account-id');
+            const accName = this.getAttribute('data-account-name');
+            const isVideo = this.getAttribute('data-is-video') === '1';
+            const currentMedia = this.getAttribute('data-current-media');
+            const globalDefault = this.getAttribute('data-global-default');
+
+            inputAccountId.value = accId;
+            labelAccountName.textContent = accName;
+            inputDefaultMedia.value = currentMedia || '';
+
+            if (isVideo) {
+                labelMedia.textContent = 'Account Fallback Video';
+                hintMedia.textContent = 'Required for video-only posts on YouTube / TikTok. Select an MP4/WebM video.';
+            } else {
+                labelMedia.textContent = 'Account Fallback Image';
+                hintMedia.textContent = 'Required for image-only posts on Instagram / Pinterest. Select a JPG/PNG/WebP image.';
+            }
+
+            if (globalDefault) {
+                labelGlobalDefault.innerHTML = '<code class="text-primary">' + globalDefault + '</code>';
+            } else {
+                labelGlobalDefault.innerHTML = '<span class="text-muted">None configured in Admin settings</span>';
+            }
+
+            mediaModal.show();
+        });
+    });
+
+    if (btnClearMedia) {
+        btnClearMedia.addEventListener('click', function () {
+            inputDefaultMedia.value = '';
+        });
+    }
+
+    // 3. Listen for file selection from standalone FileManager iframe
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'file_selected' && event.data.url) {
+            inputDefaultMedia.value = event.data.url;
+            const fmModalEl = document.getElementById('fileManagerModal');
+            if (fmModalEl && typeof bootstrap !== 'undefined') {
+                const fmInstance = bootstrap.Modal.getInstance(fmModalEl);
+                if (fmInstance) fmInstance.hide();
+            }
+            // Return focus to the account settings modal
+            mediaModal.show();
+        }
     });
 });
 </script>
