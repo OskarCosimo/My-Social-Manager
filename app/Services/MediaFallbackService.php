@@ -82,12 +82,20 @@ class MediaFallbackService {
     }
 
     /**
-     * Resolve media attachments (image or video) for a post if empty or invalid for the target network
+     * Resolve media attachments (image or video) for a post if empty or invalid for the target network.
+     * Priority: Account-level custom override -> Scraped media from link -> Global Admin plugin default.
      */
     public static function resolvePostMedia(array $post, string $pluginId): array {
         $userId = (int)($post['user_id'] ?? 0);
         $content = $post['content'] ?? '';
         $sourceLink = !empty($post['source_link']) ? trim($post['source_link']) : null;
+        $accountId = (int)($post['social_account_id'] ?? 0);
+
+        // Fetch per-account custom override if available
+        $accountCustomMedia = null;
+        if ($accountId > 0 && $userId > 0) {
+            $accountCustomMedia = SocialAccount::getDefaultMedia($accountId, $userId);
+        }
 
         // 1. If not specified in source_link, search for first URL inside post content
         if (empty($sourceLink) || str_starts_with($sourceLink, 'mailing_list:')) {
@@ -98,6 +106,11 @@ class MediaFallbackService {
         // A. VIDEO RESOLUTION (For YouTube, TikTok)
         // =========================================================================
         if (self::isVideoRequired($pluginId)) {
+            // Check account-level video override first
+            if (!empty($accountCustomMedia) && self::isVideoUrl($accountCustomMedia)) {
+                return [self::ensureAbsoluteUrl($accountCustomMedia)];
+            }
+
             // Attempt to scrape a video from the link
             if (!empty($sourceLink) && filter_var($sourceLink, FILTER_VALIDATE_URL)) {
                 $coverVideoUrl = self::fetchCoverVideoFromUrl($sourceLink);
@@ -111,7 +124,7 @@ class MediaFallbackService {
                 }
             }
 
-            // Fallback to configured default video in plugin settings
+            // Fallback to configured global default video in Admin plugin settings
             $defaultVideo = self::getDefaultVideo($pluginId);
             if (!empty($defaultVideo)) {
                 return [$defaultVideo];
@@ -124,6 +137,12 @@ class MediaFallbackService {
         // B. IMAGE RESOLUTION (For Instagram, Pinterest)
         // =========================================================================
         if (self::isImageRequired($pluginId)) {
+            // Check account-level image override first
+            if (!empty($accountCustomMedia)) {
+                return [self::ensureAbsoluteUrl($accountCustomMedia)];
+            }
+
+            // Attempt to scrape an image from the link
             if (!empty($sourceLink) && filter_var($sourceLink, FILTER_VALIDATE_URL)) {
                 $coverImageUrl = self::fetchCoverImageFromUrl($sourceLink);
 
@@ -136,7 +155,7 @@ class MediaFallbackService {
                 }
             }
 
-            // Fallback to configured default image in plugin settings
+            // Fallback to configured global default image in Admin plugin settings
             $defaultPluginImage = self::getDefaultImage($pluginId);
             if (!empty($defaultPluginImage)) {
                 return [$defaultPluginImage];
