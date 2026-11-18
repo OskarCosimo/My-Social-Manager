@@ -36,6 +36,11 @@ class YoutubePlugin implements SocialPluginInterface {
                 'type' => 'password',
                 'label' => 'Google Client Secret',
                 'placeholder' => 'Enter Client Secret'
+            ],
+            'default_video' => [
+                'type' => 'text',
+                'label' => 'Default Fallback Video URL / Path (for text/link posts)',
+                'placeholder' => 'https://example.com/default.mp4 or /public/assets/My-File-Manager/files/...'
             ]
         ];
     }
@@ -182,7 +187,8 @@ class YoutubePlugin implements SocialPluginInterface {
      */
     public function checkTokenStatus(string $accessToken): array {
         $decoded = json_decode($accessToken, true);
-        $realToken = (is_array($decoded) && isset($decoded['token'])) ? $decoded['token'] : $accessToken;
+        $tokenData = is_array($decoded) ? $decoded : ['token' => $accessToken];
+        $realToken = $this->getValidAccessToken($tokenData);
 
         $ch = curl_init(self::API_YT_CHANNELS . '?part=snippet&mine=true');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -210,19 +216,196 @@ class YoutubePlugin implements SocialPluginInterface {
     }
 
     public function publishPost(string $content, array $mediaUrls, string $accessToken): array {
+        return $this->publishPostWithLink($content, $mediaUrls, $accessToken, null);
+    }
+
+    /**
+     * Publish video to YouTube via official Resumable Upload protocol
+     */
+    public function publishPostWithLink(string $content, array $mediaUrls, string $accessToken, ?string $sourceLink = null): array {
         $decoded = json_decode($accessToken, true);
-        $realToken = (is_array($decoded) && isset($decoded['token'])) ? $decoded['token'] : $accessToken;
+        $tokenData = is_array($decoded) ? $decoded : ['token' => $accessToken];
+        $realToken = $this->getValidAccessToken($tokenData);
 
-        if (empty($mediaUrls)) {
-            return ['success' => false, 'error' => 'YouTube requires a valid video file path.'];
+        if (empty($mediaUrls) || empty($mediaUrls[0])) {
+            return ['success' => false, 'error' => 'YouTube requires a video file.'];
         }
 
-        $videoPath = $mediaUrls[0];
-        if (!file_exists($videoPath)) {
-            return ['success' => false, 'error' => "Video file not found on server: {$videoPath}. Requires File Manager integration."];
+        $videoTarget = $mediaUrls[0];
+        $localFilePath = $this->resolveLocalFilePath($videoTarget);
+
+        if (!$localFilePath || !file_exists($localFilePath)) {
+            return ['success' => false, 'error' => "Video file not accessible on server: {$videoTarget}"];
         }
 
-        return ['success' => false, 'error' => 'YouTube Upload logic pending File Manager implementation.'];
+        $fileSize = filesize($localFilePath);
+        if ($fileSize <= 0) {
+            return ['success' => false, 'error' => "Video file is empty (0 bytes)."];
+        }
+
+        // Prepare video metadata
+        $cleanLines = array_values(array_filter(array_map('trim', explode("\n", strip_tags(html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8'))))));
+        $title = !empty($cleanLines[0]) ? mb_strimwidth($cleanLines[0], 0, 95, '...') : 'New Video';
+        
+        $description = trim(strip_tags(html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        if (!empty($sourceLink) && !str_contains($description, $sourceLink)) {
+            $description .= "\n\n" . $sourceLink;
+        }
+
+        // STEP 1: Initialize Resumable Upload Session
+        $metadata = json_encode([
+            'snippet' => [
+                'title'       => $title,
+                'description' => $description,
+                'categoryId'  => '22'
+            ],
+            'status' => [
+                'privacyStatus'           => 'public',
+                'selfDeclaredMadeForKids' => false
+            ]
+        ]);
+
+        $chInit = curl_init(self::API_YT_UPLOAD);
+        curl_setopt($chInit, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($chInit, CURLOPT_POST, true);
+        curl_setopt($chInit, CURLOPT_POSTFIELDS, $metadata);
+        curl_setopt($chInit, CURLOPT_HEADER, true);
+        curl_setopt($chInit, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer {$realToken}",
+            "Content-Type: application/json; charset=UTF-8",
+            "X-Upload-Content-Length: {$fileSize}",
+            "X-Upload-Content-Type: video/mp4"
+        ]);
+
+        $responseRaw = curl_exec($chInit);
+        $httpCode = curl_getinfo($chInit, CURLINFO_HTTP_CODE);
+        $headerSize = curl_getinfo($chInit, CURLINFO_HEADER_SIZE);
+        curl_close($chInit);
+
+        if ($httpCode !== 200) {
+            return ['success' => false, 'error' => "YouTube upload initialization failed (HTTP {$httpCode})."];
+        }
+
+        $headers = substr($responseRaw, 0, $headerSize);
+        if (!preg_match('/^location:\s*(.*)$/mi', $headers, $matches)) {
+            return ['success' => false, 'error' => 'YouTube did not return a valid upload location URL.'];
+        }
+
+        $uploadUrl = trim($matches[1]);
+
+        // STEP 2: Stream video binary content to the Resumable Location
+        $fp = fopen($localFilePath, 'rb');
+        if (!$fp) {
+            return ['success' => false, 'error' => "Unable to read video file for upload."];
+        }
+
+        $chUpload = curl_init($uploadUrl);
+        curl_setopt($chUpload, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($chUpload, CURLOPT_PUT, true);
+        curl_setopt($chUpload, CURLOPT_INFILE, $fp);
+        curl_setopt($chUpload, CURLOPT_INFILESIZE, $fileSize);
+        curl_setopt($chUpload, CURLOPT_TIMEOUT, 600);
+        curl_setopt($chUpload, CURLOPT_HTTPHEADER, [
+            "Content-Type: video/mp4",
+            "Content-Length: {$fileSize}"
+        ]);
+
+        $uploadRes = curl_exec($chUpload);
+        $uploadHttp = curl_getinfo($chUpload, CURLINFO_HTTP_CODE);
+        curl_close($chUpload);
+        fclose($fp);
+
+        $resultData = json_decode($uploadRes, true) ?? [];
+
+        if (in_array($uploadHttp, [200, 201]) && !empty($resultData['id'])) {
+            return ['success' => true, 'post_id' => $resultData['id']];
+        }
+
+        $errorMsg = $resultData['error']['message'] ?? "Upload failed with HTTP code {$uploadHttp}";
+        return ['success' => false, 'error' => "YouTube upload error: {$errorMsg}"];
+    }
+
+    /**
+     * Resolve a web URL or relative path to a local filesystem path
+     */
+    private function resolveLocalFilePath(string $target): ?string {
+        if (file_exists($target)) {
+            return $target;
+        }
+
+        $basePath = defined('BASE_PATH') ? BASE_PATH : (dirname(__DIR__, 2) . '/');
+        $parsedPath = parse_url($target, PHP_URL_PATH);
+
+        if (!empty($parsedPath)) {
+            $candidate = $basePath . ltrim($parsedPath, '/');
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+
+            if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+                $docCandidate = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/' . ltrim($parsedPath, '/');
+                if (file_exists($docCandidate)) {
+                    return $docCandidate;
+                }
+            }
+        }
+
+        // If target is external remote URL, download it temporarily
+        if (filter_var($target, FILTER_VALIDATE_URL)) {
+            $tmpFile = sys_get_temp_dir() . '/yt_upload_' . uniqid() . '.mp4';
+            $fp = @fopen($tmpFile, 'w+');
+            if ($fp) {
+                $ch = curl_init($target);
+                curl_setopt($ch, CURLOPT_FILE, $fp);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+                curl_exec($ch);
+                curl_close($ch);
+                fclose($fp);
+
+                if (file_exists($tmpFile) && filesize($tmpFile) > 1024) {
+                    return $tmpFile;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Helper to retrieve a valid YouTube access token with automatic refresh
+     */
+    private function getValidAccessToken(array $tokenData): string {
+        $token = $tokenData['token'] ?? '';
+        $refreshToken = $tokenData['refresh_token'] ?? '';
+        $clientId = $tokenData['client_id'] ?? '';
+        $clientSecret = $tokenData['client_secret'] ?? '';
+
+        if (empty($clientId) || empty($clientSecret)) {
+            $settings = PluginSetting::getForPlugin($this->getId());
+            $clientId = $settings['client_id'] ?? '';
+            $clientSecret = $settings['client_secret'] ?? '';
+        }
+
+        if (!empty($refreshToken) && !empty($clientId) && !empty($clientSecret)) {
+            $ch = curl_init(self::API_TOKEN_URL);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+                'client_id'     => $clientId,
+                'client_secret' => $clientSecret,
+                'refresh_token' => $refreshToken,
+                'grant_type'    => 'refresh_token'
+            ]));
+            $refreshRes = json_decode(curl_exec($ch), true);
+            curl_close($ch);
+
+            if (!empty($refreshRes['access_token'])) {
+                return $refreshRes['access_token'];
+            }
+        }
+
+        return $token;
     }
 
     /**
