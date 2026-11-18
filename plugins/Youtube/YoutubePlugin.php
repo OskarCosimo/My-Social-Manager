@@ -50,6 +50,17 @@ class YoutubePlugin implements SocialPluginInterface {
     }
 
     public function getAuthUrl(): string {
+        $settings = PluginSetting::getForPlugin($this->getId());
+        $clientId = trim($settings['client_id'] ?? '');
+
+        // If system keys are configured, launch Google OAuth directly
+        if (!empty($clientId)) {
+            $redirectUri = urlencode($this->getCallbackUrl());
+            $scopes = urlencode('https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly'); 
+            $state = urlencode($this->getId());
+            return "https://accounts.google.com/o/oauth2/v2/auth?client_id={$clientId}&redirect_uri={$redirectUri}&response_type=code&scope={$scopes}&state={$state}&access_type=offline&prompt=consent";
+        }
+
         return '/accounts/manual-setup?platform=' . $this->getId();
     }
 
