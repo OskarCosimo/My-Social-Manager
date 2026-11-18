@@ -33,6 +33,11 @@ class TikTokPlugin implements SocialPluginInterface {
                 'type' => 'password',
                 'label' => 'TikTok Client Secret',
                 'placeholder' => 'Enter Client Secret'
+            ],
+            'default_video' => [
+                'type' => 'text',
+                'label' => 'Default Fallback Video URL (for text/link posts)',
+                'placeholder' => 'https://example.com/default.mp4 or /public/assets/My-File-Manager/files/...'
             ]
         ];
     }
@@ -73,7 +78,6 @@ class TikTokPlugin implements SocialPluginInterface {
     }
 
     public function handleCallback(array $requestData): array {
-        // STEP 1: BYOK redirect
         if (isset($requestData['byok_submit'])) {
             $clientKey = trim($requestData['custom_client_id'] ?? '');
             $clientSecret = trim($requestData['custom_client_secret'] ?? '');
@@ -105,7 +109,6 @@ class TikTokPlugin implements SocialPluginInterface {
             exit;
         }
 
-        // STEP 2: OAuth Callback
         if (isset($requestData['error'])) {
             throw new Exception("TikTok Error: " . ($requestData['error_description'] ?? 'Unknown error'));
         }
@@ -120,7 +123,6 @@ class TikTokPlugin implements SocialPluginInterface {
         $clientSecret = $byok['client_secret'] ?? '';
         $redirectUri = $this->getCallbackUrl();
 
-        // Exchange code for user token
         $tokenUrl = "https://open.tiktokapis.com/v2/oauth/token/";
         $postData = [
             'client_key' => $clientKey,
@@ -148,7 +150,6 @@ class TikTokPlugin implements SocialPluginInterface {
             throw new Exception($response['error_description'] ?? $response['error']['message'] ?? 'Failed to retrieve TikTok Access Token.');
         }
 
-        // Fetch user profile info
         $userUrl = "https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url";
         $userCh = curl_init($userUrl);
         curl_setopt($userCh, CURLOPT_RETURNTRANSFER, true);
@@ -232,7 +233,6 @@ class TikTokPlugin implements SocialPluginInterface {
 
         $token = $decoded['access_token'] ?? '';
 
-        // Clean HTML tags and preserve line breaks
         $formattedContent = preg_replace('/<br\s*\/?>/i', "\n", $content);
         $formattedContent = preg_replace('/<\/p>/i', "\n\n", $formattedContent);
         $cleanMessage = trim(strip_tags(html_entity_decode($formattedContent, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
@@ -243,7 +243,12 @@ class TikTokPlugin implements SocialPluginInterface {
 
         $videoUrl = $mediaUrls[0] ?? null;
         if (empty($videoUrl)) {
-            return ['success' => false, 'error' => 'TikTok requires a media URL (Video/Photo) to publish.'];
+            return ['success' => false, 'error' => 'TikTok requires a video URL to publish.'];
+        }
+
+        // Ensure video URL is an absolute public URL
+        if (!preg_match('~^https?://~i', $videoUrl)) {
+            $videoUrl = rtrim(Config::APP_URL, '/') . '/' . ltrim($videoUrl, '/');
         }
 
         // TikTok Content Posting API Init
