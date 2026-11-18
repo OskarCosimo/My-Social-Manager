@@ -39,24 +39,30 @@ class PluginAuthController {
             exit;
         }
 
-        // 2. Determine if Global API Keys exist (if the plugin requires them)
+        // 2. Determine if Global API Keys exist (excluding optional fallback media fields)
         $fields = $plugin->getSettingsFields();
         $hasGlobalKeys = true;
         foreach ($fields as $key => $field) {
+            // Ignore optional fallback media fields when checking required API credentials
+            if (in_array($key, ['default_video', 'default_image'], true)) {
+                continue;
+            }
+            if (isset($field['required']) && $field['required'] === false) {
+                continue;
+            }
             if (empty(trim($settings[$key] ?? ''))) {
                 $hasGlobalKeys = false;
-                break; // Missing at least one key
+                break; // Missing at least one credential key
             }
         }
 
-        // 3. If keys are missing, FORCE manual BYOK setup!
+        // 3. If keys are missing, FORCE manual BYOK setup
         if (!$hasGlobalKeys && !empty($fields)) {
-            // Bypass the plugin's getAuthUrl() entirely
             header("Location: /accounts/manual-setup?platform=" . urlencode($pluginId) . "&forced_byok=1");
             exit;
         }
 
-        // 4. Otherwise, proceed as normal with the Plugin's native auth URL
+        // 4. Otherwise, proceed with the Plugin's native auth URL
         $authUrl = $plugin->getAuthUrl();
         header("Location: " . $authUrl);
         exit;
@@ -66,7 +72,6 @@ class PluginAuthController {
      * Handle the callback from the Social Network
      */
     public function callback(): void {
-        // Retrieve the plugin ID from GET, POST, or state parameter
         $pluginId = $_GET['id'] ?? $_GET['state'] ?? $_POST['state'] ?? '';
         
         try {
@@ -75,10 +80,7 @@ class PluginAuthController {
                 throw new Exception("Invalid plugin configuration.");
             }
 
-            // Gather all request data
             $requestData = array_merge($_GET, $_POST);
-            
-            // Let the plugin handle the data
             $accountData = $plugin->handleCallback($requestData);
                 
             if (!empty($accountData['access_token'])) {
@@ -89,16 +91,13 @@ class PluginAuthController {
                     exit;
                 }
 
-                // Extract optional refresh token and expiration details
                 $refreshToken = $accountData['refresh_token'] ?? null;
                 $tokenExpiresAt = $accountData['token_expires_at'] ?? null;
 
-                // If expires_in in seconds is provided, compute DATETIME
                 if (empty($tokenExpiresAt) && !empty($accountData['expires_in'])) {
                     $tokenExpiresAt = date('Y-m-d H:i:s', time() + (int)$accountData['expires_in']);
                 }
 
-                // Save the token securely in the database
                 SocialAccount::save(
                     (int)$_SESSION['user_id'],
                     $pluginId,
