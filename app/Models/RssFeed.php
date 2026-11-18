@@ -5,7 +5,7 @@ require_once __DIR__ . '/../Core/Database.php';
 class RssFeed {
 
     /**
-     * Ensure database schema has AI caption columns on rss_feeds table
+     * Ensure database schema has AI caption and only_new_after columns on rss_feeds table
      */
     private static function ensureAiColumns(): void {
         static $checked = false;
@@ -17,7 +17,8 @@ class RssFeed {
             "ALTER TABLE rss_feeds ADD COLUMN ai_prompt TEXT NULL",
             "ALTER TABLE rss_feeds ADD COLUMN ai_detail_level VARCHAR(20) NOT NULL DEFAULT 'medium'",
             "ALTER TABLE rss_feeds ADD COLUMN ai_max_tokens INT NOT NULL DEFAULT 350",
-            "ALTER TABLE rss_feeds ADD COLUMN ai_max_chars INT NOT NULL DEFAULT 0"
+            "ALTER TABLE rss_feeds ADD COLUMN ai_max_chars INT NOT NULL DEFAULT 0",
+            "ALTER TABLE rss_feeds ADD COLUMN only_new_after DATETIME NULL"
         ];
 
         foreach ($columns as $sql) {
@@ -51,8 +52,9 @@ class RssFeed {
         self::ensureAiColumns();
         $db = Database::getInstance();
         
-        // If "only new items" is selected, initialize last_checked to NOW() so existing items are ignored
-        $lastChecked = ($onlyNewItems === 1) ? date('Y-m-d H:i:s') : null;
+        // Baseline UTC timestamp for "only new items" (kept separate from last_checked)
+        $onlyNewAfter = ($onlyNewItems === 1) ? gmdate('Y-m-d H:i:s') : null;
+        $lastChecked  = null;
 
         $stmt = $db->prepare("
             INSERT INTO rss_feeds (
@@ -61,6 +63,7 @@ class RssFeed {
                 target_accounts, 
                 post_interval_hours, 
                 only_new_items, 
+                only_new_after,
                 random_repost_enabled, 
                 random_repost_limit,
                 last_checked,
@@ -69,7 +72,7 @@ class RssFeed {
                 ai_detail_level,
                 ai_max_tokens,
                 ai_max_chars
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         return $stmt->execute([
             $userId, 
@@ -77,6 +80,7 @@ class RssFeed {
             json_encode($targetAccounts), 
             $intervalHours, 
             $onlyNewItems, 
+            $onlyNewAfter,
             $randomRepostEnabled, 
             $randomRepostLimit,
             $lastChecked,
@@ -109,47 +113,41 @@ class RssFeed {
         self::ensureAiColumns();
         $db = Database::getInstance();
 
-        // If only_new_items is toggled on, update last_checked to NOW() to prevent past items blast
+        $existing = self::getById($feedId, $userId);
+        $onlyNewAfter = $existing['only_new_after'] ?? null;
+
         if ($onlyNewItems === 1) {
-            $stmt = $db->prepare("
-                UPDATE rss_feeds 
-                SET feed_url = ?, 
-                    target_accounts = ?, 
-                    post_interval_hours = ?, 
-                    only_new_items = ?, 
-                    random_repost_enabled = ?, 
-                    random_repost_limit = ?,
-                    ai_enabled = ?,
-                    ai_prompt = ?,
-                    ai_detail_level = ?,
-                    ai_max_tokens = ?,
-                    ai_max_chars = ?,
-                    last_checked = NOW()
-                WHERE id = ? AND user_id = ?
-            ");
+            // Set cutoff ONLY if only_new_items was just enabled or had no cutoff yet
+            if (empty($existing['only_new_items']) || empty($onlyNewAfter)) {
+                $onlyNewAfter = gmdate('Y-m-d H:i:s');
+            }
         } else {
-            $stmt = $db->prepare("
-                UPDATE rss_feeds 
-                SET feed_url = ?, 
-                    target_accounts = ?, 
-                    post_interval_hours = ?, 
-                    only_new_items = ?, 
-                    random_repost_enabled = ?, 
-                    random_repost_limit = ?,
-                    ai_enabled = ?,
-                    ai_prompt = ?,
-                    ai_detail_level = ?,
-                    ai_max_tokens = ?,
-                    ai_max_chars = ?
-                WHERE id = ? AND user_id = ?
-            ");
+            $onlyNewAfter = null;
         }
+
+        $stmt = $db->prepare("
+            UPDATE rss_feeds 
+            SET feed_url = ?, 
+                target_accounts = ?, 
+                post_interval_hours = ?, 
+                only_new_items = ?, 
+                only_new_after = ?,
+                random_repost_enabled = ?, 
+                random_repost_limit = ?,
+                ai_enabled = ?,
+                ai_prompt = ?,
+                ai_detail_level = ?,
+                ai_max_tokens = ?,
+                ai_max_chars = ?
+            WHERE id = ? AND user_id = ?
+        ");
 
         return $stmt->execute([
             $url, 
             json_encode($targetAccounts), 
             $intervalHours, 
             $onlyNewItems, 
+            $onlyNewAfter,
             $randomRepostEnabled, 
             $randomRepostLimit,
             $aiEnabled,
@@ -196,12 +194,21 @@ class RssFeed {
     }
 
     /**
-     * Update the last_checked timestamp after the cronjob runs
+     * Update the last_checked timestamp (UTC) after the cronjob runs
      */
     public static function updateLastChecked(int $feedId): void {
         $db = Database::getInstance();
-        $stmt = $db->prepare("UPDATE rss_feeds SET last_checked = NOW() WHERE id = ?");
-        $stmt->execute([$feedId]);
+        $stmt = $db->prepare("UPDATE rss_feeds SET last_checked = ? WHERE id = ?");
+        $stmt->execute([gmdate('Y-m-d H:i:s'), $feedId]);
+    }
+
+    /**
+     * Set the fixed only_new_after cutoff timestamp (UTC)
+     */
+    public static function setOnlyNewAfter(int $feedId, string $utcDatetime): void {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("UPDATE rss_feeds SET only_new_after = ? WHERE id = ?");
+        $stmt->execute([$utcDatetime, $feedId]);
     }
 
     /**
