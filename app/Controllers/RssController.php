@@ -6,6 +6,7 @@ require_once __DIR__ . '/../Models/SocialAccount.php';
 require_once __DIR__ . '/../Models/Group.php';
 require_once __DIR__ . '/../Models/UsageManager.php';
 require_once __DIR__ . '/../Models/MailingList.php';
+require_once __DIR__ . '/../Services/AiContentService.php';
 
 class RssController {
 
@@ -34,7 +35,37 @@ class RssController {
     }
 
     /**
-     * Handle the addition of a new RSS feed with advanced settings
+     * Extract and normalize AI caption settings from POST payload
+     */
+    private function extractAiSettings(array $post): array {
+        $aiEnabled = isset($post['ai_enabled']) ? 1 : 0;
+        $aiPrompt = !empty($post['ai_prompt']) ? trim((string)$post['ai_prompt']) : null;
+
+        $detailLevel = $post['ai_detail_level'] ?? 'medium';
+        if (!in_array($detailLevel, ['light', 'medium', 'detailed'], true)) {
+            $detailLevel = 'medium';
+        }
+
+        $defaults = AiContentService::getDetailLevelConfig($detailLevel);
+        $maxTokens = (int)($post['ai_max_tokens'] ?? $defaults['tokens']);
+        if ($maxTokens <= 0) {
+            $maxTokens = $defaults['tokens'];
+        }
+        $maxTokens = max(50, min(4096, $maxTokens));
+
+        $maxChars = max(0, (int)($post['ai_max_chars'] ?? 0));
+
+        return [
+            'ai_enabled'      => $aiEnabled,
+            'ai_prompt'       => $aiPrompt,
+            'ai_detail_level' => $detailLevel,
+            'ai_max_tokens'   => $maxTokens,
+            'ai_max_chars'    => $maxChars
+        ];
+    }
+
+    /**
+     * Handle the addition of a new RSS feed with advanced and AI settings
      */
     public function add(): void {
         if (!isset($_SESSION['user_id'])) exit;
@@ -48,6 +79,8 @@ class RssController {
         $onlyNewItems        = isset($_POST['only_new_items']) ? 1 : 0;
         $randomRepostEnabled = isset($_POST['random_repost_enabled']) ? 1 : 0;
         $randomRepostLimit   = max(10, min(100, (int)($_POST['random_repost_limit'] ?? 10)));
+
+        $aiSettings = $this->extractAiSettings($_POST);
 
         // Merge social accounts and mailing lists into target_accounts
         $mergedTargets = [];
@@ -89,7 +122,12 @@ class RssController {
                 $intervalHours, 
                 $onlyNewItems, 
                 $randomRepostEnabled, 
-                $randomRepostLimit
+                $randomRepostLimit,
+                $aiSettings['ai_enabled'],
+                $aiSettings['ai_prompt'],
+                $aiSettings['ai_detail_level'],
+                $aiSettings['ai_max_tokens'],
+                $aiSettings['ai_max_chars']
             );
             $_SESSION['success'] = "RSS Feed added successfully! The system will check it periodically.";
         }
@@ -114,6 +152,8 @@ class RssController {
         $onlyNewItems        = isset($_POST['only_new_items']) ? 1 : 0;
         $randomRepostEnabled = isset($_POST['random_repost_enabled']) ? 1 : 0;
         $randomRepostLimit   = max(10, min(100, (int)($_POST['random_repost_limit'] ?? 10)));
+
+        $aiSettings = $this->extractAiSettings($_POST);
 
         // Merge social accounts and mailing lists
         $mergedTargets = [];
@@ -145,7 +185,12 @@ class RssController {
                 $intervalHours, 
                 $onlyNewItems, 
                 $randomRepostEnabled, 
-                $randomRepostLimit
+                $randomRepostLimit,
+                $aiSettings['ai_enabled'],
+                $aiSettings['ai_prompt'],
+                $aiSettings['ai_detail_level'],
+                $aiSettings['ai_max_tokens'],
+                $aiSettings['ai_max_chars']
             );
             $_SESSION['success'] = "RSS Feed updated successfully!";
         }
