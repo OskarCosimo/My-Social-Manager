@@ -49,18 +49,11 @@ class YoutubePlugin implements SocialPluginInterface {
         return Config::APP_URL . '/plugin/callback';
     }
 
+    /**
+     * Always route through the BYOK setup screen so the user can choose
+     * between custom API credentials or leaving them blank to use system keys.
+     */
     public function getAuthUrl(): string {
-        $settings = PluginSetting::getForPlugin($this->getId());
-        $clientId = trim($settings['client_id'] ?? '');
-
-        // If system keys are configured, launch Google OAuth directly
-        if (!empty($clientId)) {
-            $redirectUri = urlencode($this->getCallbackUrl());
-            $scopes = urlencode('https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly'); 
-            $state = urlencode($this->getId());
-            return "https://accounts.google.com/o/oauth2/v2/auth?client_id={$clientId}&redirect_uri={$redirectUri}&response_type=code&scope={$scopes}&state={$state}&access_type=offline&prompt=consent";
-        }
-
         return '/accounts/manual-setup?platform=' . $this->getId();
     }
 
@@ -102,21 +95,22 @@ class YoutubePlugin implements SocialPluginInterface {
             $clientSecret = trim($requestData['custom_client_secret'] ?? '');
             $isCustom = true;
 
+            // If left blank by the user, pull the global credentials configured in Admin
             if (empty($clientId) || empty($clientSecret)) {
                 $settings = PluginSetting::getForPlugin($this->getId());
-                $clientId = $settings['client_id'] ?? '';
-                $clientSecret = $settings['client_secret'] ?? '';
+                $clientId = trim($settings['client_id'] ?? '');
+                $clientSecret = trim($settings['client_secret'] ?? '');
                 $isCustom = false;
             }
 
-            if (empty($clientId)) {
-                throw new Exception("Google Client ID missing.");
+            if (empty($clientId) || empty($clientSecret)) {
+                throw new Exception("Google Client ID or Client Secret missing. Please configure system keys in the Admin panel or provide custom BYOK keys.");
             }
 
             $_SESSION['byok_' . $this->getId()] = [
-                'client_id' => $clientId,
+                'client_id'     => $clientId,
                 'client_secret' => $clientSecret,
-                'is_custom' => $isCustom
+                'is_custom'     => $isCustom
             ];
 
             $redirectUri = urlencode($this->getCallbackUrl());
