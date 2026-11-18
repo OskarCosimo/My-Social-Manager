@@ -8,15 +8,49 @@ require_once __DIR__ . '/../Models/PluginSetting.php';
 class MediaFallbackService {
 
     /**
-     * Networks that strictly require at least one media image
+     * Networks that strictly require at least one image
      */
-    private static array $mediaRequiredNetworks = ['instagram', 'pinterest'];
+    private static array $imageRequiredNetworks = ['instagram', 'pinterest'];
 
     /**
-     * Check if a plugin requires at least one media file
+     * Networks that strictly require a video file
+     */
+    private static array $videoRequiredNetworks = ['youtube', 'tiktok'];
+
+    /**
+     * Common video file extensions
+     */
+    private static array $videoExtensions = ['mp4', 'mov', 'webm', 'avi', 'mkv', 'm4v', 'flv', '3gp'];
+
+    /**
+     * Check if a plugin strictly requires an image
+     */
+    public static function isImageRequired(string $pluginId): bool {
+        return in_array(strtolower(trim($pluginId)), self::$imageRequiredNetworks, true);
+    }
+
+    /**
+     * Check if a plugin strictly requires a video
+     */
+    public static function isVideoRequired(string $pluginId): bool {
+        return in_array(strtolower(trim($pluginId)), self::$videoRequiredNetworks, true);
+    }
+
+    /**
+     * Check if a plugin requires any mandatory media (image or video)
      */
     public static function isMediaRequired(string $pluginId): bool {
-        return in_array(strtolower(trim($pluginId)), self::$mediaRequiredNetworks, true);
+        return self::isImageRequired($pluginId) || self::isVideoRequired($pluginId);
+    }
+
+    /**
+     * Check if a given URL or file path points to a video
+     */
+    public static function isVideoUrl(string $url): bool {
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!$path) return false;
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return in_array($ext, self::$videoExtensions, true);
     }
 
     /**
@@ -34,7 +68,21 @@ class MediaFallbackService {
     }
 
     /**
-     * Resolve media attachments for a post if empty and required by the platform
+     * Get configured default video for a given plugin
+     */
+    public static function getDefaultVideo(string $pluginId): ?string {
+        $settings = PluginSetting::getForPlugin($pluginId);
+        $defaultVideo = trim($settings['default_video'] ?? '');
+
+        if (empty($defaultVideo)) {
+            return null;
+        }
+
+        return self::ensureAbsoluteUrl($defaultVideo);
+    }
+
+    /**
+     * Resolve media attachments (image or video) for a post if empty or invalid for the target network
      */
     public static function resolvePostMedia(array $post, string $pluginId): array {
         $userId = (int)($post['user_id'] ?? 0);
@@ -46,26 +94,53 @@ class MediaFallbackService {
             $sourceLink = self::extractFirstUrl($content);
         }
 
-        // 2. If a valid external URL is found, attempt to scrape its cover image
-        if (!empty($sourceLink) && filter_var($sourceLink, FILTER_VALIDATE_URL)) {
-            $coverImageUrl = self::fetchCoverImageFromUrl($sourceLink);
+        // =========================================================================
+        // A. VIDEO RESOLUTION (For YouTube, TikTok)
+        // =========================================================================
+        if (self::isVideoRequired($pluginId)) {
+            // Attempt to scrape a video from the link
+            if (!empty($sourceLink) && filter_var($sourceLink, FILTER_VALIDATE_URL)) {
+                $coverVideoUrl = self::fetchCoverVideoFromUrl($sourceLink);
 
-            if (!empty($coverImageUrl)) {
-                // Download and store the cover image into the user's File Manager directory
-                $localStoredUrl = self::downloadAndStoreInFileManager($coverImageUrl, $userId);
-                if (!empty($localStoredUrl)) {
-                    return [$localStoredUrl];
+                if (!empty($coverVideoUrl)) {
+                    $localStoredVideo = self::downloadAndStoreVideoInFileManager($coverVideoUrl, $userId);
+                    if (!empty($localStoredVideo)) {
+                        return [$localStoredVideo];
+                    }
+                    return [$coverVideoUrl];
                 }
-                
-                // Fallback to direct external URL if local file manager download fails
-                return [$coverImageUrl];
             }
+
+            // Fallback to configured default video in plugin settings
+            $defaultVideo = self::getDefaultVideo($pluginId);
+            if (!empty($defaultVideo)) {
+                return [$defaultVideo];
+            }
+
+            return [];
         }
 
-        // 3. Fallback to default plugin image configured in the Admin area
-        $defaultPluginImage = self::getDefaultImage($pluginId);
-        if (!empty($defaultPluginImage)) {
-            return [$defaultPluginImage];
+        // =========================================================================
+        // B. IMAGE RESOLUTION (For Instagram, Pinterest)
+        // =========================================================================
+        if (self::isImageRequired($pluginId)) {
+            if (!empty($sourceLink) && filter_var($sourceLink, FILTER_VALIDATE_URL)) {
+                $coverImageUrl = self::fetchCoverImageFromUrl($sourceLink);
+
+                if (!empty($coverImageUrl)) {
+                    $localStoredUrl = self::downloadAndStoreInFileManager($coverImageUrl, $userId);
+                    if (!empty($localStoredUrl)) {
+                        return [$localStoredUrl];
+                    }
+                    return [$coverImageUrl];
+                }
+            }
+
+            // Fallback to configured default image in plugin settings
+            $defaultPluginImage = self::getDefaultImage($pluginId);
+            if (!empty($defaultPluginImage)) {
+                return [$defaultPluginImage];
+            }
         }
 
         return [];
@@ -109,7 +184,12 @@ class MediaFallbackService {
             return $url;
         }
 
-        // Extract OpenGraph og:image (property or name)
+        // YouTube thumbnail shortcut
+        if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/i', $url, $ytMatch)) {
+            return 'https://img.youtube.com/vi/' . $ytMatch[1] . '/maxresdefault.jpg';
+        }
+
+        // Extract OpenGraph og:image
         if (preg_match('/<meta[^>]+(?:property|name)=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $m)) {
             return self::normalizeScrapedUrl(trim($m[1]), $url);
         }
@@ -131,21 +211,69 @@ class MediaFallbackService {
     }
 
     /**
+     * Scrape OpenGraph og:video or HTML5 <video> from a target webpage
+     */
+    public static function fetchCoverVideoFromUrl(string $url): ?string {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        $html = curl_exec($ch);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+
+        if (!$html) {
+            return null;
+        }
+
+        // If the URL itself directly points to a video
+        if ($contentType && str_starts_with($contentType, 'video/')) {
+            return $url;
+        }
+
+        // Extract og:video or og:video:secure_url
+        if (preg_match('/<meta[^>]+(?:property|name)=["\']og:video(?::secure_url|:url)?["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $m)) {
+            $candidate = self::normalizeScrapedUrl(trim($m[1]), $url);
+            if (self::isVideoUrl($candidate)) {
+                return $candidate;
+            }
+        }
+
+        // Extract twitter:player:stream
+        if (preg_match('/<meta[^>]+(?:name|property)=["\']twitter:player:stream["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $m)) {
+            $candidate = self::normalizeScrapedUrl(trim($m[1]), $url);
+            if (self::isVideoUrl($candidate)) {
+                return $candidate;
+            }
+        }
+
+        // Extract HTML5 <video><source src="...">
+        if (preg_match('/<source[^>]+src=["\']([^"\']+\.(?:mp4|webm|mov))["\']/i', $html, $m)) {
+            return self::normalizeScrapedUrl(trim($m[1]), $url);
+        }
+
+        return null;
+    }
+
+    /**
      * Download an image and store it into the user's File Manager directory
      */
     public static function downloadAndStoreInFileManager(string $imageUrl, int $userId): ?string {
-        if ($userId <= 0) {
-            return null;
-        }
+        if ($userId <= 0) return null;
 
         $basePath = defined('BASE_PATH') ? BASE_PATH : (dirname(__DIR__, 2) . '/');
         $userFolder = 'user_' . $userId;
         $targetDir = $basePath . 'public/assets/My-File-Manager/files/' . $userFolder . '/';
 
         if (!is_dir($targetDir)) {
-            if (!@mkdir($targetDir, 0775, true)) {
-                return null;
-            }
+            if (!@mkdir($targetDir, 0775, true)) return null;
         }
 
         $ch = curl_init();
@@ -166,7 +294,6 @@ class MediaFallbackService {
             return null;
         }
 
-        // Resolve file extension
         $ext = 'jpg';
         if ($contentType) {
             if (str_contains($contentType, 'png')) $ext = 'png';
@@ -182,41 +309,90 @@ class MediaFallbackService {
             return null;
         }
 
-        // Return the full public URL reachable by social networks
+        return rtrim(Config::APP_URL, '/') . '/public/assets/My-File-Manager/files/' . $userFolder . '/' . $filename;
+    }
+
+    /**
+     * Download a video file and store it into the user's File Manager directory (safely bounded)
+     */
+    public static function downloadAndStoreVideoInFileManager(string $videoUrl, int $userId): ?string {
+        if ($userId <= 0) return null;
+
+        $basePath = defined('BASE_PATH') ? BASE_PATH : (dirname(__DIR__, 2) . '/');
+        $userFolder = 'user_' . $userId;
+        $targetDir = $basePath . 'public/assets/My-File-Manager/files/' . $userFolder . '/';
+
+        if (!is_dir($targetDir)) {
+            if (!@mkdir($targetDir, 0775, true)) return null;
+        }
+
+        // Determine extension
+        $path = parse_url($videoUrl, PHP_URL_PATH);
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (!in_array($ext, self::$videoExtensions, true)) {
+            $ext = 'mp4';
+        }
+
+        $filename = 'video_' . date('Ymd_His') . '_' . substr(md5($videoUrl . microtime()), 0, 8) . '.' . $ext;
+        $filePath = $targetDir . $filename;
+
+        // Stream download with 100MB safety ceiling
+        $fp = @fopen($filePath, 'w+');
+        if (!$fp) return null;
+
+        $ch = curl_init($videoUrl);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+        
+        $success = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        fclose($fp);
+
+        if (!$success || $httpCode !== 200 || filesize($filePath) < 1024) {
+            @unlink($filePath);
+            return null;
+        }
+
         return rtrim(Config::APP_URL, '/') . '/public/assets/My-File-Manager/files/' . $userFolder . '/' . $filename;
     }
 
     /**
      * Resolve relative URLs to absolute HTTP/HTTPS URLs
      */
-    private static function normalizeScrapedUrl(string $imageSrc, string $pageUrl): string {
-        $imageSrc = html_entity_decode(trim($imageSrc));
+    private static function normalizeScrapedUrl(string $src, string $pageUrl): string {
+        $src = html_entity_decode(trim($src));
 
-        if (str_starts_with($imageSrc, '//')) {
-            return 'https:' . $imageSrc;
+        if (str_starts_with($src, '//')) {
+            return 'https:' . $src;
         }
 
-        if (str_starts_with($imageSrc, 'http://') || str_starts_with($imageSrc, 'https://')) {
-            return $imageSrc;
+        if (str_starts_with($src, 'http://') || str_starts_with($src, 'https://')) {
+            return $src;
         }
 
         $parsed = parse_url($pageUrl);
         $scheme = $parsed['scheme'] ?? 'https';
         $host = $parsed['host'] ?? '';
 
-        if (str_starts_with($imageSrc, '/')) {
-            return $scheme . '://' . $host . $imageSrc;
+        if (str_starts_with($src, '/')) {
+            return $scheme . '://' . $host . $src;
         }
 
         $path = $parsed['path'] ?? '/';
         $dir = rtrim(dirname($path), '/');
-        return $scheme . '://' . $host . ($dir ? $dir . '/' : '/') . $imageSrc;
+        return $scheme . '://' . $host . ($dir ? $dir . '/' : '/') . $src;
     }
 
     /**
      * Ensure a relative local path becomes a full URL
      */
-    private static function ensureAbsoluteUrl(string $url): string {
+    public static function ensureAbsoluteUrl(string $url): string {
         if (!preg_match('~^https?://~i', $url)) {
             return rtrim(Config::APP_URL, '/') . '/' . ltrim($url, '/');
         }
