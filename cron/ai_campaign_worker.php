@@ -1,43 +1,29 @@
 <?php
 // cron/ai_campaign_worker.php
 /**
- * AI Campaign Worker - Runs via CLI/Cronjob
- * Processes active campaigns, calls MLX-LM/Ollama/Gemini, and schedules posts.
+ * AI Campaign Worker - Runs via CLI/Cronjob or Internal CronRunner
+ * Processes active campaigns (prompt-only, RSS feeds, or link/topic lists),
+ * calls AiContentService, and schedules posts.
  */
+
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', dirname(__DIR__) . '/');
+}
+
+// Allow execution either via CLI or via internal PHP cron runner
+if (php_sapi_name() !== 'cli' && !defined('INTERNAL_CRON_EXEC')) {
+    die("This script can only be run from the command line or internal runner.");
+}
 
 // Prevent timeout for batch processing
 set_time_limit(0);
 
-require_once __DIR__ . '/../app/Core/Config.php';
-require_once __DIR__ . '/../app/Core/Database.php';
-require_once __DIR__ . '/../app/Models/AiCampaign.php';
-require_once __DIR__ . '/../app/Models/UsageManager.php';
-require_once __DIR__ . '/../app/Models/SystemSetting.php';
-
-/**
- * Sanitize AI generated content for social media:
- * Removes markdown bold/italics, vision model tags (like <image|>), and header syntax.
- */
-function cleanAiSocialPost(string $text): string {
-    // 1. Strip vision and multimodal tokens (e.g. <image|>, <image>, <|...|>)
-    $text = preg_replace('/<image[^>]*>/i', '', $text);
-    $text = preg_replace('/<\|[^>]*\|>/i', '', $text);
-    $text = preg_replace('/<[^>]+>/', '', $text);
-
-    // 2. Remove markdown asterisks (**bold** -> bold, *italic* -> italic)
-    $text = preg_replace('/\*\*(.*?)\*\*/s', '$1', $text);
-    $text = preg_replace('/\*([^\*]+)\*/s', '$1', $text);
-    $text = str_replace(['**', '***'], '', $text);
-
-    // 3. Remove markdown headers (# Title -> Title)
-    $text = preg_replace('/^#+\s+/m', '', $text);
-
-    // 4. Strip leading/trailing quotes and extra whitespace
-    $text = trim($text, " \t\n\r\0\x0B\"'");
-    $text = preg_replace('/[ \t]+/', ' ', $text);
-
-    return trim($text);
-}
+require_once BASE_PATH . 'app/Core/Config.php';
+require_once BASE_PATH . 'app/Core/Database.php';
+require_once BASE_PATH . 'app/Models/AiCampaign.php';
+require_once BASE_PATH . 'app/Models/UsageManager.php';
+require_once BASE_PATH . 'app/Models/SystemSetting.php';
+require_once BASE_PATH . 'app/Services/AiContentService.php';
 
 echo "[START] AI Campaign Worker started at " . date('Y-m-d H:i:s') . "\n";
 
@@ -46,20 +32,33 @@ $activeCampaigns = AiCampaign::getActiveCampaigns();
 
 if (empty($activeCampaigns)) {
     echo "No active campaigns found. Exiting.\n";
-    exit;
+    return;
 }
 
 foreach ($activeCampaigns as $campaign) {
     echo "Processing Campaign ID: {$campaign['id']} for User: {$campaign['user_id']}...\n";
 
-    $userId = (int)$campaign['user_id'];
-    $settings = $campaign['schedule_settings'];
-    $targetTotalPosts = max(1, (int)($settings['total_posts'] ?? 1));
-    $postsPerDay = max(1, (int)($settings['posts_per_day'] ?? 1));
-    $startTime = !empty($settings['start_time']) ? $settings['start_time'] : '09:00';
-    $endTime = !empty($settings['end_time']) ? $settings['end_time'] : '18:00';
-    $isUniqueContent = !empty($settings['unique_posts']);
-    $targetMailingLists = $settings['target_mailing_lists'] ?? [];
+    $userId              = (int)$campaign['user_id'];
+    $settings            = $campaign['schedule_settings'];
+    $targetTotalPosts    = max(1, (int)($settings['total_posts'] ?? 1));
+    $postsPerDay         = max(1, (int)($settings['posts_per_day'] ?? 1));
+    $startTime           = !empty($settings['start_time']) ? $settings['start_time'] : '09:00';
+    $endTime             = !empty($settings['end_time']) ? $settings['end_time'] : '18:00';
+    $isUniqueContent     = !empty($settings['unique_posts']);
+    $targetMailingLists  = $settings['target_mailing_lists'] ?? [];
+
+    // Source & AI detail configuration
+    $sourceMode        = $settings['source_mode'] ?? 'prompt_only';
+    $rssUrl            = trim((string)($settings['rss_url'] ?? ''));
+    $linksItems        = $settings['links_items'] ?? [];
+    if (empty($linksItems) && !empty($settings['links_list'])) {
+        $linksItems = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string)$settings['links_list']))));
+    }
+    $selectionMode     = $settings['selection_mode'] ?? 'random';
+    $includeSourceLink = isset($settings['include_source_link']) ? !empty($settings['include_source_link']) : true;
+    $detailLevel       = $settings['ai_detail_level'] ?? 'medium';
+    $maxTokens         = (int)($settings['ai_max_tokens'] ?? 0);
+    $maxChars          = max(0, (int)($settings['ai_max_chars'] ?? 0));
 
     // Retrieve user timezone with system fallback
     $userTzString = 'UTC';
@@ -95,8 +94,8 @@ foreach ($activeCampaigns as $campaign) {
         $endSec   = strtotime("1970-01-01 18:00:00");
     }
 
-    // Check count of already scheduled posts
-    $stmt = $db->prepare("SELECT COUNT(DISTINCT scheduled_for) as generated_count FROM posts WHERE campaign_id = :campaign_id");
+    // Check count of already scheduled/generated posts
+    $stmt = $db->prepare("SELECT COUNT(DISTINCT scheduled_for) AS generated_count FROM posts WHERE campaign_id = :campaign_id");
     $stmt->execute(['campaign_id' => $campaign['id']]);
     $generatedCount = (int)($stmt->fetch(PDO::FETCH_ASSOC)['generated_count'] ?? 0);
 
@@ -105,6 +104,49 @@ foreach ($activeCampaigns as $campaign) {
         AiCampaign::updateStatus($campaign['id'], 'completed');
         continue;
     }
+
+    // Prepare source pool if using RSS feed or custom links/topics list
+    $sourcePool = [];
+    if ($sourceMode === 'rss_feed') {
+        $sourcePool = AiContentService::fetchRssItems($rssUrl, 100);
+        if (empty($sourcePool)) {
+            echo " - RSS feed returned no items or failed to fetch for Campaign {$campaign['id']}. Skipping.\n";
+            continue;
+        }
+    } elseif ($sourceMode === 'links_list') {
+        foreach ($linksItems as $entry) {
+            $entry = trim((string)$entry);
+            if ($entry === '') {
+                continue;
+            }
+            if (filter_var($entry, FILTER_VALIDATE_URL)) {
+                $sourcePool[] = [
+                    'title'       => '',
+                    'link'        => $entry,
+                    'description' => ''
+                ];
+            } else {
+                $sourcePool[] = [
+                    'title'       => $entry,
+                    'link'        => '',
+                    'description' => ''
+                ];
+            }
+        }
+        if (empty($sourcePool)) {
+            echo " - Links/Topics list is empty for Campaign {$campaign['id']}. Skipping.\n";
+            continue;
+        }
+    }
+
+    // Track links already used by this campaign to avoid repetitions
+    $usedLinks = [];
+    if (!empty($sourcePool)) {
+        $usedStmt = $db->prepare("SELECT DISTINCT source_link FROM posts WHERE campaign_id = ? AND source_link IS NOT NULL");
+        $usedStmt->execute([$campaign['id']]);
+        $usedLinks = $usedStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    }
+    $usedPoolKeys = [];
 
     // Prepare SQL insert matching the database schema
     $insertStmt = $db->prepare("
@@ -147,7 +189,7 @@ foreach ($activeCampaigns as $campaign) {
         $dateObj->setTimezone(new DateTimeZone('UTC'));
         $scheduledDate = $dateObj->format('Y-m-d H:i:s');
 
-        // Build uniqueness prompt if enabled
+        // Build uniqueness instruction if enabled
         $uniqueInstructions = "";
         if ($isUniqueContent) {
             $prevStmt = $db->prepare("
@@ -162,7 +204,7 @@ foreach ($activeCampaigns as $campaign) {
             $previousPosts = array_slice(array_unique($rawPrevious), 0, 5);
 
             $postNumber = $generatedCount + 1;
-            $uniqueInstructions .= "\n\nThis is post #{$postNumber} of a {$targetTotalPosts}-post series.";
+            $uniqueInstructions .= "This is post #{$postNumber} of a {$targetTotalPosts}-post series.";
             $uniqueInstructions .= " Make this post completely UNIQUE and different in style, angle, and hooks.";
             
             if (!empty($previousPosts)) {
@@ -174,167 +216,74 @@ foreach ($activeCampaigns as $campaign) {
             }
         }
 
-        // Enforce strict social formatting rules (no markdown, no image tokens)
-        $aiPrompt = $campaign['prompt'] . $uniqueInstructions . "\n\n"
-            . "CRITICAL RULES FOR SOCIAL POST:" . "\n"
-            . "- Output ONLY the social media post text." . "\n"
-            . "- Use PLAIN TEXT only. Do NOT use markdown syntax (do NOT use bold asterisks **text**, headers #, or bullet points)." . "\n"
-            . "- Do NOT include image tags, placeholders like <image>, <image|>, or special tokens." . "\n"
-            . "- Emojis and hashtags are allowed.";
+        // Select item when using external RSS or custom links/topics list
+        $selectedItem = ['title' => '', 'link' => '', 'description' => ''];
+        if (!empty($sourcePool)) {
+            $poolCount = count($sourcePool);
 
-        // Ensure prompt contains valid UTF-8
-        $aiPrompt = mb_convert_encoding($aiPrompt, 'UTF-8', 'UTF-8');
-
-        $generatedText = '';
-        $temperature = $isUniqueContent ? 0.85 : 0.7;
-
-        // Call configured AI provider
-        if (Config::AI_PROVIDER === 'openai-chat') {
-            $requestPayload = [
-                'model'       => Config::OPENAI_MODEL,
-                'messages'    => [
-                    ['role' => 'user', 'content' => $aiPrompt]
-                ],
-                'stream'      => false,
-                'temperature' => (float)$temperature,
-                'max_tokens'  => 1024
-            ];
-
-            $payload = json_encode(
-                $requestPayload,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
-            );
-
-            if ($payload === false) {
-                echo "JSON encode error: " . json_last_error_msg() . "\n";
-                break;
-            }
-
-            // Explicitly disable 100-continue and pass Content-Length to prevent empty bodies on Python/FastAPI servers
-            $headers = [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload),
-                'Expect:'
-            ];
-
-            if (!empty(Config::OPENAI_API_KEY)) {
-                $headers[] = 'Authorization: Bearer ' . Config::OPENAI_API_KEY;
-            }
-
-            $ch = curl_init(Config::OPENAI_ENDPOINT);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlErr  = curl_error($ch);
-            curl_close($ch);
-
-            if ($httpCode === 200 && $response) {
-                $responseData = json_decode($response, true);
-                $generatedText = trim($responseData['choices'][0]['message']['content'] ?? '');
+            if ($selectionMode === 'sequential') {
+                $idx = $generatedCount % $poolCount;
+                $selectedItem = $sourcePool[$idx];
             } else {
-                echo "OpenAI Chat API failed for campaign {$campaign['id']}. HTTP: $httpCode. Error: $curlErr. Response: $response\n";
-                break;
-            }
+                // Random selection avoiding already used items first
+                $availableIndices = [];
+                foreach ($sourcePool as $idx => $candidate) {
+                    $candidateLink = $candidate['link'] ?? '';
+                    $truncatedLink = $candidateLink !== '' ? mb_substr($candidateLink, 0, 255) : '';
+                    $alreadyUsedDb = ($truncatedLink !== '' && in_array($truncatedLink, $usedLinks, true));
+                    $alreadyUsedRun = in_array($idx, $usedPoolKeys, true);
 
-        } elseif (Config::AI_PROVIDER === 'ollama') {
-            $requestPayload = [
-                'model'   => Config::OLLAMA_MODEL,
-                'prompt'  => $aiPrompt,
-                'stream'  => false,
-                'options' => [
-                    'num_ctx'     => 2048,
-                    'temperature' => (float)$temperature
-                ]
-            ];
+                    if (!$alreadyUsedDb && !$alreadyUsedRun) {
+                        $availableIndices[] = $idx;
+                    }
+                }
 
-            $payload = json_encode(
-                $requestPayload,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
-            );
+                // Reset pool cycle if all items were already used once
+                if (empty($availableIndices)) {
+                    $usedPoolKeys = [];
+                    $availableIndices = array_keys($sourcePool);
+                }
 
-            $headers = [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload),
-                'Expect:'
-            ];
-
-            $ch = curl_init(Config::OLLAMA_ENDPOINT);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-            
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlErr  = curl_error($ch);
-            curl_close($ch);
-
-            if ($httpCode === 200 && $response) {
-                $responseData = json_decode($response, true);
-                $generatedText = trim($responseData['response'] ?? '');
-            } else {
-                echo "Ollama API failed for campaign {$campaign['id']}. HTTP: $httpCode. Error: $curlErr. Response: $response\n";
-                break;
-            }
-
-        } elseif (Config::AI_PROVIDER === 'gemini') {
-            $geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . Config::GEMINI_API_KEY;
-            
-            $requestPayload = [
-                'contents' => [
-                    ['parts' => [['text' => $aiPrompt]]]
-                ],
-                'generationConfig' => [
-                    'temperature' => (float)$temperature
-                ]
-            ];
-
-            $payload = json_encode(
-                $requestPayload,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
-            );
-
-            $headers = [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload),
-                'Expect:'
-            ];
-
-            $ch = curl_init($geminiEndpoint);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 120); 
-            
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlErr  = curl_error($ch);
-            curl_close($ch);
-
-            if ($httpCode === 200 && $response) {
-                $responseData = json_decode($response, true);
-                $generatedText = trim($responseData['candidates'][0]['content']['parts'][0]['text'] ?? '');
-            } else {
-                echo "Gemini API failed for campaign {$campaign['id']}. HTTP: $httpCode. Error: $curlErr. Response: $response\n";
-                break;
+                $pickedIdx = $availableIndices[array_rand($availableIndices)];
+                $usedPoolKeys[] = $pickedIdx;
+                $selectedItem = $sourcePool[$pickedIdx];
             }
         }
 
-        // Sanitize and clean the post text
-        $cleanedPost = cleanAiSocialPost($generatedText);
+        $itemLink = trim((string)($selectedItem['link'] ?? ''));
+        $shouldAppendLink = ($includeSourceLink && $itemLink !== '');
 
-        if (empty($cleanedPost)) {
+        $aiResult = AiContentService::generateCaption([
+            'user_prompt'       => $campaign['prompt'],
+            'item_title'        => $selectedItem['title'] ?? '',
+            'item_description'  => $selectedItem['description'] ?? '',
+            'item_link'         => $itemLink,
+            'detail_level'      => $detailLevel,
+            'max_tokens'        => $maxTokens,
+            'max_chars'         => $maxChars,
+            'include_link'      => $shouldAppendLink,
+            'temperature'       => $isUniqueContent ? 0.85 : 0.7,
+            'extra_instruction' => $uniqueInstructions,
+            'fetch_web_context' => ($itemLink !== '')
+        ]);
+
+        if (!$aiResult['success']) {
+            echo "AI generation failed for campaign {$campaign['id']}: " . ($aiResult['error'] ?? 'Unknown error') . "\n";
+            break;
+        }
+
+        $finalSocialText = $aiResult['text'] ?? '';
+        $captionOnly     = $aiResult['caption'] ?? $finalSocialText;
+
+        if (empty($finalSocialText)) {
             echo "AI returned empty text for campaign {$campaign['id']}. Stopping batch.\n";
             break;
+        }
+
+        // Safely bound source_link to 255 chars for DB column compatibility
+        $dbSourceLink = $itemLink !== '' ? mb_substr($itemLink, 0, 255) : null;
+        if ($dbSourceLink !== null) {
+            $usedLinks[] = $dbSourceLink;
         }
 
         // Insert into database for each selected social account
@@ -344,21 +293,30 @@ foreach ($activeCampaigns as $campaign) {
                     $userId,
                     $campaign['id'],
                     (int)$accountId,
-                    $cleanedPost,
+                    $finalSocialText,
                     $scheduledDate,
-                    null
+                    $dbSourceLink
                 ]);
             }
         }
 
         // Insert into database for each selected mailing list
         if (!empty($targetMailingLists)) {
+            $mlContent = $captionOnly;
+            if (!empty($selectedItem['title']) || $itemLink !== '') {
+                $mlContent = json_encode([
+                    'title'       => !empty($selectedItem['title']) ? $selectedItem['title'] : 'Update',
+                    'description' => $captionOnly,
+                    'link'        => $itemLink
+                ], JSON_UNESCAPED_UNICODE);
+            }
+
             foreach ($targetMailingLists as $mlId) {
                 $insertStmt->execute([
                     $userId,
                     $campaign['id'],
                     null,
-                    $cleanedPost,
+                    $mlContent,
                     $scheduledDate,
                     'mailing_list:' . (int)$mlId
                 ]);
