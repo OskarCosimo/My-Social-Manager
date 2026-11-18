@@ -182,6 +182,21 @@ try {
         }
     }
 
+    // v.1.0.3
+    // Migration: Decouple only_new_items cutoff timestamp (only_new_after) from cron last_checked timestamp
+    if (migration_table_exists($pdo, 'rss_feeds')) {
+        if (!migration_column_exists($pdo, 'rss_feeds', 'only_new_after')) {
+            $pdo->exec("ALTER TABLE `rss_feeds` ADD COLUMN `only_new_after` DATETIME DEFAULT NULL AFTER `only_new_items`");
+
+            // Backfill existing feeds with only_new_items enabled so their current watermark is preserved without re-posting archives
+            $pdo->exec("
+                UPDATE `rss_feeds` 
+                SET `only_new_after` = COALESCE(`last_checked`, UTC_TIMESTAMP()) 
+                WHERE `only_new_items` = 1 AND `only_new_after` IS NULL
+            ");
+        }
+    }
+
     if (php_sapi_name() === 'cli') {
         echo "Database migrations executed successfully.\n";
     }
