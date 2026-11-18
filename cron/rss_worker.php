@@ -234,18 +234,24 @@ foreach ($feeds as $feed) {
                 $mlSourceIdentifier = "mailing_list:{$listId}";
 
                 if (!$randomRepostEnabled) {
+                    // Match both legacy escaped-slash JSON ("https:\/\/...") and unescaped JSON ("https://...")
+                    // Using INSTR() avoids MySQL LIKE backslash-escaping issues
+                    $jsonEscapedLink   = json_encode($item['link'], JSON_UNESCAPED_UNICODE);
+                    $jsonUnescapedLink = json_encode($item['link'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
                     $chkStmt = $db->prepare("
                         SELECT id FROM posts 
                         WHERE user_id = ? 
                           AND source_link = ? 
                           AND is_rss = 1 
-                          AND (content LIKE ? OR content LIKE ?)
+                          AND (INSTR(content, ?) > 0 OR INSTR(content, ?) > 0)
+                        LIMIT 1
                     ");
                     $chkStmt->execute([
                         $feed['user_id'], 
                         $mlSourceIdentifier, 
-                        "%" . $item['link'] . "%",
-                        "%" . addcslashes($item['link'], '/') . "%"
+                        $jsonEscapedLink,
+                        $jsonUnescapedLink
                     ]);
                     if ($chkStmt->fetch()) {
                         continue;
@@ -310,7 +316,7 @@ foreach ($feeds as $feed) {
             'title'       => $item['title'],
             'description' => $mailingListDesc,
             'link'        => $item['link']
-        ], JSON_UNESCAPED_UNICODE);
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         $mediaUrlsJson = !empty($item['media_url']) ? json_encode([$item['media_url']]) : null;
         $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
