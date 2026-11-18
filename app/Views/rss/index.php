@@ -28,6 +28,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
     .stat-card { transition: transform 0.2s ease; border-radius: 12px; }
     .stat-card:hover { transform: translateY(-3px); }
     .progress { height: 8px; border-radius: 4px; }
+    .cursor-pointer { cursor: pointer; }
 </style>
 
 <div class="d-flex main-wrapper bg-light">
@@ -168,6 +169,55 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                 </div>
                             </div>
 
+                            <!-- AI Captioning & Link Explanation Section -->
+                            <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-4">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="rss_ai_enabled" value="1" data-target="#rss_ai_options" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                    <label class="form-check-label fw-bold text-dark cursor-pointer d-inline-flex align-items-center gap-2" for="rss_ai_enabled">
+                                        <span>✨</span> <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
+                                    </label>
+                                    <div class="form-text text-muted small mt-1">
+                                        <?= __('ai_automation_enable_hint') ?? 'Uses 1 AI credit per generated item. The AI reads the article/page behind each feed link and writes a custom post before attaching the link.' ?>
+                                    </div>
+                                </div>
+
+                                <div id="rss_ai_options" class="mt-3 pt-3 border-top border-primary-subtle d-none">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-dark">
+                                            <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
+                                        </label>
+                                        <textarea name="ai_prompt" class="form-control shadow-sm" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Explain this topic/function clearly with a practical example, or review this movie without spoilers and mention who will enjoy it.') ?>" <?= $isFeedLimitReached ? 'disabled' : '' ?>></textarea>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                                <?= __('ai_detail_level_label') ?? 'Detail / Reasoning Level' ?>
+                                            </label>
+                                            <select name="ai_detail_level" class="form-select shadow-sm ai-detail-select" data-token-input="#rss_ai_max_tokens" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                                <option value="light"><?= __('ai_level_light') ?? 'Light (Brief & Punchy)' ?></option>
+                                                <option value="medium" selected><?= __('ai_level_medium') ?? 'Medium (Balanced)' ?></option>
+                                                <option value="detailed"><?= __('ai_level_detailed') ?? 'Detailed (In-Depth)' ?></option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                                <?= __('ai_max_tokens_label') ?? 'Max Tokens (Manual)' ?>
+                                            </label>
+                                            <input type="number" name="ai_max_tokens" id="rss_ai_max_tokens" class="form-control shadow-sm" value="350" min="50" max="4096" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                            <div class="form-text small text-muted"><?= __('ai_max_tokens_hint') ?? 'Suggested: 150 / 350 / 750' ?></div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                                <?= __('ai_max_chars_label') ?? 'Max Characters (Social Limit)' ?>
+                                            </label>
+                                            <input type="number" name="ai_max_chars" class="form-control shadow-sm" value="0" min="0" max="10000" placeholder="0 = Unlimited" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                            <div class="form-text small text-muted"><?= __('ai_max_chars_hint') ?? 'e.g. 280 for X, 0 = no cap' ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="border-top pt-4">
                                 <div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
                                     <label class="form-label fw-bold text-secondary small text-uppercase mb-0 d-inline-flex align-items-center gap-1">
@@ -299,7 +349,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle fw-bold mb-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-clock"></i> <?= str_replace('{count}', (int)($feed['post_interval_hours'] ?? 1), __('every_hours_badge')) ?>
                                             </span>
-                                            <div>
+                                            <div class="d-flex flex-wrap gap-1">
                                                 <?php if (!empty($feed['only_new_items'])): ?>
                                                     <span class="badge bg-success text-white d-inline-flex align-items-center gap-1" title="Only new items published after setup">
                                                         <i class="bi bi-asterisk"></i> <?= __('only_new_badge') ?>
@@ -308,6 +358,11 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                 <?php if (!empty($feed['random_repost_enabled'])): ?>
                                                     <span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1" title="Random repost active">
                                                         <i class="bi bi-shuffle"></i> <?= str_replace('{count}', (int)($feed['random_repost_limit'] ?? 10), __('repost_badge')) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($feed['ai_enabled'])): ?>
+                                                    <span class="badge text-white d-inline-flex align-items-center gap-1" style="background-color: #6f42c1;" title="<?= htmlspecialchars($feed['ai_prompt'] ?? '') ?>">
+                                                        <i class="bi bi-stars"></i> AI (<?= htmlspecialchars(ucfirst($feed['ai_detail_level'] ?? 'medium')) ?> • <?= (int)($feed['ai_max_tokens'] ?? 350) ?>t<?= !empty($feed['ai_max_chars']) ? ' / ' . (int)$feed['ai_max_chars'] . 'c' : '' ?>)
                                                     </span>
                                                 <?php endif; ?>
                                             </div>
@@ -450,6 +505,46 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                             </div>
                                                         </div>
 
+                                                        <!-- AI Captioning Options (Edit Modal) -->
+                                                        <?php $feedAiActive = !empty($feed['ai_enabled']); ?>
+                                                        <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-3">
+                                                            <div class="form-check form-switch mb-0">
+                                                                <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="edit_rss_ai_enabled_<?= $feed['id'] ?>" value="1" data-target="#edit_rss_ai_options_<?= $feed['id'] ?>" <?= $feedAiActive ? 'checked' : '' ?>>
+                                                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="edit_rss_ai_enabled_<?= $feed['id'] ?>">
+                                                                    ✨ <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
+                                                                </label>
+                                                            </div>
+
+                                                            <div id="edit_rss_ai_options_<?= $feed['id'] ?>" class="mt-3 pt-3 border-top border-primary-subtle <?= $feedAiActive ? '' : 'd-none' ?>">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-bold text-dark">
+                                                                        <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
+                                                                    </label>
+                                                                    <textarea name="ai_prompt" class="form-control" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Explain this topic/link clearly...') ?>"><?= htmlspecialchars($feed['ai_prompt'] ?? '') ?></textarea>
+                                                                </div>
+
+                                                                <div class="row g-2">
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_detail_level_label') ?? 'Detail Level' ?></label>
+                                                                        <select name="ai_detail_level" class="form-select ai-detail-select" data-token-input="#edit_rss_ai_tokens_<?= $feed['id'] ?>">
+                                                                            <?php $currLvl = $feed['ai_detail_level'] ?? 'medium'; ?>
+                                                                            <option value="light" <?= $currLvl === 'light' ? 'selected' : '' ?>><?= __('ai_level_light') ?? 'Light (Brief)' ?></option>
+                                                                            <option value="medium" <?= $currLvl === 'medium' ? 'selected' : '' ?>><?= __('ai_level_medium') ?? 'Medium (Balanced)' ?></option>
+                                                                            <option value="detailed" <?= $currLvl === 'detailed' ? 'selected' : '' ?>><?= __('ai_level_detailed') ?? 'Detailed (In-Depth)' ?></option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_tokens_label') ?? 'Max Tokens' ?></label>
+                                                                        <input type="number" name="ai_max_tokens" id="edit_rss_ai_tokens_<?= $feed['id'] ?>" class="form-control" value="<?= (int)($feed['ai_max_tokens'] ?? 350) ?>" min="50" max="4096">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_chars_label') ?? 'Max Characters' ?></label>
+                                                                        <input type="number" name="ai_max_chars" class="form-control" value="<?= (int)($feed['ai_max_chars'] ?? 0) ?>" min="0" max="10000">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
                                                         <!-- Target Social Accounts (Edit Modal) -->
                                                         <div class="mb-3">
                                                             <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
@@ -517,6 +612,28 @@ $postPeriodLower     = strtolower($postPeriodLabel);
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+    const detailTokenDefaults = { light: 150, medium: 350, detailed: 750 };
+
+    // Toggle AI options panel visibility
+    document.querySelectorAll('.ai-toggle-switch').forEach(sw => {
+        sw.addEventListener('change', function() {
+            const target = document.querySelector(this.dataset.target);
+            if (target) {
+                target.classList.toggle('d-none', !this.checked);
+            }
+        });
+    });
+
+    // Update suggested max_tokens when detail level changes
+    document.querySelectorAll('.ai-detail-select').forEach(sel => {
+        sel.addEventListener('change', function() {
+            const tokenInput = document.querySelector(this.dataset.tokenInput);
+            if (tokenInput) {
+                tokenInput.value = detailTokenDefaults[this.value] || 350;
+            }
+        });
+    });
     
     const storageKey = 'rss_selected_accounts';
     const savedAccounts = JSON.parse(localStorage.getItem(storageKey)) || [];
