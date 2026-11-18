@@ -1,5 +1,5 @@
-// cron/rss_worker.php
 <?php
+// cron/rss_worker.php
 
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__) . '/');
@@ -11,6 +11,7 @@ require_once BASE_PATH . 'app/Models/UsageManager.php';
 require_once BASE_PATH . 'app/Models/MailingList.php';
 require_once BASE_PATH . 'app/Core/Mailer.php';
 require_once BASE_PATH . 'app/Core/Database.php';
+require_once BASE_PATH . 'app/Services/AiContentService.php';
 
 // Allow execution either via CLI or via internal PHP cron runner
 if (php_sapi_name() !== 'cli' && !defined('INTERNAL_CRON_EXEC')) {
@@ -102,6 +103,13 @@ foreach ($feeds as $feed) {
     $randomRepostLimit   = max(10, (int)($feed['random_repost_limit'] ?? 10));
     $isFirstCheck        = empty($feed['last_checked']);
     $lastCheckedTs       = !empty($feed['last_checked']) ? strtotime($feed['last_checked']) : 0;
+
+    // Optional AI captioning configuration
+    $aiEnabled     = !empty($feed['ai_enabled']);
+    $aiPrompt      = trim((string)($feed['ai_prompt'] ?? ''));
+    $aiDetailLevel = (string)($feed['ai_detail_level'] ?? 'medium');
+    $aiMaxTokens   = (int)($feed['ai_max_tokens'] ?? 350);
+    $aiMaxChars    = max(0, (int)($feed['ai_max_chars'] ?? 0));
 
     // If "only new items" is active on absolute first check, skip and initialize timestamp
     if ($onlyNewItems && $isFirstCheck) {
@@ -209,27 +217,13 @@ foreach ($feeds as $feed) {
             break;
         }
 
-        // Build social post content (including description snippet if present)
-        $descSnippet = !empty($item['description']) ? mb_substr($item['description'], 0, 300) . (mb_strlen($item['description']) > 300 ? '...' : '') . "\n\n" : '';
-        $socialPostContent = $item['title'] . "\n\n" . $descSnippet . $item['link'];
-
-        // Build rich email payload stored as structured JSON for mailing lists
-        $mailingListPayload = json_encode([
-            'title'       => $item['title'],
-            'description' => $item['description'],
-            'link'        => $item['link']
-        ], JSON_UNESCAPED_UNICODE);
-
-        $mediaUrlsJson = !empty($item['media_url']) ? json_encode([$item['media_url']]) : null;
-        $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
-
+        // Pre-filter eligible targets to avoid unnecessary AI generation on duplicate items
+        $eligibleTargets = [];
         foreach ($targetAccounts as $target) {
-            // Handle Mailing List Target
             if (is_string($target) && str_starts_with($target, 'ml_')) {
                 $listId = (int)substr($target, 3);
                 $mlSourceIdentifier = "mailing_list:{$listId}";
 
-                // Duplicate check for mailing list
                 if (!$randomRepostEnabled) {
                     $chkStmt = $db->prepare("
                         SELECT id FROM posts 
@@ -248,7 +242,73 @@ foreach ($feeds as $feed) {
                         continue;
                     }
                 }
+                $eligibleTargets[] = ['type' => 'ml', 'id' => $listId, 'source_id' => $mlSourceIdentifier];
+            } else {
+                $accountId = (int)$target;
+                if (!$randomRepostEnabled) {
+                    $stmt = $db->prepare("SELECT id FROM posts WHERE social_account_id = ? AND (source_link = ? OR content LIKE ?)");
+                    $searchString = "%" . $item['link'] . "%";
+                    $stmt->execute([$accountId, $item['link'], $searchString]);
+                    if ($stmt->fetch()) {
+                        continue;
+                    }
+                }
+                $eligibleTargets[] = ['type' => 'social', 'id' => $accountId];
+            }
+        }
 
+        if (empty($eligibleTargets)) {
+            continue;
+        }
+
+        // Generate post content (either AI-enhanced or standard RSS snippet)
+        if ($aiEnabled) {
+            if (!UsageManager::canGenerateAi((int)$feed['user_id'])) {
+                echo " - Skipped AI generation: User ID {$feed['user_id']} has insufficient AI credits.\n";
+                break;
+            }
+
+            $aiRes = AiContentService::generateCaption([
+                'user_prompt'       => $aiPrompt,
+                'item_title'        => $item['title'],
+                'item_description'  => $item['description'],
+                'item_link'         => $item['link'],
+                'detail_level'      => $aiDetailLevel,
+                'max_tokens'        => $aiMaxTokens,
+                'max_chars'         => $aiMaxChars,
+                'include_link'      => true,
+                'temperature'       => 0.75,
+                'fetch_web_context' => true
+            ]);
+
+            if (!$aiRes['success'] || empty($aiRes['text'])) {
+                echo " - AI generation failed for item [{$item['title']}]: " . ($aiRes['error'] ?? 'Empty output') . "\n";
+                continue;
+            }
+
+            UsageManager::incrementAiUsage((int)$feed['user_id'], 1);
+
+            $socialPostContent = $aiRes['text'];
+            $mailingListDesc   = $aiRes['caption'];
+        } else {
+            $descSnippet = !empty($item['description']) ? mb_substr($item['description'], 0, 300) . (mb_strlen($item['description']) > 300 ? '...' : '') . "\n\n" : '';
+            $socialPostContent = $item['title'] . "\n\n" . $descSnippet . $item['link'];
+            $mailingListDesc   = $item['description'];
+        }
+
+        // Build rich email payload stored as structured JSON for mailing lists
+        $mailingListPayload = json_encode([
+            'title'       => $item['title'],
+            'description' => $mailingListDesc,
+            'link'        => $item['link']
+        ], JSON_UNESCAPED_UNICODE);
+
+        $mediaUrlsJson = !empty($item['media_url']) ? json_encode([$item['media_url']]) : null;
+        $scheduledDate = date('Y-m-d H:i:s', $currentPublishTime);
+        $dbSourceLink  = mb_substr($item['link'], 0, 255);
+
+        foreach ($eligibleTargets as $targetInfo) {
+            if ($targetInfo['type'] === 'ml') {
                 $insertStmt = $db->prepare("
                     INSERT INTO posts (user_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, source_link, is_rss) 
                     VALUES (?, NULL, ?, ?, 'scheduled', ?, ?, ?, 1)
@@ -259,37 +319,23 @@ foreach ($feeds as $feed) {
                     $mediaUrlsJson,
                     $scheduledDate,
                     $scheduledDate,
-                    $mlSourceIdentifier
+                    $targetInfo['source_id']
                 ]);
-
                 $addedPosts++;
-
             } else {
-                // Handle Social Account Target
-                $accountId = (int)$target;
-                if (!$randomRepostEnabled) {
-                    $stmt = $db->prepare("SELECT id FROM posts WHERE social_account_id = ? AND (source_link = ? OR content LIKE ?)");
-                    $searchString = "%" . $item['link'] . "%";
-                    $stmt->execute([$accountId, $item['link'], $searchString]);
-                    if ($stmt->fetch()) {
-                        continue;
-                    }
-                }
-
                 $insertStmt = $db->prepare("
                     INSERT INTO posts (user_id, social_account_id, content, media_urls, status, scheduled_for, scheduled_at, source_link, is_rss) 
                     VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?, 1)
                 ");
                 $insertStmt->execute([
                     $feed['user_id'], 
-                    $accountId, 
+                    $targetInfo['id'], 
                     $socialPostContent,
                     $mediaUrlsJson,
                     $scheduledDate, 
                     $scheduledDate, 
-                    $item['link']
+                    $dbSourceLink
                 ]);
-                
                 $addedPosts++;
             }
         }
