@@ -6,6 +6,7 @@ require_once __DIR__ . '/../Models/SocialAccount.php';
 require_once __DIR__ . '/../Models/UsageManager.php';
 require_once __DIR__ . '/../Models/Group.php';
 require_once __DIR__ . '/../Models/MailingList.php';
+require_once __DIR__ . '/../Services/AiContentService.php';
 require_once __DIR__ . '/../Core/Database.php';
 
 class AiStudioController {
@@ -45,6 +46,73 @@ class AiStudioController {
     }
 
     /**
+     * Sanitize and build normalized campaign schedule & AI settings from POST input
+     */
+    private function extractScheduleSettings(array $post, array $fallback = []): array {
+        $allowedModes = ['prompt_only', 'rss_feed', 'links_list'];
+        $sourceMode = $post['source_mode'] ?? ($fallback['source_mode'] ?? 'prompt_only');
+        if (!in_array($sourceMode, $allowedModes, true)) {
+            $sourceMode = 'prompt_only';
+        }
+
+        $rssUrl = trim((string)($post['rss_url'] ?? ($fallback['rss_url'] ?? '')));
+        $rawLinksList = trim((string)($post['links_list'] ?? ($fallback['links_list'] ?? '')));
+        $linksArray = [];
+        if ($rawLinksList !== '') {
+            $lines = preg_split('/\r\n|\r|\n/', $rawLinksList);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line !== '') {
+                    $linksArray[] = $line;
+                }
+            }
+        }
+
+        $selectionMode = $post['selection_mode'] ?? ($fallback['selection_mode'] ?? 'random');
+        if (!in_array($selectionMode, ['random', 'sequential'], true)) {
+            $selectionMode = 'random';
+        }
+
+        $detailLevel = $post['ai_detail_level'] ?? ($fallback['ai_detail_level'] ?? 'medium');
+        if (!in_array($detailLevel, ['light', 'medium', 'detailed'], true)) {
+            $detailLevel = 'medium';
+        }
+
+        $levelDefaults = AiContentService::getDetailLevelConfig($detailLevel);
+        $maxTokens = (int)($post['ai_max_tokens'] ?? ($fallback['ai_max_tokens'] ?? $levelDefaults['tokens']));
+        if ($maxTokens <= 0) {
+            $maxTokens = $levelDefaults['tokens'];
+        }
+        $maxTokens = max(50, min(4096, $maxTokens));
+
+        $maxChars = max(0, (int)($post['ai_max_chars'] ?? ($fallback['ai_max_chars'] ?? 0)));
+        $includeSourceLink = !empty($post['include_source_link']) ? 1 : 0;
+
+        $uniquePosts = !empty($post['unique_posts']) ? 1 : 0;
+        $targetMailingLists = isset($post['target_mailing_lists'])
+            ? array_map('intval', (array)$post['target_mailing_lists'])
+            : ($fallback['target_mailing_lists'] ?? []);
+
+        return [
+            'total_posts'          => max(1, (int)($post['total_posts'] ?? ($fallback['total_posts'] ?? 1))),
+            'posts_per_day'        => max(1, (int)($post['posts_per_day'] ?? ($fallback['posts_per_day'] ?? 1))),
+            'start_time'           => $post['start_time'] ?? ($fallback['start_time'] ?? '09:00'),
+            'end_time'             => $post['end_time'] ?? ($fallback['end_time'] ?? '18:00'),
+            'unique_posts'         => $uniquePosts,
+            'target_mailing_lists' => $targetMailingLists,
+            'source_mode'          => $sourceMode,
+            'rss_url'              => $rssUrl,
+            'links_list'           => implode("\n", $linksArray),
+            'links_items'          => $linksArray,
+            'selection_mode'       => $selectionMode,
+            'ai_detail_level'      => $detailLevel,
+            'ai_max_tokens'        => $maxTokens,
+            'ai_max_chars'         => $maxChars,
+            'include_source_link'  => $includeSourceLink
+        ];
+    }
+
+    /**
      * Process the form submission and store the campaign
      */
     public function store() {
@@ -57,22 +125,26 @@ class AiStudioController {
         
         $prompt = trim($_POST['prompt'] ?? '');
         $selectedAccounts = array_map('intval', $_POST['accounts'] ?? []);
-        $targetMailingLists = array_map('intval', $_POST['target_mailing_lists'] ?? []);
-        $uniquePosts = !empty($_POST['unique_posts']) ? 1 : 0;
-        
-        $scheduleSettings = [
-            'total_posts'          => max(1, (int)($_POST['total_posts'] ?? 1)),
-            'posts_per_day'        => max(1, (int)($_POST['posts_per_day'] ?? 1)),
-            'start_time'           => $_POST['start_time'] ?? '09:00',
-            'end_time'             => $_POST['end_time'] ?? '18:00',
-            'unique_posts'         => $uniquePosts,
-            'target_mailing_lists' => $targetMailingLists
-        ];
+        $scheduleSettings = $this->extractScheduleSettings($_POST);
 
-        if (empty($prompt) || (empty($selectedAccounts) && empty($targetMailingLists))) {
+        if (empty($prompt) || (empty($selectedAccounts) && empty($scheduleSettings['target_mailing_lists']))) {
             $_SESSION['error'] = __('ai_studio_missing_fields') ?? 'Prompt and at least one target account or mailing list are required.';
             header('Location: /ai-studio');
             exit;
+        }
+
+        if ($scheduleSettings['source_mode'] === 'rss_feed') {
+            if (empty($scheduleSettings['rss_url']) || !filter_var($scheduleSettings['rss_url'], FILTER_VALIDATE_URL)) {
+                $_SESSION['error'] = __('ai_studio_invalid_rss_url') ?? 'Please enter a valid external RSS Feed URL.';
+                header('Location: /ai-studio');
+                exit;
+            }
+        } elseif ($scheduleSettings['source_mode'] === 'links_list') {
+            if (empty($scheduleSettings['links_items'])) {
+                $_SESSION['error'] = __('ai_studio_empty_links_list') ?? 'Please enter at least one link or topic in the list (one per line).';
+                header('Location: /ai-studio');
+                exit;
+            }
         }
 
         $aiLimits = UsageManager::getAiLimits($userId);
@@ -115,8 +187,6 @@ class AiStudioController {
         $campaignId = (int)($_POST['campaign_id'] ?? 0);
         $prompt = trim($_POST['prompt'] ?? '');
         $status = $_POST['status'] ?? 'active';
-        $uniquePosts = !empty($_POST['unique_posts']) ? 1 : 0;
-        $targetMailingLists = isset($_POST['target_mailing_lists']) ? array_map('intval', $_POST['target_mailing_lists']) : [];
 
         if (!in_array($status, ['active', 'paused', 'completed'])) {
             $status = 'active';
@@ -129,33 +199,41 @@ class AiStudioController {
             exit;
         }
 
+        $existingSettings = $existing['schedule_settings'] ?? [];
+        $scheduleSettings = $this->extractScheduleSettings($_POST, $existingSettings);
+
+        if (empty($prompt)) {
+            $_SESSION['error'] = __('ai_studio_missing_fields') ?? 'Prompt is required.';
+            header('Location: /ai-studio');
+            exit;
+        }
+
+        if ($scheduleSettings['source_mode'] === 'rss_feed' && (empty($scheduleSettings['rss_url']) || !filter_var($scheduleSettings['rss_url'], FILTER_VALIDATE_URL))) {
+            $_SESSION['error'] = __('ai_studio_invalid_rss_url') ?? 'Please enter a valid external RSS Feed URL.';
+            header('Location: /ai-studio');
+            exit;
+        }
+
+        if ($scheduleSettings['source_mode'] === 'links_list' && empty($scheduleSettings['links_items'])) {
+            $_SESSION['error'] = __('ai_studio_empty_links_list') ?? 'Please enter at least one link or topic in the list (one per line).';
+            header('Location: /ai-studio');
+            exit;
+        }
+
         $aiLimits = UsageManager::getAiLimits($userId);
-        $totalPosts = max(1, (int)($_POST['total_posts'] ?? ($existing['schedule_settings']['total_posts'] ?? 1)));
-        $postsPerDay = max(1, (int)($_POST['posts_per_day'] ?? ($existing['schedule_settings']['posts_per_day'] ?? 1)));
-        $startTime = $_POST['start_time'] ?? ($existing['schedule_settings']['start_time'] ?? '09:00');
-        $endTime = $_POST['end_time'] ?? ($existing['schedule_settings']['end_time'] ?? '18:00');
 
         // Server-side strict limit checks
-        if ($totalPosts > $aiLimits['ai_max_campaign_posts']) {
+        if ($scheduleSettings['total_posts'] > $aiLimits['ai_max_campaign_posts']) {
             $_SESSION['error'] = __('plan_campaign_limit_exceeded') ?? 'Total posts exceed your plan allowance.';
             header('Location: /ai-studio');
             exit;
         }
 
-        if ($postsPerDay > $aiLimits['ai_max_daily_posts']) {
+        if ($scheduleSettings['posts_per_day'] > $aiLimits['ai_max_daily_posts']) {
             $_SESSION['error'] = __('plan_daily_limit_exceeded') ?? 'Daily posts exceed your plan allowance.';
             header('Location: /ai-studio');
             exit;
         }
-
-        $scheduleSettings = [
-            'total_posts'          => $totalPosts,
-            'posts_per_day'        => $postsPerDay,
-            'start_time'           => $startTime,
-            'end_time'             => $endTime,
-            'unique_posts'         => $uniquePosts,
-            'target_mailing_lists' => $targetMailingLists
-        ];
 
         AiCampaign::update($campaignId, $userId, $prompt, $scheduleSettings, $status);
 
