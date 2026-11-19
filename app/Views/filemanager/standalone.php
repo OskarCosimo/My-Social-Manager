@@ -25,20 +25,23 @@ $currentUserId = (int)$_SESSION['user_id'];
     <script>
     // Helper function to send the selected file to the Post Composer
     function sendToComposer(fileName) {
-        // Build base URL with user folder isolation
-        const appBase = '<?= rtrim(Config::APP_URL, "/") ?>';
-        const fileUrl = appBase + '/public/assets/My-File-Manager/files/user_<?= $currentUserId ?>/' + fileName;
-        
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({
-                type: 'file_selected',
-                url: fileUrl
-            }, '*');
-        } else {
-            localStorage.setItem('pending_file_url', fileUrl);
-            window.location.href = '/compose';
-        }
+    // Dynamically build base URL from Config::APP_URL and current user session
+    const appBaseUrl = '<?= rtrim(Config::APP_URL, "/") ?>';
+    const userId = '<?= (int)($_SESSION["user_id"] ?? 0) ?>';
+    const fileUrl = appBaseUrl + '/public/assets/My-File-Manager/files/user_' + userId + '/' + fileName;
+    
+    // If running inside modal iframe, dispatch postMessage to parent container
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: 'file_selected',
+            url: fileUrl
+        }, '*');
+    } else {
+        // Direct tab fallback
+        localStorage.setItem('pending_file_url', fileUrl);
+        window.location.href = '/compose';
     }
+}
 
     const token_bearer_header = '<?= $validToken ?>';
     const appLanguage = '<?= htmlspecialchars($currentLang) ?>';
