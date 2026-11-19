@@ -331,10 +331,10 @@ class YoutubePlugin implements SocialPluginInterface {
     }
 
     /**
-     * Resolve a web URL or relative path to a local filesystem path
+     * Resolve a web URL or relative path to a local filesystem path on the server
      */
     private function resolveLocalFilePath(string $target): ?string {
-        if (file_exists($target)) {
+        if (file_exists($target) && is_file($target)) {
             return $target;
         }
 
@@ -342,20 +342,41 @@ class YoutubePlugin implements SocialPluginInterface {
         $parsedPath = parse_url($target, PHP_URL_PATH);
 
         if (!empty($parsedPath)) {
-            $candidate = $basePath . ltrim($parsedPath, '/');
-            if (file_exists($candidate)) {
-                return $candidate;
-            }
+            $relativePath = ltrim($parsedPath, '/');
+            $fileName = basename($parsedPath);
+
+            $candidates = [
+                $basePath . $relativePath,
+                $basePath . 'public/' . $relativePath,
+                $basePath . preg_replace('#^public/#', '', $relativePath),
+            ];
 
             if (!empty($_SERVER['DOCUMENT_ROOT'])) {
-                $docCandidate = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/' . ltrim($parsedPath, '/');
-                if (file_exists($docCandidate)) {
-                    return $docCandidate;
+                $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/';
+                $candidates[] = $docRoot . $relativePath;
+                $candidates[] = $docRoot . preg_replace('#^public/#', '', $relativePath);
+            }
+
+            // Auto-heal missing user folder or wrong domain: search inside user folders
+            $filesDir = $basePath . 'public/assets/My-File-Manager/files/';
+            if (is_dir($filesDir)) {
+                $candidates[] = $filesDir . $fileName;
+                $userDirs = glob($filesDir . 'user_*', GLOB_ONLYDIR);
+                if (!empty($userDirs)) {
+                    foreach ($userDirs as $uDir) {
+                        $candidates[] = $uDir . '/' . $fileName;
+                    }
+                }
+            }
+
+            foreach ($candidates as $candidate) {
+                if (file_exists($candidate) && is_file($candidate)) {
+                    return $candidate;
                 }
             }
         }
 
-        // If target is external remote URL, download it temporarily
+        // External remote download fallback
         if (filter_var($target, FILTER_VALIDATE_URL)) {
             $tmpFile = sys_get_temp_dir() . '/yt_upload_' . uniqid() . '.mp4';
             $fp = @fopen($tmpFile, 'w+');
@@ -364,13 +385,17 @@ class YoutubePlugin implements SocialPluginInterface {
                 curl_setopt($ch, CURLOPT_FILE, $fp);
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                 curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 curl_close($ch);
                 fclose($fp);
 
-                if (file_exists($tmpFile) && filesize($tmpFile) > 1024) {
+                if (file_exists($tmpFile) && filesize($tmpFile) > 1024 && $httpCode === 200) {
                     return $tmpFile;
                 }
+                @unlink($tmpFile);
             }
         }
 
