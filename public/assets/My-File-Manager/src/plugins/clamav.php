@@ -1,40 +1,59 @@
 <?php
 /**
+ * // plugins/clamav.php
  * ClamAV Antivirus Scanner Plugin
+ *
+ * @package MyFileManager
+ * @author Oscar Cosimo & MYETV Team
+ * @license MIT
  */
+
 class clamavPlugin {
     private $config;
+    private $pluginConfig;
 
     public function __construct($config) {
-        $this->config = $config;
+        $this->config = is_array($config) ? $config : [];
+        $this->pluginConfig = $this->config['plugins']['clamav'] ?? $this->config;
     }
 
     /**
      * Scans a file using ClamAV daemon
+     *
      * @param string $filePath Absolute path of the file to scan
      * @return array Scan result
      */
     public function scanFile($filePath) {
-        if (!file_exists($filePath)) {
+        if (!is_string($filePath) || $filePath === '' || !is_file($filePath)) {
             return ['success' => false, 'is_safe' => false, 'error' => 'File not found for scanning.'];
         }
 
-        // Get the path from config, or fallback to the standard command
-        $clamdscanPath = $this->config['clamdscan_path'] ?? 'clamdscan';
+        // Support both nested plugin config and direct config array
+        $clamdscanPath = $this->pluginConfig['clamdscan_path'] ?? 'clamdscan';
 
-        // Build the command using the exact path
         // --fdpass allows clamd to read the file even with restrictive permissions
-        // --no-summary gives us a clean 1-line output
-        $cmd = escapeshellcmd($clamdscanPath) . " --no-summary --fdpass " . escapeshellarg($filePath) . " 2>&1";
-        
-        $output = shell_exec($cmd);
+        // --no-summary gives a clean single-line output
+        $cmd = escapeshellcmd($clamdscanPath) . ' --no-summary --fdpass ' . escapeshellarg($filePath) . ' 2>&1';
 
-        // If the output contains "OK", the file is clean
-        if (strpos($output, 'OK') !== false && strpos($output, 'FOUND') === false) {
+        $outputLines = [];
+        $exitCode = 0;
+        exec($cmd, $outputLines, $exitCode);
+        $output = trim(implode("\n", $outputLines));
+
+        // clamdscan exit codes: 0 = no virus found, 1 = virus(es) found, 2 = error
+        if ($exitCode === 0 && preg_match('/:\s*OK$/m', $output) === 1 && strpos($output, 'FOUND') === false) {
             return ['success' => true, 'is_safe' => true];
         }
 
-        // Otherwise, a malware was found (or a daemon error occurred)
-        return ['success' => true, 'is_safe' => false, 'details' => trim($output)];
+        if ($exitCode === 1 || strpos($output, 'FOUND') !== false) {
+            return ['success' => true, 'is_safe' => false, 'details' => $output];
+        }
+
+        return [
+            'success' => false,
+            'is_safe' => false,
+            'error' => 'ClamAV scan error (exit code: ' . $exitCode . ')',
+            'details' => $output
+        ];
     }
 }

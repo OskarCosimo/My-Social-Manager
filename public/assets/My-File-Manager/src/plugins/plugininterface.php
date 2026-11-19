@@ -1,5 +1,6 @@
 <?php
 /**
+// plguins/plugininterface.php
  * My File Manager - Plugin Interface
  * 
  * Base interface for storage plugins (FTP, Cloud services, etc.)
