@@ -13,14 +13,14 @@ $currentUserId = (int)$_SESSION['user_id'];
 <head>
     <meta charset="UTF-8">
     <title><?= __('file_manager') ?? 'File Manager' ?></title>
-    <link rel="stylesheet" href="https://www.myetv.tv/CDN/myetv-file-manager/css/myfilemanager.min.css?v=14" />
+    <link rel="stylesheet" href="/public/assets/My-File-Manager/css/myfilemanager.min.css" />
 </head>
 <body style="margin: 0; padding: 0;">
 
     <div id="fm-container" name="fm-container" style="text-align:left;" align="left"></div>
 
-    <script src="https://www.myetv.tv/CDN/myetv-file-manager/js/myfilemanager.min.js?v=14"></script>
-    <script src="https://www.myetv.tv/CDN/myetv-file-manager/js/i18n.min.js" integrity="sha512-nIO9Dwx78lHCDg5KuucL4NSa9nGogW0D1yKHuqE6GSoirca2X/aCxufNPGQcZgFwhdz1XthOa77SJX/LDOPcWg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="/public/assets/My-File-Manager/js/myfilemanager.min.js"></script>
+    <script src="/public/assets/My-File-Manager/js/i18n.min.js"></script>
 
     <script>
     // Helper function to send the selected file to the Post Composer
@@ -62,8 +62,8 @@ $currentUserId = (int)$_SESSION['user_id'];
         hideExtensions: ['.tmp', '.log', '.cache', '.bak', '.sh'],
 
         // Branding configuration
-        brandLogo: 'https://www.myetv.tv/CDN/assets/images/LogoMYETV_trademark_120px.png',
-        brandLink: 'https://www.myetv.tv',
+        brandLogo: '/public/assets/My-File-Manager/assets/myfilemanager_logo_icon.jpeg',
+        brandLink: 'https://github.com/OskarCosimo/My-Social-Manager',
         brandTarget: '_blank',
         
         // Upload limits
