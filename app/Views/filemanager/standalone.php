@@ -4,9 +4,9 @@ if (!isset($_SESSION['user_id'])) exit;
 
 require_once __DIR__ . '/../../Core/Config.php';
 
-// Resolve the active language priority: Cookie -> Session -> Default config
 $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? (class_exists('Config') ? Config::DEFAULT_LANG : 'en');
 $validToken  = "rh4h45yh4hyà4y]hà45yhà45yh4r5thyò4r@5thyàòe4r5thye4r5thygòe4r5ty#hge5r";
+$currentUserId = (int)$_SESSION['user_id'];
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($currentLang) ?>">
@@ -25,17 +25,16 @@ $validToken  = "rh4h45yh4hyà4y]hà45yhà45yh4r5thyò4r@5thyàòe4r5thye4r5thyg�
     <script>
     // Helper function to send the selected file to the Post Composer
     function sendToComposer(fileName) {
-        const baseUrl = 'https://www.mysocialmanager.myetv.tv/public/assets/My-File-Manager/files/';
-        const fileUrl = baseUrl + fileName;
+        // Build base URL with user folder isolation
+        const appBase = '<?= rtrim(Config::APP_URL, "/") ?>';
+        const fileUrl = appBase + '/public/assets/My-File-Manager/files/user_<?= $currentUserId ?>/' + fileName;
         
-        // If running inside modal iframe, dispatch postMessage to parent container
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({
                 type: 'file_selected',
                 url: fileUrl
             }, '*');
         } else {
-            // Direct tab fallback
             localStorage.setItem('pending_file_url', fileUrl);
             window.location.href = '/compose';
         }
