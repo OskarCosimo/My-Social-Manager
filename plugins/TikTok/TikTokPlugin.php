@@ -241,33 +241,124 @@ class TikTokPlugin implements SocialPluginInterface {
             $cleanMessage .= " " . $sourceLink;
         }
 
-        $videoUrl = $mediaUrls[0] ?? null;
-        if (empty($videoUrl)) {
-            return ['success' => false, 'error' => 'TikTok requires a video URL to publish.'];
+        $rawMedia = $mediaUrls[0] ?? null;
+        if (empty($rawMedia)) {
+            return ['success' => false, 'error' => 'TikTok requires a video file.'];
         }
 
-        // Ensure video URL is an absolute public URL
+        // 1. Resolve local file path on the server
+        $basePath = defined('BASE_PATH') ? BASE_PATH : (dirname(__DIR__, 2) . '/');
+        $localFilePath = null;
+        $fileName = basename(parse_url($rawMedia, PHP_URL_PATH));
+
+        // Scan potential local paths on disk
+        $filesDir = $basePath . 'public/assets/My-File-Manager/files/';
+        if (file_exists($rawMedia) && is_file($rawMedia)) {
+            $localFilePath = $rawMedia;
+        } elseif (is_dir($filesDir)) {
+            if (file_exists($filesDir . $fileName)) {
+                $localFilePath = $filesDir . $fileName;
+            } else {
+                $userDirs = glob($filesDir . 'user_*', GLOB_ONLYDIR);
+                if (!empty($userDirs)) {
+                    foreach ($userDirs as $uDir) {
+                        if (file_exists($uDir . '/' . $fileName)) {
+                            $localFilePath = $uDir . '/' . $fileName;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. If file exists on server, use direct binary FILE_UPLOAD to TikTok
+        if ($localFilePath && file_exists($localFilePath)) {
+            $fileSize = filesize($localFilePath);
+            
+            $initUrl = "https://open.tiktokapis.com/v2/post/publish/video/init/";
+            $initPayload = json_encode([
+                'post_info' => [
+                    'title'            => mb_strimwidth($cleanMessage, 0, 2200, "..."),
+                    'privacy_level'    => 'PUBLIC_TO_EVERYONE',
+                    'disable_duet'     => false,
+                    'disable_stitch'   => false,
+                    'disable_comment'  => false
+                ],
+                'source_info' => [
+                    'source'            => 'FILE_UPLOAD',
+                    'video_size'        => $fileSize,
+                    'chunk_size'        => $fileSize,
+                    'total_chunk_count' => 1
+                ]
+            ]);
+
+            $ch = curl_init($initUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json; charset=UTF-8'
+            ]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $initPayload);
+            $initRes = json_decode(curl_exec($ch), true);
+            curl_close($ch);
+
+            if (isset($initRes['error']['code']) && $initRes['error']['code'] !== 'ok') {
+                return ['success' => false, 'error' => 'TikTok Init Error: ' . ($initRes['error']['message'] ?? 'Unknown error')];
+            }
+
+            $uploadUrl = $initRes['data']['upload_url'] ?? null;
+            $publishId = $initRes['data']['publish_id'] ?? ('tiktok_' . time());
+
+            if (!$uploadUrl) {
+                return ['success' => false, 'error' => 'TikTok did not provide an upload URL.'];
+            }
+
+            // Stream video binary to TikTok upload endpoint
+            $fp = fopen($localFilePath, 'rb');
+            $chUpload = curl_init($uploadUrl);
+            curl_setopt($chUpload, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($chUpload, CURLOPT_PUT, true);
+            curl_setopt($chUpload, CURLOPT_INFILE, $fp);
+            curl_setopt($chUpload, CURLOPT_INFILESIZE, $fileSize);
+            curl_setopt($chUpload, CURLOPT_HTTPHEADER, [
+                'Content-Type: video/mp4',
+                'Content-Range: bytes 0-' . ($fileSize - 1) . '/' . $fileSize
+            ]);
+            $uploadRes = curl_exec($chUpload);
+            $httpCode = curl_getinfo($chUpload, CURLINFO_HTTP_CODE);
+            curl_close($chUpload);
+            fclose($fp);
+
+            if ($httpCode >= 200 && $httpCode < 300) {
+                return ['success' => true, 'post_id' => $publishId];
+            }
+
+            return ['success' => false, 'error' => "TikTok binary upload failed (HTTP {$httpCode})."];
+        }
+
+        // 3. Fallback: PULL_FROM_URL for external remote URLs
+        $videoUrl = $rawMedia;
         if (!preg_match('~^https?://~i', $videoUrl)) {
             $videoUrl = rtrim(Config::APP_URL, '/') . '/' . ltrim($videoUrl, '/');
         }
 
-        // TikTok Content Posting API Init
-        $url = "https://open.tiktokapis.com/v2/post/publish/video/init/";
+        $initUrl = "https://open.tiktokapis.com/v2/post/publish/video/init/";
         $payload = json_encode([
             'post_info' => [
-                'title' => mb_strimwidth($cleanMessage, 0, 2200, "..."),
-                'privacy_level' => 'PUBLIC_TO_EVERYONE',
-                'disable_duet' => false,
-                'disable_stitch' => false,
-                'disable_comment' => false
+                'title'            => mb_strimwidth($cleanMessage, 0, 2200, "..."),
+                'privacy_level'    => 'PUBLIC_TO_EVERYONE',
+                'disable_duet'     => false,
+                'disable_stitch'   => false,
+                'disable_comment'  => false
             ],
             'source_info' => [
-                'source' => 'PULL_FROM_URL',
+                'source'    => 'PULL_FROM_URL',
                 'video_url' => $videoUrl
             ]
         ]);
 
-        $ch = curl_init($url);
+        $ch = curl_init($initUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
