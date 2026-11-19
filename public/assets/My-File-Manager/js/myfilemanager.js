@@ -1,37 +1,50 @@
 /**
+ * // myfilemanager.js
  * My File Manager - Enhanced JavaScript UI
  * MyFileManager - Secure File Manager with Universal Crypto Support
- * Embedded CryptoJS + WebCrypto fallback for ALL browsers/WebViews
- * 
+ * WebCrypto AES-256-GCM with CryptoJS CTR+HMAC fallback
+ *
  * @package MyFileManager
  * @author Oscar Cosimo & MYETV Team
  * @license MIT
  */
 
 /**
- * Load CryptoJS ONLY if WebCrypto not available (bandwidth savings)
+ * Load CryptoJS ONLY if WebCrypto is not available (without eval)
  */
 async function loadCryptoJSIfNeeded() {
-    // Skip if WebCrypto available (modern browsers)
+    // Skip if WebCrypto is available (modern browsers in secure context)
     if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.importKey === 'function') {
-        //console.log('WebCrypto detected - CryptoJS NOT loaded');
         return;
     }
 
-    // WebCrypto NOT available - load CryptoJS as fallback
+    // WebCrypto not available - load CryptoJS via script tag as fallback
     if (window.CryptoJS) return;
 
-    try {
-        const response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js');
-        const cryptoJSScript = await response.text();
-        eval(cryptoJSScript);
-        //console.log('CryptoJS loaded as WebCrypto fallback');
-    } catch (error) {
-        console.warn('CryptoJS load failed - WebCrypto required:', error);
-    }
+    return new Promise(function (resolve) {
+        var existing = document.querySelector('script[data-mfm-cryptojs="true"]');
+        if (existing) {
+            existing.addEventListener('load', function () { resolve(); });
+            existing.addEventListener('error', function () { resolve(); });
+            return;
+        }
+
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js';
+        script.integrity = 'sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ==';
+        script.crossOrigin = 'anonymous';
+        script.referrerPolicy = 'no-referrer';
+        script.setAttribute('data-mfm-cryptojs', 'true');
+        script.onload = function () { resolve(); };
+        script.onerror = function (err) {
+            console.warn('CryptoJS load failed - WebCrypto required:', err);
+            resolve();
+        };
+        document.head.appendChild(script);
+    });
 }
 
-// Auto-init crypto on page load
+// Auto-init crypto fallback check on page load
 loadCryptoJSIfNeeded();
 
 // Check Web Crypto API availability
@@ -41,106 +54,173 @@ function hasWebCrypto() {
         typeof crypto.subtle.importKey === 'function';
 }
 
+// Convert Uint8Array to CryptoJS WordArray
+function uint8ArrayToWordArray(u8arr) {
+    var words = [];
+    for (var i = 0; i < u8arr.length; i += 4) {
+        words.push(
+            ((u8arr[i] || 0) << 24) |
+            ((u8arr[i + 1] || 0) << 16) |
+            ((u8arr[i + 2] || 0) << 8) |
+            (u8arr[i + 3] || 0)
+        );
+    }
+    return window.CryptoJS.lib.WordArray.create(words, u8arr.length);
+}
+
+// Convert CryptoJS WordArray to Uint8Array
+function wordArrayToUint8Array(wordArray) {
+    var words = wordArray.words;
+    var sigBytes = wordArray.sigBytes;
+    var u8 = new Uint8Array(sigBytes);
+    for (var i = 0; i < sigBytes; i++) {
+        u8[i] = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    }
+    return u8;
+}
+
 // Derive secure key from password (PBKDF2 100k iterations)
 async function deriveKeyFromPassword(password, salt) {
     if (hasWebCrypto()) {
         // WebCrypto PBKDF2 (native, fastest)
-        const encoder = new TextEncoder();
-        const keyMaterial = await crypto.subtle.importKey(
-            'raw', encoder.encode(password),
-            { name: 'PBKDF2' }, false, ['deriveKey']
+        var encoder = new TextEncoder();
+        var keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            encoder.encode(password),
+            { name: 'PBKDF2' },
+            false,
+            ['deriveKey']
         );
         return crypto.subtle.deriveKey(
-            { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+            { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
             keyMaterial,
             { name: 'AES-GCM', length: 256 },
-            false, ['encrypt', 'decrypt']
+            false,
+            ['encrypt', 'decrypt']
         );
     } else if (window.CryptoJS) {
-        // CryptoJS PBKDF2 fallback (secure)
-        return CryptoJS.PBKDF2(password, salt, {
-            keySize: 8, // 256 bits
+        // CryptoJS PBKDF2 fallback (512 bits: 256-bit enc key + 256-bit HMAC key)
+        var saltWA = uint8ArrayToWordArray(salt);
+        return window.CryptoJS.PBKDF2(password, saltWA, {
+            keySize: 16, // 16 * 32 = 512 bits
             iterations: 100000,
-            hasher: CryptoJS.algo.SHA256
+            hasher: window.CryptoJS.algo.SHA256
         });
     }
     throw new Error('No crypto engine available');
 }
 
-// Encrypt file data (AES-256-GCM authenticated encryption)
+// Encrypt file data (AES-256-GCM on WebCrypto, AES-256-CTR + HMAC-SHA256 on CryptoJS)
 async function encryptFileData(fileData, key) {
+    var bytes = fileData instanceof Uint8Array ? fileData : new Uint8Array(fileData);
+
     if (hasWebCrypto()) {
-        // WebCrypto AES-GCM
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const encrypted = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv }, key, fileData
+        var iv = crypto.getRandomValues(new Uint8Array(12));
+        var encrypted = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            bytes
         );
         // Prepend IV (12 bytes) + encrypted data
-        const result = new Uint8Array(12 + encrypted.byteLength);
+        var result = new Uint8Array(12 + encrypted.byteLength);
         result.set(iv, 0);
         result.set(new Uint8Array(encrypted), 12);
         return result;
     } else if (window.CryptoJS) {
-        // CryptoJS AES-GCM fallback
-        const keyStr = CryptoJS.enc.Utf8.parse(key.key || key.toString(CryptoJS.enc.Hex));
-        const iv = CryptoJS.lib.WordArray.random(12);
-        const encrypted = CryptoJS.AES.encrypt(fileData, keyStr, {
-            iv: iv,
-            mode: CryptoJS.mode.GCM,
-            padding: CryptoJS.pad.NoPadding
+        // Split 512-bit derived key into 256-bit AES key + 256-bit HMAC key
+        var fullKeyWA = key;
+        var encKeyWA = window.CryptoJS.lib.WordArray.create(fullKeyWA.words.slice(0, 8), 32);
+        var macKeyWA = window.CryptoJS.lib.WordArray.create(fullKeyWA.words.slice(8, 16), 32);
+
+        var ivBytes = generateSalt(); // 16 bytes IV for CTR
+        var ivWA = uint8ArrayToWordArray(ivBytes);
+        var dataWA = uint8ArrayToWordArray(bytes);
+
+        var encryptedCTR = window.CryptoJS.AES.encrypt(dataWA, encKeyWA, {
+            iv: ivWA,
+            mode: window.CryptoJS.mode.CTR,
+            padding: window.CryptoJS.pad.NoPadding
         });
-        // Prepend IV + ciphertext
-        const result = iv.concat(encrypted.ciphertext);
-        return new Uint8Array(result.sigBytes);
+
+        var cipherBytes = wordArrayToUint8Array(encryptedCTR.ciphertext);
+        var macInput = ivWA.clone().concat(encryptedCTR.ciphertext);
+        var macWA = window.CryptoJS.HmacSHA256(macInput, macKeyWA);
+        var macBytes = wordArrayToUint8Array(macWA); // 32 bytes
+
+        // Output: [16 bytes IV][32 bytes HMAC][ciphertext]
+        var out = new Uint8Array(16 + 32 + cipherBytes.length);
+        out.set(ivBytes, 0);
+        out.set(macBytes, 16);
+        out.set(cipherBytes, 48);
+        return out;
     }
     throw new Error('Encryption not available');
 }
 
-// Decrypt file data (AES-256-GCM)
+// Decrypt file data
 async function decryptFileData(encryptedData, key) {
+    var bytes = encryptedData instanceof Uint8Array ? encryptedData : new Uint8Array(encryptedData);
+
     if (hasWebCrypto()) {
-        // WebCrypto AES-GCM
-        const iv = encryptedData.slice(0, 12);
-        const data = encryptedData.slice(12);
+        if (bytes.length < 13) {
+            throw new Error('Corrupted encrypted data');
+        }
+        var iv = bytes.slice(0, 12);
+        var data = bytes.slice(12);
         return await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv }, key, data
+            { name: 'AES-GCM', iv: iv },
+            key,
+            data
         );
     } else if (window.CryptoJS) {
-        // CryptoJS AES-GCM
-        const iv = CryptoJS.lib.WordArray.create(encryptedData.slice(0, 12));
-        const ciphertext = CryptoJS.lib.WordArray.create(encryptedData.slice(12));
-        const keyStr = CryptoJS.enc.Utf8.parse(key.key || key.toString(CryptoJS.enc.Hex));
+        if (bytes.length < 48) {
+            throw new Error('Corrupted encrypted data');
+        }
+        var fullKeyWA = key;
+        var encKeyWA = window.CryptoJS.lib.WordArray.create(fullKeyWA.words.slice(0, 8), 32);
+        var macKeyWA = window.CryptoJS.lib.WordArray.create(fullKeyWA.words.slice(8, 16), 32);
 
-        const decrypted = CryptoJS.AES.decrypt(
-            { ciphertext: ciphertext },
-            keyStr,
-            { iv: iv, mode: CryptoJS.mode.GCM, padding: CryptoJS.pad.NoPadding }
+        var ivBytes = bytes.slice(0, 16);
+        var macBytes = bytes.slice(16, 48);
+        var cipherBytes = bytes.slice(48);
+
+        var ivWA = uint8ArrayToWordArray(ivBytes);
+        var cipherWA = uint8ArrayToWordArray(cipherBytes);
+        var macInput = ivWA.clone().concat(cipherWA);
+        var expectedMac = wordArrayToUint8Array(window.CryptoJS.HmacSHA256(macInput, macKeyWA));
+
+        // Constant-time MAC verification
+        var diff = 0;
+        for (var i = 0; i < 32; i++) {
+            diff |= (macBytes[i] ^ expectedMac[i]);
+        }
+        if (diff !== 0) {
+            throw new Error('Decryption failed: invalid password or corrupted data');
+        }
+
+        var decrypted = window.CryptoJS.AES.decrypt(
+            { ciphertext: cipherWA },
+            encKeyWA,
+            { iv: ivWA, mode: window.CryptoJS.mode.CTR, padding: window.CryptoJS.pad.NoPadding }
         );
-        return decrypted.sigBytes ? new Uint8Array(decrypted.sigBytes) : new Uint8Array(0);
+        return wordArrayToUint8Array(decrypted);
     }
     throw new Error('Decryption not available');
 }
 
 // Generate random salt (16 bytes)
 function generateSalt() {
-    if (hasWebCrypto()) {
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
         return crypto.getRandomValues(new Uint8Array(16));
     }
-    // Fallback random salt
-    const salt = new Uint8Array(16);
-    const randomValues = new Uint32Array(4);
-    crypto.getRandomValues(randomValues);
-    for (let i = 0; i < 16; i++) {
-        salt[i] = randomValues[i % 4] >> (i * 2) & 0xFF;
-    }
-    return salt;
+    throw new Error('Secure random generator not available');
 }
 
 // Convert ArrayBuffer to base64 (for storage)
 function arrayBufferToBase64(buffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.byteLength; i++) {
+    var binary = '';
+    var bytes = new Uint8Array(buffer);
+    for (var i = 0; i < bytes.byteLength; i++) {
         binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
@@ -148,33 +228,60 @@ function arrayBufferToBase64(buffer) {
 
 // Convert base64 to ArrayBuffer
 function base64ToArrayBuffer(base64) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
+    var binary = atob(base64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
         bytes[i] = binary.charCodeAt(i);
     }
     return bytes.buffer;
 }
 
+// UTF-8 safe Base64 encoding (compatible with PHP base64_encode)
+function utf8ToBase64(str) {
+    if (!str) return '';
+    var bytes = new TextEncoder().encode(str);
+    var binary = '';
+    for (var i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+// UTF-8 safe Base64 decoding (compatible with PHP base64_encode)
+function base64ToUtf8(b64) {
+    if (!b64) return '';
+    var normalized = b64.replace(/-/g, '+').replace(/_/g, '/');
+    while (normalized.length % 4 !== 0) {
+        normalized += '=';
+    }
+    var binary = atob(normalized);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+}
+
 // Expose global functions for MyFileManager
 window.MyFileManagerCrypto = {
-    hasWebCrypto,
-    deriveKeyFromPassword,
-    encryptFileData,
-    decryptFileData,
-    generateSalt,
-    arrayBufferToBase64,
-    base64ToArrayBuffer
+    hasWebCrypto: hasWebCrypto,
+    deriveKeyFromPassword: deriveKeyFromPassword,
+    encryptFileData: encryptFileData,
+    decryptFileData: decryptFileData,
+    generateSalt: generateSalt,
+    arrayBufferToBase64: arrayBufferToBase64,
+    base64ToArrayBuffer: base64ToArrayBuffer
 };
-//debug only
-//console.log('MyFileManager Crypto ready - WebCrypto:', hasWebCrypto(), 'CryptoJS:', !!window.CryptoJS);
 
 (function (window) {
     'use strict';
 
+    // Magic header for self-contained encrypted files (includes 16-byte per-file salt)
+    var ENC_MAGIC_BYTES = new Uint8Array([0x4D, 0x46, 0x4D, 0x45, 0x4E, 0x43, 0x30, 0x31]); // "MFMENC01"
+
     /**
-    * MyFileManager Constructor
-    */
+     * MyFileManager Constructor
+     */
     function MyFileManager(selector, options) {
         this.container = document.querySelector(selector);
 
@@ -182,12 +289,14 @@ window.MyFileManagerCrypto = {
             throw new Error('Container not found: ' + selector);
         }
 
+        var userOptions = options || {};
+
         // Default options
-        this.options = {
+        var defaultOptions = {
             url: '/connector.php',
             downloadUrl: null, // Custom download URL (if null, uses connector)
             token: null,
-            lang: navigator.language.split('-')[0] || 'en',
+            lang: (navigator.language || 'en').split('-')[0] || 'en',
             viewMode: 'list',
             theme: 'light',
             maxFileSize: 524288000,
@@ -202,8 +311,8 @@ window.MyFileManagerCrypto = {
             cryptFiles: false,        // Enable client-side file encryption
             encryptionKey: null,      // User-provided encryption key (derived from password)
             encryptionSalt: null,     // Salt for key derivation (Uint8Array)
-            cryptExclude: [''], // exclude patterns from encryption; example: ['video/*', 'audio/*']
-            showUrlOnProperties: false,  // Show URL field in properties modal
+            cryptExclude: [],         // Exclude MIME patterns from encryption; e.g. ['video/*', 'audio/*']
+            showUrlOnProperties: false, // Show URL field in properties modal
             features: {
                 upload: true,
                 download: true,
@@ -234,7 +343,7 @@ window.MyFileManagerCrypto = {
             sortOrder: 'asc',
             autoRefresh: false,
             hideExtensions: [], // Extensions to hide from view (e.g., ['.tmp', '.log', '.cache'])
-            //these are defualt banned extensions for uploads or rename, if you edit the option at the initization of the file manager, make sure to include the default ones plus your custom ones for security purposes. If you change it, check also connector.php
+            // Default banned extensions for uploads or rename (also enforce server-side in connector.php)
             banExtensions: [
                 // Unix/Linux executables
                 'sh', 'bash', 'csh', 'ksh', 'zsh', 'tcsh', 'dash',
@@ -243,7 +352,7 @@ window.MyFileManagerCrypto = {
 
                 // Windows executables
                 'exe', 'bat', 'cmd', 'com', 'scr', 'pif', 'cpl',
-                'msi', 'msp', 'dll', 'ocx', 'sys', 'scr',
+                'msi', 'msp', 'dll', 'ocx', 'sys',
 
                 // Web server scripts
                 'php', 'php3', 'php4', 'php5', 'phtml', 'php7',
@@ -254,10 +363,10 @@ window.MyFileManagerCrypto = {
                 // Dangerous scripts
                 'js', 'vbs', 'vbe', 'jse', 'wsf', 'wsh', 'ps1', 'psm1',
 
-                // MAC/OS dangerous
+                // macOS dangerous
                 'app', 'dmg', 'pkg', 'mpkg',
 
-                // dangerous config files
+                // Dangerous config files
                 'conf', 'cnf', 'ini', 'cfg', 'config',
 
                 // htaccess and config server files
@@ -265,15 +374,23 @@ window.MyFileManagerCrypto = {
 
                 // Macro virus (Office)
                 'docm', 'xlsm', 'pptm', 'dotm', 'xltm'
-            ],
-
+            ]
         };
 
-        this.options = Object.assign(this.options, options);
+        // Merge options while preserving nested features and cloning array options
+        this.options = Object.assign({}, defaultOptions, userOptions);
+        this.options.features = Object.assign({}, defaultOptions.features, userOptions.features || {});
+        this.options.customMenus = Array.isArray(userOptions.customMenus) ? userOptions.customMenus.slice() : [];
+        this.options.customContextMenu = Array.isArray(userOptions.customContextMenu) ? userOptions.customContextMenu.slice() : [];
+        this.options.cryptExclude = Array.isArray(userOptions.cryptExclude) ? userOptions.cryptExclude.slice() : defaultOptions.cryptExclude.slice();
+        this.options.hideExtensions = Array.isArray(userOptions.hideExtensions) ? userOptions.hideExtensions.slice() : [];
+        this.options.banExtensions = Array.isArray(userOptions.banExtensions) ? userOptions.banExtensions.slice() : defaultOptions.banExtensions.slice();
+
+        // Keep password in closure-like private reference (never exposed in public options)
+        this._encryptionPassword = null;
 
         // Plugin system support
         this.plugins = [];
-        // autorefresh option
         this.autoRefreshInterval = null;
 
         this.hasWebCrypto = window.MyFileManagerCrypto.hasWebCrypto;
@@ -282,6 +399,14 @@ window.MyFileManagerCrypto = {
         this.decryptFileData = window.MyFileManagerCrypto.decryptFileData;
 
         this.wakeLock = null;
+        this.currentUploadXHR = null;
+        this.currentDownloadController = null;
+        this._uploadCancelled = false;
+        this._searchTimer = null;
+        this._searchRequestId = 0;
+        this._lastSelectedHash = null;
+        this._lastProgressUiUpdate = 0;
+        this._boundDocHandlers = {};
 
         // Internal state
         this.state = {
@@ -290,11 +415,13 @@ window.MyFileManagerCrypto = {
             selectedFiles: [],
             clipboard: null,
             uploadQueue: [],
+            isUploading: false,
             files: [],
             quota: null,
             activeMenu: null,
             history: [],
-            historyIndex: -1
+            historyIndex: -1,
+            isSearching: false
         };
 
         this._letterNavState = { lastLetter: null, index: -1 };
@@ -310,30 +437,34 @@ window.MyFileManagerCrypto = {
         };
 
         // Load translations
-        this.i18n = window.MyFileManagerI18n[this.options.lang] || window.MyFileManagerI18n['en'];
+        this.i18n = (window.MyFileManagerI18n && (window.MyFileManagerI18n[this.options.lang] || window.MyFileManagerI18n['en'])) || {};
 
         // Initialize
         this.init();
     }
 
     /**
-    * Check if file should be encrypted based on MIME type
-    */
+     * Check if file should be encrypted based on MIME type
+     */
     MyFileManager.prototype.shouldEncrypt = function (mime) {
-        if (!this.options.cryptFiles || !this.options.encryptionKey) {
+        if (!this.options.cryptFiles || (!this.options.encryptionKey && !this._encryptionPassword)) {
             return false;
         }
+
+        var safeMime = mime || '';
 
         // Check if MIME is in exclusion list
         for (var i = 0; i < this.options.cryptExclude.length; i++) {
             var pattern = this.options.cryptExclude[i];
+            if (!pattern) continue;
+
             if (pattern.endsWith('/*')) {
                 // Wildcard match: "video/*" matches "video/mp4"
-                var prefix = pattern.slice(0, -2);
-                if (mime.startsWith(prefix)) {
+                var prefix = pattern.slice(0, -1); // keep trailing "/"
+                if (safeMime.startsWith(prefix)) {
                     return false;
                 }
-            } else if (mime === pattern) {
+            } else if (safeMime === pattern) {
                 // Exact match
                 return false;
             }
@@ -343,8 +474,8 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Initialize file manager
-    */
+     * Initialize file manager
+     */
     MyFileManager.prototype.init = function () {
         this.cryptoMode = this.hasWebCrypto() ? 'webcrypto' : 'fallback';
         this.applyTheme();
@@ -353,14 +484,7 @@ window.MyFileManagerCrypto = {
         this.state.history = [];
         this.state.historyIndex = -1;
 
-        this.requestWakeLock(); // Keep screen on during initial load
         this.open('');
-
-        // Add visibility change listener
-        var self = this;
-        document.addEventListener('visibilitychange', function () {
-            self.handleVisibilityChange();
-        });
 
         this.trigger('onInit');
 
@@ -372,8 +496,8 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Internal debug logger - only logs when debug option is enabled
-    */
+     * Internal debug logger - only logs when debug option is enabled
+     */
     MyFileManager.prototype._debug = function (type) {
         if (this.options.debug) {
             var args = Array.prototype.slice.call(arguments, 1);
@@ -390,8 +514,8 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Build UI
-    */
+     * Build UI
+     */
     MyFileManager.prototype.buildUI = function () {
         var self = this;
 
@@ -404,65 +528,59 @@ window.MyFileManagerCrypto = {
         // Toolbar
         var toolbar = document.createElement('div');
         toolbar.className = 'mfm-toolbar';
-        toolbar.innerHTML = `
-        <div class="mfm-toolbar-left">
-            <button class="mfm-btn" data-action="back" title="${this.i18n.back}">
-                <span class="mfm-icon-back"></span>
-            </button>
-            <button class="mfm-btn" data-action="forward" title="${this.i18n.forward}">
-                <span class="mfm-icon-forward"></span>
-            </button>
-            <button class="mfm-btn" data-action="up" title="${this.i18n.up}">
-                <span class="mfm-icon-up"></span>
-            </button>
-            <button class="mfm-btn" data-action="refresh" title="${this.i18n.refresh}">
-                <span class="mfm-icon-refresh"></span>
-            </button>
-        </div>
-        <div class="mfm-toolbar-right">
-            <input type="text" class="mfm-search" placeholder="${this.i18n.search}" ${!this.options.features.search ? 'disabled' : ''}>
-        </div>
-    `;
+        toolbar.innerHTML =
+            '<div class="mfm-toolbar-left">' +
+            '<button class="mfm-btn" data-action="back" title="' + this.escapeHtml(this.i18n.back || 'Back') + '">' +
+            '<span class="mfm-icon-back"></span>' +
+            '</button>' +
+            '<button class="mfm-btn" data-action="forward" title="' + this.escapeHtml(this.i18n.forward || 'Forward') + '">' +
+            '<span class="mfm-icon-forward"></span>' +
+            '</button>' +
+            '<button class="mfm-btn" data-action="up" title="' + this.escapeHtml(this.i18n.up || 'Up') + '">' +
+            '<span class="mfm-icon-up"></span>' +
+            '</button>' +
+            '<button class="mfm-btn" data-action="refresh" title="' + this.escapeHtml(this.i18n.refresh || 'Refresh') + '">' +
+            '<span class="mfm-icon-refresh"></span>' +
+            '</button>' +
+            '</div>' +
+            '<div class="mfm-toolbar-right">' +
+            '<input type="text" class="mfm-search" placeholder="' + this.escapeHtml(this.i18n.search || 'Search') + '" ' + (!this.options.features.search ? 'disabled' : '') + '>' +
+            '</div>';
 
         // Trash toolbar (shown only when in trash)
         var trashToolbar = document.createElement('div');
         trashToolbar.className = 'mfm-trash-toolbar';
         trashToolbar.style.display = 'none';
-        trashToolbar.innerHTML = `
-        <button class="mfm-toolbar-btn" data-action="restore-selected">
-            ♻️ <span>${this.i18n.restoreSelected}</span>
-        </button>
-        <button class="mfm-toolbar-btn mfm-btn-danger" data-action="empty-trash">
-            🗑️ <span>${this.i18n.emptyTrash}</span>
-        </button>
-    `;
+        trashToolbar.innerHTML =
+            '<button class="mfm-toolbar-btn" data-action="restore-selected">' +
+            '♻️ <span>' + this.escapeHtml(this.i18n.restoreSelected || 'Restore Selected') + '</span>' +
+            '</button>' +
+            '<button class="mfm-toolbar-btn mfm-btn-danger" data-action="empty-trash">' +
+            '🗑️ <span>' + this.escapeHtml(this.i18n.emptyTrash || 'Empty Recycle Bin') + '</span>' +
+            '</button>';
 
         // Address Bar
         var addressbar = document.createElement('div');
         addressbar.className = 'mfm-addressbar';
-        addressbar.innerHTML = `
-        <span class="mfm-addressbar-label">${this.i18n.address || 'Address'}:</span>
-        <div class="mfm-breadcrumb"></div>
-    `;
+        addressbar.innerHTML =
+            '<span class="mfm-addressbar-label">' + this.escapeHtml(this.i18n.address || 'Address') + ':</span>' +
+            '<div class="mfm-breadcrumb"></div>';
 
         // Content area
         var content = document.createElement('div');
         content.className = 'mfm-content';
-        content.innerHTML = `
-        <div class="mfm-files mfm-view-${this.options.viewMode}"></div>
-    `;
+        content.innerHTML = '<div class="mfm-files mfm-view-' + this.escapeHtml(this.options.viewMode) + '"></div>';
 
         // Status bar
         var statusbar = document.createElement('div');
         statusbar.className = 'mfm-statusbar';
-        statusbar.innerHTML = `
-        <div class="mfm-status-left">
-            <span class="mfm-status-items">0 ${this.i18n.items}</span>
-        </div>
-        <div class="mfm-status-right">
-            <span class="mfm-status-quota"></span>
-        </div>
-    `;
+        statusbar.innerHTML =
+            '<div class="mfm-status-left">' +
+            '<span class="mfm-status-items">0 ' + this.escapeHtml(this.i18n.items || 'items') + '</span>' +
+            '</div>' +
+            '<div class="mfm-status-right">' +
+            '<span class="mfm-status-quota"></span>' +
+            '</div>';
 
         // Context menu
         var contextMenu = document.createElement('div');
@@ -481,110 +599,72 @@ window.MyFileManagerCrypto = {
         modal.className = 'mfm-modal';
         modal.style.display = 'none';
 
-        // Upload Progress Modal - Fixed version with proper filename handling and progress bar
+        // Upload Progress Modal
         var uploadModal = document.createElement('div');
         uploadModal.className = 'mfm-upload-modal';
         uploadModal.style.display = 'none';
-        uploadModal.innerHTML = `
-        <div class="mfm-upload-modal-content">
-            <div class="mfm-upload-modal-header">
-                <h3 class="mfm-upload-modal-title">Uploading File</h3>
-                <button class="mfm-upload-modal-close">&times;</button>
-            </div>
-            <div class="mfm-upload-modal-body">
-                <div class="mfm-upload-info">
-                    <div class="mfm-upload-filename"></div>
-                    
-                    <!-- Visual Progress Bar -->
-                    <div class="mfm-progress-container">
-                        <div class="mfm-progress-bar">
-                            <div class="mfm-progress-fill" style="width: 0%"></div>
-                        </div>
-                        <div class="mfm-progress-text">0%</div>
-                    </div>
-                    
-                    <!-- Upload Statistics -->
-                    <div class="mfm-upload-stats">
-                        <span class="mfm-upload-speed">0 MB/s</span>
-                        <span class="mfm-upload-time">Calculating...</span>
-                    </div>
-                </div>
-                
-                <!-- Upload Status Message -->
-                <div class="mfm-upload-status" style="margin-top: 15px; display: none;">
-                    <div class="mfm-upload-status-message"></div>
-                </div>
-                
-                <!-- Upload Actions -->
-                <div class="mfm-upload-actions" style="margin-top: 15px; text-align: right; display: none;">
-                    <button class="mfm-btn mfm-upload-close-btn">Close</button>
-                </div>
-            </div>
-        </div>
-    `;
+        uploadModal.innerHTML =
+            '<div class="mfm-upload-modal-content">' +
+            '<div class="mfm-upload-modal-header">' +
+            '<h3 class="mfm-upload-modal-title">' + this.escapeHtml(this.i18n.uploadingFile || 'Uploading File') + '</h3>' +
+            '<button class="mfm-upload-modal-close">&times;</button>' +
+            '</div>' +
+            '<div class="mfm-upload-modal-body">' +
+            '<div class="mfm-upload-info">' +
+            '<div class="mfm-upload-filename"></div>' +
+            '<div class="mfm-progress-container">' +
+            '<div class="mfm-progress-bar">' +
+            '<div class="mfm-progress-fill" style="width: 0%"></div>' +
+            '</div>' +
+            '<div class="mfm-progress-text">0%</div>' +
+            '</div>' +
+            '<div class="mfm-upload-stats">' +
+            '<span class="mfm-upload-speed">0 MB/s</span>' +
+            '<span class="mfm-upload-time">' + this.escapeHtml(this.i18n.calculating || 'Calculating...') + '</span>' +
+            '</div>' +
+            '</div>' +
+            '<div class="mfm-upload-status" style="margin-top: 15px; display: none;">' +
+            '<div class="mfm-upload-status-message"></div>' +
+            '</div>' +
+            '<div class="mfm-upload-actions" style="margin-top: 15px; text-align: right; display: none;">' +
+            '<button class="mfm-btn mfm-upload-close-btn">' + this.escapeHtml(this.i18n.close || 'Close') + '</button>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
 
         // Download Progress Modal
         var downloadModal = document.createElement('div');
         downloadModal.className = 'mfm-download-modal';
         downloadModal.style.display = 'none';
-        downloadModal.innerHTML = `
-    <div class="mfm-download-modal-content">
-        <div class="mfm-download-modal-header">
-            <h3 class="mfm-download-modal-title">Downloading File</h3>
-            <button class="mfm-download-modal-close">&times;</button>
-        </div>
-        <div class="mfm-download-modal-body">
-            <div class="mfm-download-info">
-                <div class="mfm-download-filename"></div>
-                <div class="mfm-download-filesize"></div>
-            </div>
-            <!-- Progress Bar -->
-            <div class="mfm-progress-container">
-                <div class="mfm-progress-bar">
-                    <div class="mfm-progress-fill" style="width: 0%"></div>
-                </div>
-                <div class="mfm-progress-text">0%</div>
-            </div>
-            <!-- Download Stats -->
-            <div class="mfm-download-stats">
-                <span class="mfm-download-speed">0 MB/s</span>
-                <span class="mfm-download-time">Calculating...</span>
-            </div>
-            <!-- Status Message -->
-            <div class="mfm-download-status" style="margin-top: 15px; display: none;">
-                <div class="mfm-download-status-message"></div>
-            </div>
-            <!-- Actions -->
-            <div class="mfm-download-actions" style="margin-top: 15px; text-align: right; display: none;">
-                <button class="mfm-btn mfm-download-close-btn">Close</button>
-            </div>
-        </div>
-    </div>
-`;
-
-        // Bind close buttons
-        var downloadCloseBtn = downloadModal.querySelector('.mfm-download-modal-close');
-        var downloadCloseBtnAction = downloadModal.querySelector('.mfm-download-close-btn');
-
-        var self = this;
-        if (downloadCloseBtn) {
-            downloadCloseBtn.addEventListener('click', function () {
-                if (self.currentDownloadController) {
-                    if (confirm('Download in progress. Cancel download?')) {
-                        self.cancelDownload();
-                        self.hideDownloadProgress();
-                    }
-                } else {
-                    self.hideDownloadProgress();
-                }
-            });
-        }
-
-        if (downloadCloseBtnAction) {
-            downloadCloseBtnAction.addEventListener('click', function () {
-                self.hideDownloadProgress();
-            });
-        }
+        downloadModal.innerHTML =
+            '<div class="mfm-download-modal-content">' +
+            '<div class="mfm-download-modal-header">' +
+            '<h3 class="mfm-download-modal-title">' + this.escapeHtml(this.i18n.downloadingFile || 'Downloading File') + '</h3>' +
+            '<button class="mfm-download-modal-close">&times;</button>' +
+            '</div>' +
+            '<div class="mfm-download-modal-body">' +
+            '<div class="mfm-download-info">' +
+            '<div class="mfm-download-filename"></div>' +
+            '<div class="mfm-download-filesize"></div>' +
+            '</div>' +
+            '<div class="mfm-progress-container">' +
+            '<div class="mfm-progress-bar">' +
+            '<div class="mfm-progress-fill" style="width: 0%"></div>' +
+            '</div>' +
+            '<div class="mfm-progress-text">0%</div>' +
+            '</div>' +
+            '<div class="mfm-download-stats">' +
+            '<span class="mfm-download-speed">0 MB/s</span>' +
+            '<span class="mfm-download-time">' + this.escapeHtml(this.i18n.calculating || 'Calculating...') + '</span>' +
+            '</div>' +
+            '<div class="mfm-download-status" style="margin-top: 15px; display: none;">' +
+            '<div class="mfm-download-status-message"></div>' +
+            '</div>' +
+            '<div class="mfm-download-actions" style="margin-top: 15px; text-align: right; display: none;">' +
+            '<button class="mfm-btn mfm-download-close-btn">' + this.escapeHtml(this.i18n.close || 'Close') + '</button>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
 
         // Append elements
         this.container.appendChild(menubar);
@@ -617,9 +697,31 @@ window.MyFileManagerCrypto = {
             trashToolbar: trashToolbar
         };
 
-        // Populate menubar and bind events
+        // Populate menubar
         this.elements.menubar.innerHTML = this.buildMenuBar();
-        this.bindMenuEvents();
+
+        // Bind download modal close buttons
+        var downloadCloseBtn = downloadModal.querySelector('.mfm-download-modal-close');
+        var downloadCloseBtnAction = downloadModal.querySelector('.mfm-download-close-btn');
+
+        if (downloadCloseBtn) {
+            downloadCloseBtn.addEventListener('click', function () {
+                if (self.currentDownloadController) {
+                    if (confirm(self.i18n.confirmCancelDownload || 'Download in progress. Cancel download?')) {
+                        self.cancelDownload();
+                        self.hideDownloadProgress();
+                    }
+                } else {
+                    self.hideDownloadProgress();
+                }
+            });
+        }
+
+        if (downloadCloseBtnAction) {
+            downloadCloseBtnAction.addEventListener('click', function () {
+                self.hideDownloadProgress();
+            });
+        }
 
         // Bind upload modal close buttons
         var uploadCloseBtn = uploadModal.querySelector('.mfm-upload-modal-close');
@@ -627,8 +729,8 @@ window.MyFileManagerCrypto = {
 
         if (uploadCloseBtn) {
             uploadCloseBtn.addEventListener('click', function () {
-                if (self.currentUploadXHR) {
-                    if (confirm('Upload in progress. Cancel upload?')) {
+                if (self.currentUploadXHR || self.state.isUploading) {
+                    if (confirm(self.i18n.confirmCancelUpload || 'Upload in progress. Cancel upload?')) {
                         self.cancelUpload();
                         self.hideUploadProgress();
                     }
@@ -650,7 +752,6 @@ window.MyFileManagerCrypto = {
             if (!target) return;
 
             var action = target.getAttribute('data-action');
-
             switch (action) {
                 case 'restore-selected':
                     self.restoreSelected();
@@ -662,19 +763,22 @@ window.MyFileManagerCrypto = {
         });
     };
 
-    // Request wake lock to prevent screen sleep
+    // Request wake lock to prevent screen sleep during active transfers
     MyFileManager.prototype.requestWakeLock = async function () {
-        if ('wakeLock' in navigator) {
+        if ('wakeLock' in navigator && document.visibilityState === 'visible') {
             try {
-                this.wakeLock = await navigator.wakeLock.request('screen');
-                this._debug('log', 'Wake lock acquired');
+                if (!this.wakeLock) {
+                    this.wakeLock = await navigator.wakeLock.request('screen');
+                    this._debug('log', 'Wake lock acquired');
 
-                // Re-acquire wake lock when page becomes visible again
-                this.wakeLock.addEventListener('release', () => {
-                    this._debug('log', 'Wake lock released');
-                });
+                    var self = this;
+                    this.wakeLock.addEventListener('release', function () {
+                        self._debug('log', 'Wake lock released');
+                        self.wakeLock = null;
+                    });
+                }
             } catch (err) {
-                this._debug('warn', `Wake lock failed: ${err.name}, ${err.message}`);
+                this._debug('warn', 'Wake lock failed:', err.name, err.message);
             }
         }
     };
@@ -682,31 +786,30 @@ window.MyFileManagerCrypto = {
     // Release wake lock
     MyFileManager.prototype.releaseWakeLock = function () {
         if (this.wakeLock !== null) {
-            this.wakeLock.release()
-                .then(() => {
-                    this.wakeLock = null;
-                });
+            var lock = this.wakeLock;
+            this.wakeLock = null;
+            lock.release().catch(function () { });
         }
     };
 
-    // Handle visibility change to reacquire lock
+    // Handle visibility change to reacquire lock only if a transfer is active
     MyFileManager.prototype.handleVisibilityChange = async function () {
-        if (this.wakeLock !== null && document.visibilityState === 'visible') {
+        if (document.visibilityState === 'visible' && (this.state.isUploading || this.currentDownloadController)) {
             await this.requestWakeLock();
         }
     };
 
     /**
-    * Apply theme
-    */
+     * Apply theme
+     */
     MyFileManager.prototype.applyTheme = function () {
         this.container.classList.remove('mfm-theme-light', 'mfm-theme-dark');
         this.container.classList.add('mfm-theme-' + this.options.theme);
     };
 
     /**
-    * Build menu bar
-    */
+     * Build menu bar
+     */
     MyFileManager.prototype.buildMenuBar = function () {
         var self = this;
 
@@ -751,7 +854,6 @@ window.MyFileManagerCrypto = {
             });
         }
 
-        // Define menus with fileItems as 'file' menu items
         var menus = [
             {
                 id: 'file',
@@ -848,108 +950,61 @@ window.MyFileManagerCrypto = {
                 menus.splice(position, 0, {
                     id: customMenu.id,
                     label: customMenu.label,
-                    items: customMenu.items,
+                    items: customMenu.items || [],
                     custom: true
                 });
             });
         }
 
-        var html = '';
+        var html = [];
         menus.forEach(function (menu) {
-            html += '<div class="mfm-menu" data-menu="' + self.escapeHtml(menu.id) + '">';
-            html += '<button class="mfm-menu-trigger">' + self.escapeHtml(menu.label) + '</button>';
-            html += '<div class="mfm-menu-dropdown">';
+            html.push('<div class="mfm-menu" data-menu="' + self.escapeHtml(menu.id) + '">');
+            html.push('<button class="mfm-menu-trigger">' + self.escapeHtml(menu.label) + '</button>');
+            html.push('<div class="mfm-menu-dropdown">');
 
             menu.items.forEach(function (item) {
                 if (item.type === 'separator') {
-                    html += '<div class="mfm-menu-separator"></div>';
+                    html.push('<div class="mfm-menu-separator"></div>');
                 } else {
                     var action = item.action || item.id;
                     var tooltip = item.shortcut ? item.label + ' (' + item.shortcut + ')' : item.label;
 
-                    html += '<div class="mfm-menu-item" data-action="' + self.escapeHtml(action) + '" title="' + self.escapeHtml(tooltip) + '">';
+                    html.push('<div class="mfm-menu-item" data-action="' + self.escapeHtml(action) + '" title="' + self.escapeHtml(tooltip) + '">');
                     if (item.icon) {
-                        html += '<span class="mfm-menu-item-icon">' + item.icon + '</span>';
+                        html.push('<span class="mfm-menu-item-icon">' + self.escapeHtml(item.icon) + '</span>');
                     }
-                    html += '<span>' + self.escapeHtml(item.label) + '</span>';
-                    html += '</div>';
+                    html.push('<span>' + self.escapeHtml(item.label) + '</span>');
+                    html.push('</div>');
                 }
             });
 
-            html += '</div>';
-            html += '</div>';
+            html.push('</div>');
+            html.push('</div>');
         });
 
-        // Add brand logo if configured
-        if (this.options.brandLogo) {
-            var brandUrl = this.options.brandLink || '#';
+        // Add brand logo if configured and URL is safe
+        if (this.options.brandLogo && this.isSafeUrl(this.options.brandLogo)) {
+            var brandUrl = this.isSafeUrl(this.options.brandLink) ? this.options.brandLink : '#';
             var brandTarget = this.options.brandTarget || '_self';
             var brandAlt = this.options.brandAlt || 'Logo';
+            var relAttr = brandTarget === '_blank' ? ' rel="noopener noreferrer"' : '';
 
-            html += '<div class="mfm-menubar-brand">';
-            html += '<a href="' + self.escapeHtml(brandUrl) + '" class="mfm-brand-link" target="' + self.escapeHtml(brandTarget) + '">';
-            html += '<img src="' + self.escapeHtml(this.options.brandLogo) + '" alt="' + self.escapeHtml(brandAlt) + '" class="mfm-brand-logo">';
-            html += '</a></div>';
+            html.push('<div class="mfm-menubar-brand">');
+            html.push('<a href="' + self.escapeHtml(brandUrl) + '" class="mfm-brand-link" target="' + self.escapeHtml(brandTarget) + '"' + relAttr + '>');
+            html.push('<img src="' + self.escapeHtml(this.options.brandLogo) + '" alt="' + self.escapeHtml(brandAlt) + '" class="mfm-brand-logo">');
+            html.push('</a></div>');
         }
 
-        return html;
+        return html.join('');
     };
 
     /**
-    * Bind menu events
-    */
-    MyFileManager.prototype.bindMenuEvents = function () {
-        // Prevent double binding
-        if (this._menuEventsBound) {
-            return;
-        }
-        this._menuEventsBound = true;
-
-        var self = this;
-
-        // Menu trigger click (open/close dropdown)
-        var menuTriggers = this.elements.menubar.querySelectorAll('.mfm-menu-trigger');
-        menuTriggers.forEach(function (trigger) {
-            trigger.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var menu = this.parentElement;
-                var dropdown = menu.querySelector('.mfm-menu-dropdown');
-
-                // Close all other menus
-                var allDropdowns = self.elements.menubar.querySelectorAll('.mfm-menu-dropdown');
-                allDropdowns.forEach(function (dd) {
-                    if (dd !== dropdown) {
-                        dd.style.display = 'none';
-                    }
-                });
-
-                // Toggle current menu
-                if (dropdown.style.display === 'block') {
-                    dropdown.style.display = 'none';
-                } else {
-                    dropdown.style.display = 'block';
-                }
-            });
-        });
-
-        // Close menus when clicking outside
-        document.addEventListener('click', function (e) {
-            if (!self.elements.menubar.contains(e.target)) {
-                var allDropdowns = self.elements.menubar.querySelectorAll('.mfm-menu-dropdown');
-                allDropdowns.forEach(function (dd) {
-                    dd.style.display = 'none';
-                });
-            }
-        });
-    };
-
-    /**
-    * Bind event listeners
-    */
+     * Bind event listeners
+     */
     MyFileManager.prototype.bindEvents = function () {
         var self = this;
 
-        // Menu bar click events (click only, not hover)
+        // Menu bar click events (unified via .active class)
         this.elements.menubar.addEventListener('click', function (e) {
             var trigger = e.target.closest('.mfm-menu-trigger');
             var menuItem = e.target.closest('.mfm-menu-item');
@@ -958,10 +1013,8 @@ window.MyFileManagerCrypto = {
                 var menu = trigger.closest('.mfm-menu');
                 var wasActive = menu.classList.contains('active');
 
-                // Close all menus
                 self.closeAllMenus();
 
-                // Toggle this menu
                 if (!wasActive) {
                     menu.classList.add('active');
                     self.state.activeMenu = menu;
@@ -975,10 +1028,12 @@ window.MyFileManagerCrypto = {
             }
         });
 
-        // Close menus when clicking outside
-        document.addEventListener('click', function (e) {
-            if (!e.target.closest('.mfm-menubar')) {
-                self.closeAllMenus();
+        // Breadcrumb navigation via event delegation
+        this.elements.breadcrumb.addEventListener('click', function (e) {
+            var item = e.target.closest('.mfm-breadcrumb-item');
+            if (item) {
+                var hash = item.getAttribute('data-hash') || '';
+                self.open(hash);
             }
         });
 
@@ -990,7 +1045,7 @@ window.MyFileManagerCrypto = {
             }
         });
 
-        // Search
+        // Search input
         this.elements.search.addEventListener('input', function () {
             self.handleSearch(this.value);
         });
@@ -1002,17 +1057,21 @@ window.MyFileManagerCrypto = {
             if (fileEl) {
                 var hash = fileEl.getAttribute('data-hash');
                 var file = self.getFileByHash(hash);
+                if (!file) return;
 
                 if (e.ctrlKey || e.metaKey) {
                     self.toggleFileSelection(fileEl, file);
-                } else if (e.shiftKey && self.state.selectedFiles.length > 0) {
+                    self._lastSelectedHash = file.hash;
+                } else if (e.shiftKey && (self._lastSelectedHash || self.state.selectedFiles.length > 0)) {
                     self.selectRange(fileEl);
                 } else {
                     self.clearSelection();
                     self.selectFile(fileEl, file);
+                    self._lastSelectedHash = file.hash;
                 }
             } else {
                 self.clearSelection();
+                self._lastSelectedHash = null;
             }
         });
 
@@ -1037,12 +1096,14 @@ window.MyFileManagerCrypto = {
                 var hash = fileEl.getAttribute('data-hash');
                 var file = self.getFileByHash(hash);
 
-                if (!fileEl.classList.contains('mfm-selected')) {
+                if (file && !fileEl.classList.contains('mfm-selected')) {
                     self.clearSelection();
                     self.selectFile(fileEl, file);
+                    self._lastSelectedHash = file.hash;
                 }
             } else {
                 self.clearSelection();
+                self._lastSelectedHash = null;
             }
 
             self.showContextMenu(e.clientX, e.clientY);
@@ -1055,11 +1116,6 @@ window.MyFileManagerCrypto = {
                 var action = item.getAttribute('data-action');
                 self.handleContextMenuAction(action);
             }
-        });
-
-        // Hide context menu on click outside
-        document.addEventListener('click', function () {
-            self.elements.contextMenu.style.display = 'none';
         });
 
         // Upload input change
@@ -1086,80 +1142,103 @@ window.MyFileManagerCrypto = {
             e.preventDefault();
             self.elements.filesContainer.classList.remove('mfm-drag-over');
 
-            if (e.dataTransfer.files.length > 0) {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 self.uploadFiles(e.dataTransfer.files);
             }
         });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function (e) {
+        // Modal close
+        this.elements.modal.addEventListener('click', function (e) {
+            if (e.target === self.elements.modal ||
+                e.target.classList.contains('mfm-modal-overlay') ||
+                e.target.classList.contains('mfm-modal-close')) {
+                self.closeModal();
+            }
+        });
+
+        // Document-level handlers stored for proper cleanup on destroy()
+        this._boundDocHandlers.click = function (e) {
+            if (!e.target.closest('.mfm-menubar')) {
+                self.closeAllMenus();
+            }
+            if (!self.elements.contextMenu.contains(e.target)) {
+                self.elements.contextMenu.style.display = 'none';
+            }
+        };
+
+        this._boundDocHandlers.visibilitychange = function () {
+            self.handleVisibilityChange();
+        };
+
+        this._boundDocHandlers.keydown = function (e) {
             // Ignore shortcuts when typing in input/textarea
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
                 return;
             }
 
-            // Arrow key navigation and Enter to open files/folders
-            var files = self.state.files;
+            // Ignore when a modal is open
+            if (self.elements.modal.style.display === 'block' ||
+                self.elements.uploadModal.style.display === 'flex' ||
+                self.elements.downloadModal.style.display === 'flex') {
+                if (e.key === 'Escape' && self.elements.modal.style.display === 'block') {
+                    self.closeModal();
+                }
+                return;
+            }
+
+            var fileElements = self.elements.filesContainer.querySelectorAll('.mfm-file');
             var selectedFile = self.state.selectedFiles.length > 0 ? self.state.selectedFiles[0] : null;
             var currentIndex = -1;
 
-            // Find current selection index
             if (selectedFile) {
-                currentIndex = files.findIndex(function (f) {
-                    return f.hash === selectedFile.hash;
-                });
+                for (var i = 0; i < fileElements.length; i++) {
+                    if (fileElements[i].getAttribute('data-hash') === selectedFile.hash) {
+                        currentIndex = i;
+                        break;
+                    }
+                }
             }
 
-            // Arrow Down - Select next file
+            // Arrow Down - Select next file in rendered DOM order
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                if (files.length > 0) {
-                    var nextIndex = currentIndex + 1;
-                    if (nextIndex >= files.length) {
-                        nextIndex = 0; // Wrap to first
-                    }
-
-                    if (files[nextIndex]) {
+                if (fileElements.length > 0) {
+                    var nextIndex = (currentIndex + 1) % fileElements.length;
+                    var nextEl = fileElements[nextIndex];
+                    var nextFile = self.getFileByHash(nextEl.getAttribute('data-hash'));
+                    if (nextFile) {
                         self.clearSelection();
-                        var fileElements = self.elements.filesContainer.querySelectorAll('.mfm-file');
-                        var nextElement = fileElements[nextIndex];
-                        if (nextElement) {
-                            self.selectFile(nextElement, files[nextIndex]);
-                            nextElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                        }
+                        self.selectFile(nextEl, nextFile);
+                        self._lastSelectedHash = nextFile.hash;
+                        nextEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     }
                 }
-                return; // Exit early
+                return;
             }
 
-            // Arrow Up - Select previous file
+            // Arrow Up - Select previous file in rendered DOM order
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                if (files.length > 0) {
+                if (fileElements.length > 0) {
                     var prevIndex = currentIndex - 1;
-                    if (prevIndex < 0) {
-                        prevIndex = files.length - 1; // Wrap to last
-                    }
-
-                    if (files[prevIndex]) {
+                    if (prevIndex < 0) prevIndex = fileElements.length - 1;
+                    var prevEl = fileElements[prevIndex];
+                    var prevFile = self.getFileByHash(prevEl.getAttribute('data-hash'));
+                    if (prevFile) {
                         self.clearSelection();
-                        var fileElements = self.elements.filesContainer.querySelectorAll('.mfm-file');
-                        var prevElement = fileElements[prevIndex];
-                        if (prevElement) {
-                            self.selectFile(prevElement, files[prevIndex]);
-                            prevElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                        }
+                        self.selectFile(prevEl, prevFile);
+                        self._lastSelectedHash = prevFile.hash;
+                        prevEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     }
                 }
-                return; // Exit early
+                return;
             }
 
             // Enter - Open selected file/folder
             if (e.key === 'Enter') {
-                e.preventDefault();
-
                 var selectedElement = self.elements.filesContainer.querySelector('.mfm-selected');
                 if (selectedElement) {
+                    e.preventDefault();
                     var hash = selectedElement.getAttribute('data-hash');
                     var file = self.getFileByHash(hash);
                     if (file) {
@@ -1175,59 +1254,67 @@ window.MyFileManagerCrypto = {
                     e.preventDefault();
                     self.navigateUp();
                 }
-                return; // Exit early
+                return;
             }
 
             // Ctrl+C - Copy
-            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !e.shiftKey) {
                 e.preventDefault();
                 self.copySelected();
+                return;
             }
 
             // Ctrl+X - Cut
-            if ((e.ctrlKey || e.metaKey) && e.key === 'x' && !e.shiftKey) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x' && !e.shiftKey) {
                 e.preventDefault();
                 self.cutSelected();
+                return;
             }
 
             // Ctrl+V - Paste
-            if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !e.shiftKey) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && !e.shiftKey) {
                 e.preventDefault();
                 self.pasteClipboard();
+                return;
             }
 
             // Ctrl+A - Select all
-            if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.shiftKey) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !e.shiftKey) {
                 e.preventDefault();
                 self.selectAll();
+                return;
             }
 
             // Ctrl+Shift+U - Upload
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'U' || e.key === 'u')) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'u') {
                 e.preventDefault();
                 self.openUploadDialog();
+                return;
             }
 
             // Ctrl+Shift+D - Download
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
                 if (self.state.selectedFiles.length > 0) {
                     e.preventDefault();
                     self.downloadSelected();
                 }
+                return;
             }
 
-            // Ctrl+Shift+M - New folder (M for Make)
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+            // Ctrl+Shift+M - New folder
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'm') {
                 e.preventDefault();
                 self.createFolder();
+                return;
             }
 
             // Ctrl+Shift+I - Properties/Info
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i') {
                 if (self.state.selectedFiles.length === 1) {
                     e.preventDefault();
                     self.showInfo();
                 }
+                return;
             }
 
             // Delete key
@@ -1236,6 +1323,7 @@ window.MyFileManagerCrypto = {
                     e.preventDefault();
                     self.deleteSelected();
                 }
+                return;
             }
 
             // F2 - Rename
@@ -1244,75 +1332,58 @@ window.MyFileManagerCrypto = {
                     e.preventDefault();
                     self.renameSelected();
                 }
+                return;
             }
 
             // F5 - Refresh
             if (e.key === 'F5') {
                 e.preventDefault();
                 self.refresh();
+                return;
             }
 
-            // Keyboard navigation - First letter file selection
-            document.addEventListener('keydown', function (e) {
-                // Ignore if typing in input/textarea
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            // First-letter navigation with cycle
+            if (e.key.length === 1 && /^[a-zA-Z0-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+                var files = self.state.files;
+                if (files.length === 0) return;
 
-                // First letter navigation with cycle (a, a, a...)
-                if (e.key.length === 1 && e.key.match(/[a-zA-Z0-9]/) && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-                    e.preventDefault();
+                e.preventDefault();
+                var firstLetter = e.key.toLowerCase();
+                var navState = self._letterNavState;
 
-                    var files = self.state.files;
-                    if (files.length === 0) return;
-
-                    var firstLetter = e.key.toLowerCase();
-
-                    // Initialize state variables if not exist
-                    if (!self._letterNavState) {
-                        self._letterNavState = { lastLetter: null, index: -1 };
-                    }
-
-                    var state = self._letterNavState;
-
-                    // Reset index if different letter
-                    if (state.lastLetter !== firstLetter) {
-                        state.lastLetter = firstLetter;
-                        state.index = -1;
-                    }
-
-                    // Find all files starting with this letter
-                    var candidates = files.filter(function (file) {
-                        return file.name.toLowerCase().startsWith(firstLetter);
-                    });
-
-                    if (candidates.length === 0) return;
-
-                    // Cycle to next matching file
-                    state.index = (state.index + 1) % candidates.length;
-                    var fileToSelect = candidates[state.index];
-
-                    var fileEl = self.elements.filesContainer.querySelector('[data-hash="' + fileToSelect.hash + '"]');
-                    if (fileEl) {
-                        self.clearSelection();
-                        self.selectFile(fileEl, fileToSelect);
-                        fileEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                    }
+                if (navState.lastLetter !== firstLetter) {
+                    navState.lastLetter = firstLetter;
+                    navState.index = -1;
                 }
 
-            });
+                var candidates = [];
+                fileElements.forEach(function (el) {
+                    var f = self.getFileByHash(el.getAttribute('data-hash'));
+                    if (f && f.name.toLowerCase().startsWith(firstLetter)) {
+                        candidates.push({ el: el, file: f });
+                    }
+                });
 
-        });
+                if (candidates.length === 0) return;
 
-        // Modal close
-        this.elements.modal.addEventListener('click', function (e) {
-            if (e.target === self.elements.modal || e.target.classList.contains('mfm-modal-close')) {
-                self.closeModal();
+                navState.index = (navState.index + 1) % candidates.length;
+                var chosen = candidates[navState.index];
+
+                self.clearSelection();
+                self.selectFile(chosen.el, chosen.file);
+                self._lastSelectedHash = chosen.file.hash;
+                chosen.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             }
-        });
+        };
+
+        document.addEventListener('click', this._boundDocHandlers.click);
+        document.addEventListener('visibilitychange', this._boundDocHandlers.visibilitychange);
+        document.addEventListener('keydown', this._boundDocHandlers.keydown);
     };
 
     /**
-    * Close all menus
-    */
+     * Close all menus
+     */
     MyFileManager.prototype.closeAllMenus = function () {
         var menus = this.elements.menubar.querySelectorAll('.mfm-menu');
         menus.forEach(function (menu) {
@@ -1322,11 +1393,9 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Handle menu action
-    */
+     * Handle menu action
+     */
     MyFileManager.prototype.handleMenuAction = function (action) {
-        var self = this;
-
         // Check if it's a custom menu action first
         var isCustomAction = false;
         if (this.options.customMenus) {
@@ -1341,7 +1410,7 @@ window.MyFileManagerCrypto = {
             });
         }
 
-        if (isCustomAction && this.options.onCustomMenuAction && typeof this.options.onCustomMenuAction === 'function') {
+        if (isCustomAction && typeof this.options.onCustomMenuAction === 'function') {
             this.options.onCustomMenuAction(action);
             return;
         }
@@ -1361,7 +1430,7 @@ window.MyFileManagerCrypto = {
                 this.showInfo();
                 break;
             case 'setEncryptionKey':
-                const password = prompt('Enter encryption password:');
+                var password = prompt(this.i18n.enterEncryptionPassword || 'Enter encryption password:');
                 if (password) {
                     this.setEncryptionKey(password);
                 }
@@ -1391,51 +1460,34 @@ window.MyFileManagerCrypto = {
                 this.setViewMode('grid');
                 break;
             case 'sortName':
-                this.options.sortBy = 'name';
-                this.sortFiles(this.state.files);
-                this.renderFiles();
-                this.updateMenuStates();
+                this.setSortBy('name');
                 break;
             case 'sortSize':
-                this.options.sortBy = 'size';
-                this.sortFiles(this.state.files);
-                this.renderFiles();
-                this.updateMenuStates();
+                this.setSortBy('size');
                 break;
             case 'sortDate':
-                this.options.sortBy = 'date';
-                this.sortFiles(this.state.files);
-                this.renderFiles();
-                this.updateMenuStates();
+                this.setSortBy('date');
                 break;
             case 'sortType':
-                this.options.sortBy = 'type';
-                this.sortFiles(this.state.files);
-                this.renderFiles();
-                this.updateMenuStates();
+                this.setSortBy('type');
                 break;
-
-            // PLUGIN ACTIONS - Check custom context menu items
             default:
                 var handled = false;
                 for (var i = 0; i < this.options.customContextMenu.length; i++) {
                     var item = this.options.customContextMenu[i];
                     if (item.action === action && typeof item.handler === 'function') {
-                        // Check condition if present
                         var canExecute = true;
-                        if (item.condition && typeof item.condition === 'function') {
+                        if (typeof item.condition === 'function') {
                             canExecute = item.condition(this.state.selectedFiles, this);
                         }
 
                         if (canExecute) {
                             item.handler(this.state.selectedFiles, this);
-                            handled = true;
-                            break;
                         } else {
-                            alert('This action cannot be performed on the selected file(s)');
-                            handled = true;
-                            break;
+                            alert(this.i18n.actionNotAllowed || 'This action cannot be performed on the selected file(s)');
                         }
+                        handled = true;
+                        break;
                     }
                 }
 
@@ -1449,39 +1501,33 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Open upload dialog
-    */
+     * Open upload dialog
+     */
     MyFileManager.prototype.openUploadDialog = function () {
         if (!this.options.features.upload) {
             return;
         }
-
-        // Reset input value to allow selecting the same file again
         this.elements.uploadInput.value = '';
-
-        // Trigger file selection
         this.elements.uploadInput.click();
     };
 
     /**
-    * Update menu item states (enabled/disabled)
-    */
+     * Update menu item states (enabled/disabled)
+     */
     MyFileManager.prototype.updateMenuStates = function () {
+        var self = this;
         var hasSelection = this.state.selectedFiles.length > 0;
         var hasClipboard = this.state.clipboard !== null;
         var menubar = this.elements.menubar;
 
         // Check if trash folder is selected
         var isTrashSelected = false;
-        if (this.state.selectedFiles.length > 0) {
+        if (hasSelection) {
             isTrashSelected = this.state.selectedFiles.some(function (file) {
-                return file.name === this.options.trashPath ||
-                    file.name === '.trash' ||
-                    file.path === this.options.trashPath;
-            }.bind(this));
+                return self.isTrashItem(file);
+            });
         }
 
-        // Check if any folder is selected
         var hasFolderSelected = this.hasFolderSelected();
 
         // Download - disable if no selection OR if any folder is selected
@@ -1496,21 +1542,22 @@ window.MyFileManagerCrypto = {
             infoItem.classList.toggle('disabled', this.state.selectedFiles.length !== 1);
         }
 
-        // Copy, Cut, Rename - DISABLE if trash selected!
+        // Copy, Cut, Rename - disable if trash selected
         ['copy', 'cut', 'rename'].forEach(function (action) {
             var item = menubar.querySelector('[data-action="' + action + '"]');
             if (item) {
-                item.classList.toggle('disabled', !hasSelection || isTrashSelected);
+                var disabled = !hasSelection || isTrashSelected || (action === 'rename' && self.state.selectedFiles.length !== 1);
+                item.classList.toggle('disabled', disabled);
             }
         });
 
-        // Delete - enable for selection (trash can be deleted)
+        // Delete - enable for selection
         var deleteItem = menubar.querySelector('[data-action="delete"]');
         if (deleteItem) {
             deleteItem.classList.toggle('disabled', !hasSelection);
         }
 
-        // Paste - DISABLE if inside trash OR trash selected
+        // Paste - disable if inside trash or trash selected
         var pasteItem = menubar.querySelector('[data-action="paste"]');
         if (pasteItem) {
             var inTrash = this.isInTrash();
@@ -1535,15 +1582,15 @@ window.MyFileManagerCrypto = {
             var actionName = sortActions[sortKey];
             var itemIcon = menubar.querySelector('[data-action="' + actionName + '"] .mfm-menu-item-icon');
             if (itemIcon) {
-                itemIcon.textContent = this.options.sortBy === sortKey ? '✓' : '\u00A0';
+                itemIcon.textContent = self.options.sortBy === sortKey ? '✓' : '\u00A0';
             }
-        }.bind(this));
+        });
 
         if (this.options.cryptFiles) {
-            var encryptItem = this.elements.menubar.querySelector('[data-action="setEncryptionKey"]');
+            var encryptItem = menubar.querySelector('[data-action="setEncryptionKey"]');
             if (encryptItem) {
-                // hide or show based on encryptionKey presence
-                encryptItem.style.display = this.options.encryptionKey ? 'none' : 'block';
+                var hasKey = !!(this.options.encryptionKey || this._encryptionPassword);
+                encryptItem.style.display = hasKey ? 'none' : 'flex';
             }
         }
 
@@ -1551,8 +1598,8 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Handle toolbar action
-    */
+     * Handle toolbar action
+     */
     MyFileManager.prototype.handleToolbarAction = function (action) {
         switch (action) {
             case 'back':
@@ -1571,8 +1618,8 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Set view mode
-    */
+     * Set view mode
+     */
     MyFileManager.prototype.setViewMode = function (mode) {
         this.options.viewMode = mode;
         this.elements.filesContainer.className = 'mfm-files mfm-view-' + mode;
@@ -1581,11 +1628,10 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Set sort by
-    */
+     * Set sort by
+     */
     MyFileManager.prototype.setSortBy = function (sortBy) {
         if (this.options.sortBy === sortBy) {
-            // Toggle sort order
             this.options.sortOrder = this.options.sortOrder === 'asc' ? 'desc' : 'asc';
         } else {
             this.options.sortBy = sortBy;
@@ -1596,29 +1642,80 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Download selected files (folders cannot be downloaded)
-    */
-    MyFileManager.prototype.downloadSelected = function () {
+     * Download selected files (folders cannot be downloaded)
+     */
+    MyFileManager.prototype.downloadSelected = async function () {
         var self = this;
 
-        self._debug('log', 'downloadSelected CALLED!');
-        self._debug('log', 'Selected files:', this.state.selectedFiles.length);
-
-        // Prevent downloading folders
         if (this.hasFolderSelected()) {
-            alert('Folders cannot be downloaded. Please select only files.');
+            alert(this.i18n.foldersCannotDownload || 'Folders cannot be downloaded. Please select only files.');
             return;
         }
 
-        // Download only files
-        this.state.selectedFiles.forEach(function (file) {
-            self._debug('log', 'Downloading file:', file.name);
-
-            // Double check: skip directories
-            if (file.mime === 'directory') return;
-
-            self.downloadFile(file);
+        var filesToDownload = this.state.selectedFiles.filter(function (file) {
+            return file.mime !== 'directory';
         });
+
+        for (var i = 0; i < filesToDownload.length; i++) {
+            self._debug('log', 'Downloading file:', filesToDownload[i].name);
+            await self.downloadFile(filesToDownload[i]);
+        }
+    };
+
+    /**
+     * Check if Uint8Array starts with magic bytes
+     */
+    MyFileManager.prototype._hasMagicHeader = function (bytes) {
+        if (!bytes || bytes.length < ENC_MAGIC_BYTES.length + 16 + 12) {
+            return false;
+        }
+        for (var i = 0; i < ENC_MAGIC_BYTES.length; i++) {
+            if (bytes[i] !== ENC_MAGIC_BYTES[i]) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    /**
+     * Encrypt bytes using per-file salt if password is available, or fallback to fixed encryptionKey
+     */
+    MyFileManager.prototype._encryptBytes = async function (plainBytes) {
+        if (this._encryptionPassword) {
+            var salt = window.MyFileManagerCrypto.generateSalt();
+            var derivedKey = await this.deriveKeyFromPassword(this._encryptionPassword, salt);
+            var cipherPayload = await this.encryptFileData(plainBytes, derivedKey);
+
+            // Header: [8 bytes magic "MFMENC01"][16 bytes salt][cipherPayload]
+            var out = new Uint8Array(ENC_MAGIC_BYTES.length + salt.length + cipherPayload.length);
+            out.set(ENC_MAGIC_BYTES, 0);
+            out.set(salt, ENC_MAGIC_BYTES.length);
+            out.set(cipherPayload, ENC_MAGIC_BYTES.length + salt.length);
+            return out;
+        }
+        return await this.encryptFileData(plainBytes, this.options.encryptionKey);
+    };
+
+    /**
+     * Decrypt bytes supporting both self-contained MFMENC01 header and legacy raw format
+     */
+    MyFileManager.prototype._decryptBytes = async function (encryptedBytes) {
+        if (this._hasMagicHeader(encryptedBytes)) {
+            if (!this._encryptionPassword) {
+                throw new Error('Encryption password required to decrypt this file.');
+            }
+            var saltStart = ENC_MAGIC_BYTES.length;
+            var saltEnd = saltStart + 16;
+            var salt = encryptedBytes.slice(saltStart, saltEnd);
+            var payload = encryptedBytes.slice(saltEnd);
+            var derivedKey = await this.deriveKeyFromPassword(this._encryptionPassword, salt);
+            return await this.decryptFileData(payload, derivedKey);
+        }
+
+        if (!this.options.encryptionKey) {
+            throw new Error('Encryption key required to decrypt this file.');
+        }
+        return await this.decryptFileData(encryptedBytes, this.options.encryptionKey);
     };
 
     /**
@@ -1627,25 +1724,30 @@ window.MyFileManagerCrypto = {
     MyFileManager.prototype.downloadFile = async function (file) {
         var self = this;
         self._debug('log', 'downloadFile START for', file.name);
+        var wasAborted = false;
 
         try {
-            // Skip folders
             if (file.mime === 'directory') {
-                alert('Folders cannot be downloaded.');
+                alert(this.i18n.foldersCannotDownload || 'Folders cannot be downloaded.');
                 return;
             }
 
-            // Show progress modal immediately
-            this.showDownloadProgress(file.name, file.size);
+            if (file.name.endsWith('.encrypted') && (!this.options.cryptFiles || (!this.options.encryptionKey && !this._encryptionPassword))) {
+                if (this.options.cryptFiles) {
+                    var pwd = prompt(this.i18n.enterEncryptionPassword || 'This file is encrypted. Enter encryption password:');
+                    if (pwd) {
+                        await this.setEncryptionKey(pwd, true);
+                    }
+                }
+            }
 
-            // Create AbortController for cancellation
+            this.showDownloadProgress(file.name, file.size || 0);
             this.currentDownloadController = new AbortController();
+            await this.requestWakeLock();
 
-            // Get base URL
             var downloadUrl = this.options.downloadUrl || this.options.url;
             var baseUrl = downloadUrl.split('?')[0];
 
-            // Extract tokens
             var token1 = '';
             var token2 = Date.now();
 
@@ -1660,8 +1762,7 @@ window.MyFileManagerCrypto = {
                 }
             }
 
-            // Build FormData
-            const formData = new FormData();
+            var formData = new FormData();
             formData.append('cmd', 'download');
             formData.append('target', file.hash);
 
@@ -1673,57 +1774,50 @@ window.MyFileManagerCrypto = {
             }
             formData.append('token2', token2.toString());
 
-            self._debug('log', 'Starting download with streaming...');
-
-            const response = await fetch(baseUrl, {
+            var fetchOptions = {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: {
-                    'Authorization': 'Bearer ' + this.options.token
-                },
                 body: formData,
                 signal: this.currentDownloadController.signal
-            });
+            };
+
+            if (this.options.token) {
+                fetchOptions.headers = {
+                    'Authorization': 'Bearer ' + this.options.token
+                };
+            }
+
+            var response = await fetch(baseUrl, fetchOptions);
 
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
 
-            // Use file.size from JavaScript (already known!)
-            const total = file.size || 0;
+            var contentLength = parseInt(response.headers.get('Content-Length') || '0', 10);
+            var total = file.size || contentLength || 0;
 
-            self._debug('log', 'File size from metadata:', total, 'bytes');
-
-            // Stream the response with progress tracking
-            const reader = response.body.getReader();
-            const chunks = [];
-            let receivedLength = 0;
-            let lastTime = Date.now();
-            let lastReceived = 0;
-
-            // Speed tracking with moving average
-            const speedSamples = [];
-            const maxSamples = 10;
+            var reader = response.body.getReader();
+            var chunks = [];
+            var receivedLength = 0;
+            var lastTime = Date.now();
+            var lastReceived = 0;
+            var speedSamples = [];
+            var maxSamples = 10;
 
             while (true) {
-                const { done, value } = await reader.read();
+                var step = await reader.read();
+                if (step.done) break;
 
-                if (done) break;
+                chunks.push(step.value);
+                receivedLength += step.value.length;
 
-                chunks.push(value);
-                receivedLength += value.length;
+                var percent = total > 0 ? Math.min(100, (receivedLength / total) * 100) : 0;
+                var now = Date.now();
+                var deltaTime = (now - lastTime) / 1000;
+                var deltaReceived = receivedLength - lastReceived;
 
-                // Calculate progress using file.size
-                const percent = total > 0 ? (receivedLength / total) * 100 : 0;
-
-                // Calculate speed with moving average
-                const now = Date.now();
-                const deltaTime = (now - lastTime) / 1000;
-                const deltaReceived = receivedLength - lastReceived;
-
-                if (deltaTime > 0.1) { // Update every 100ms
-                    const instantSpeed = deltaReceived / deltaTime;
-
+                if (deltaTime >= 0.1) {
+                    var instantSpeed = deltaReceived / deltaTime;
                     if (instantSpeed > 0) {
                         speedSamples.push(instantSpeed);
                         if (speedSamples.length > maxSamples) {
@@ -1731,70 +1825,55 @@ window.MyFileManagerCrypto = {
                         }
                     }
 
-                    // Calculate average speed
-                    let avgSpeed = 0;
+                    var avgSpeed = 0;
                     if (speedSamples.length > 0) {
-                        const sum = speedSamples.reduce((a, b) => a + b, 0);
-                        avgSpeed = sum / speedSamples.length;
+                        avgSpeed = speedSamples.reduce(function (a, b) { return a + b; }, 0) / speedSamples.length;
                     }
 
-                    // Calculate time remaining using file.size
-                    let timeRemaining = Infinity;
+                    var timeRemaining = Infinity;
                     if (avgSpeed > 0 && total > 0) {
-                        const remaining = total - receivedLength;
-                        timeRemaining = remaining / avgSpeed;
+                        timeRemaining = Math.max(0, (total - receivedLength) / avgSpeed);
                     }
 
-                    // Update UI
                     self.updateDownloadProgress(percent, avgSpeed, timeRemaining);
-
                     lastTime = now;
                     lastReceived = receivedLength;
                 }
             }
 
-            self._debug('log', 'Download complete, received:', receivedLength, 'bytes');
-
-            // Force final update to 100% (for small files)
-            if (total > 0) {
-                // Calculate final average speed for small files
-                let finalSpeed = 0;
-                if (speedSamples.length > 0) {
-                    const sum = speedSamples.reduce((a, b) => a + b, 0);
-                    finalSpeed = sum / speedSamples.length;
-                }
-                self.updateDownloadProgress(100, finalSpeed, 0);
+            var finalSpeed = 0;
+            if (speedSamples.length > 0) {
+                finalSpeed = speedSamples.reduce(function (a, b) { return a + b; }, 0) / speedSamples.length;
             }
+            self.updateDownloadProgress(100, finalSpeed, 0);
 
-            // Combine chunks into blob
-            const blob = new Blob(chunks, { type: 'application/octet-stream' });
+            var blob = new Blob(chunks, { type: 'application/octet-stream' });
+            var finalBlob = blob;
+            var finalFilename = file.name;
 
-            // Handle decryption if needed
-            let finalBlob = blob;
-            let finalFilename = file.name;
-
-            if (this.options.cryptFiles && this.options.encryptionKey && file.name.endsWith('.encrypted')) {
+            if (this.options.cryptFiles && (this.options.encryptionKey || this._encryptionPassword) && file.name.endsWith('.encrypted')) {
                 self._debug('log', 'Decrypting file...');
-                const arrayBuffer = await blob.arrayBuffer();
-                const encryptedData = new Uint8Array(arrayBuffer);
-                const decryptedData = await this.decryptFileData(encryptedData, this.options.encryptionKey);
+                var arrayBuffer = await blob.arrayBuffer();
+                var encryptedData = new Uint8Array(arrayBuffer);
+                var decryptedData = await this._decryptBytes(encryptedData);
                 finalBlob = new Blob([decryptedData], { type: file.mime || 'application/octet-stream' });
-                finalFilename = file.name.replace('.encrypted', '');
+                finalFilename = file.name.slice(0, -10);
             }
 
-            // Trigger browser download
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(finalBlob);
+            var a = document.createElement('a');
+            var objectUrl = URL.createObjectURL(finalBlob);
+            a.href = objectUrl;
             a.download = finalFilename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
+            setTimeout(function () {
+                URL.revokeObjectURL(objectUrl);
+            }, 1000);
 
-            // Wait a bit longer for small files so user sees 100%
             setTimeout(function () {
                 self.hideDownloadProgress();
-            }, 1500);
+            }, 1000);
 
             self._debug('log', 'Download saved:', finalFilename);
 
@@ -1802,18 +1881,27 @@ window.MyFileManagerCrypto = {
             self._debug('error', 'Download failed:', error);
 
             if (error.name === 'AbortError') {
-                self.showDownloadError('Download cancelled by user');
-            } else if (error.name === 'OperationError' || error.message.includes('decryption')) {
+                wasAborted = true;
+                self.hideDownloadProgress();
+            } else if (error.name === 'OperationError' || (error.message && error.message.toLowerCase().indexOf('decrypt') !== -1)) {
                 self.showDownloadError('Decryption failed. Wrong password or corrupted file.');
             } else {
-                self.showDownloadError(error.message);
+                self.showDownloadError(error.message || 'Download failed');
+            }
+        } finally {
+            this.currentDownloadController = null;
+            if (!this.state.isUploading) {
+                this.releaseWakeLock();
+            }
+            if (wasAborted) {
+                this._debug('log', 'Download aborted by user');
             }
         }
     };
 
     /**
-    * Render files in current view mode
-    */
+     * Render files in current view mode
+     */
     MyFileManager.prototype.renderFiles = function () {
         var self = this;
         var files = this.sortFiles(this.state.files);
@@ -1821,128 +1909,103 @@ window.MyFileManagerCrypto = {
         // Filter hidden extensions
         if (self.options.hideExtensions && self.options.hideExtensions.length > 0) {
             files = files.filter(function (file) {
-                // Always show directories
                 if (file.mime === 'directory') return true;
 
-                // Check if file extension should be hidden
                 var fileName = file.name.toLowerCase();
                 for (var i = 0; i < self.options.hideExtensions.length; i++) {
                     var ext = self.options.hideExtensions[i].toLowerCase();
-                    // Ensure extension starts with dot
                     if (!ext.startsWith('.')) ext = '.' + ext;
                     if (fileName.endsWith(ext)) {
-                        return false; // Hide this file
+                        return false;
                     }
                 }
-                return true; // Show this file
+                return true;
             });
         }
 
-        var html = '';
+        var parts = [];
 
         if (files.length === 0) {
-            html = '<div class="mfm-empty">' + this.i18n.emptyFolder + '</div>';
+            parts.push('<div class="mfm-empty">' + this.escapeHtml(this.i18n.emptyFolder || 'This folder is empty') + '</div>');
         } else {
-            if (this.options.viewMode === 'list') {
-                // List view explorer
-                files.forEach(function (file) {
-                    var icon = self.getFileIcon(file);
-                    var size = file.mime === 'directory' ? '' : self.formatSize(file.size);
-                    var type = file.mime === 'directory' ? self.i18n.folder : self.getFileType(file);
-                    var date = self.formatDate(file.ts);
+            var isListView = this.options.viewMode === 'list';
 
-                    // Create tooltip with file information
-                    var tooltip = '';
-                    tooltip += self.i18n.name + ': ' + file.name + '\u000A';
-                    tooltip += self.i18n.type + ': ' + type + '\u000A';
-                    if (size) tooltip += self.i18n.size + ': ' + size + '\u000A';
-                    tooltip += self.i18n.dateModified + ': ' + date;
+            files.forEach(function (file) {
+                var icon = self.getFileIcon(file);
+                var size = file.mime === 'directory' ? '' : self.formatSize(file.size);
+                var type = file.mime === 'directory' ? (self.i18n.folder || 'Folder') : self.getFileType(file);
+                var date = self.formatDate(file.ts);
 
-                    html += '<div class="mfm-file" data-hash="' + file.hash + '" title="' + self.escapeHtml(tooltip) + '">';
-                    html += '<div class="mfm-file-icon ' + icon + '"></div>';
-                    // Display translated name for trash folder
-                    var displayName = self.escapeHtml(file.name);
-                    if (displayName.endsWith('.encrypted')) {
-                        displayName = displayName.slice(0, -10); // remove ".encrypted"
-                    }
-                    if (file.name === self.options.trashPath || file.name === '.trash') {
-                        displayName = self.i18n.trash;
-                    }
-                    html += '<span class="mfm-file-name">' + displayName + '</span>';
-                    html += '<div class="mfm-file-size">' + size + '</div>';
-                    html += '<div class="mfm-file-type">' + type + '</div>';
-                    html += '<div class="mfm-file-date">' + date + '</div>';
-                    html += '</div>';
-                });
-            } else {
-                // Grid view explorer
-                files.forEach(function (file) {
-                    var icon = self.getFileIcon(file);
-                    var size = file.mime === 'directory' ? '' : self.formatSize(file.size);
-                    var type = file.mime === 'directory' ? self.i18n.folder : self.getFileType(file);
-                    var date = self.formatDate(file.ts);
+                var tooltip = '';
+                tooltip += (self.i18n.name || 'Name') + ': ' + file.name + '\u000A';
+                tooltip += (self.i18n.type || 'Type') + ': ' + type + '\u000A';
+                if (size) tooltip += (self.i18n.size || 'Size') + ': ' + size + '\u000A';
+                tooltip += (self.i18n.dateModified || 'Date Modified') + ': ' + date;
 
-                    // Create tooltip with file information
-                    var tooltip = '';
-                    tooltip += self.i18n.name + ': ' + file.name + '\u000A';
-                    tooltip += self.i18n.type + ': ' + type + '\u000A';
-                    if (size) tooltip += self.i18n.size + ': ' + size + '\u000A';
-                    tooltip += self.i18n.dateModified + ': ' + date;
+                var rawDisplayName = file.name;
+                if (rawDisplayName.endsWith('.encrypted')) {
+                    rawDisplayName = rawDisplayName.slice(0, -10);
+                }
+                if (self.isTrashItem(file)) {
+                    rawDisplayName = self.i18n.trash || 'Recycle Bin';
+                }
 
-                    html += '<div class="mfm-file" data-hash="' + file.hash + '" title="' + self.escapeHtml(tooltip) + '">';
-                    html += '<div class="mfm-file-icon ' + icon + '"></div>';
-                    // Display translated name for trash folder
-                    var displayName = self.escapeHtml(file.name);
-                    if (displayName.endsWith('.encrypted')) {
-                        displayName = displayName.slice(0, -10); // remove ".encrypted"
-                    }
-                    if (file.name === self.options.trashPath || file.name === '.trash') {
-                        displayName = self.i18n.trash;
-                    }
-                    html += '<span class="mfm-file-name">' + displayName + '</span>';
-                    html += '</div>';
-                });
-            }
+                parts.push('<div class="mfm-file" data-hash="' + self.escapeHtml(file.hash) + '" title="' + self.escapeHtml(tooltip) + '">');
+                parts.push('<div class="mfm-file-icon ' + self.escapeHtml(icon) + '"></div>');
+                parts.push('<span class="mfm-file-name">' + self.escapeHtml(rawDisplayName) + '</span>');
 
+                if (isListView) {
+                    parts.push('<div class="mfm-file-size">' + self.escapeHtml(size) + '</div>');
+                    parts.push('<div class="mfm-file-type">' + self.escapeHtml(type) + '</div>');
+                    parts.push('<div class="mfm-file-date">' + self.escapeHtml(date) + '</div>');
+                }
+
+                parts.push('</div>');
+            });
         }
 
-        this.elements.filesContainer.innerHTML = html;
+        this.elements.filesContainer.innerHTML = parts.join('');
         this.updateStatusBar();
     };
 
     /**
-    * Filter hidden files/folders starting with dot (except trash folder)
-    * Controlled by options.showHidden option
-    * @param {Array} files - Array of files to filter
-    * @return {Array} Filtered files
-    */
+     * Helper to check if a file item represents the trash folder
+     */
+    MyFileManager.prototype.isTrashItem = function (file) {
+        if (!file) return false;
+        var cleanTrash = this.options.trashPath.replace(/^\/+|\/+$/g, '');
+        return file.name === cleanTrash ||
+            file.name === '.trash' ||
+            file.name === '.' + cleanTrash.replace(/^\./, '') ||
+            file.path === cleanTrash ||
+            file.path === '/' + cleanTrash;
+    };
+
+    /**
+     * Filter hidden files/folders starting with dot (except trash folder)
+     */
     MyFileManager.prototype.filterHiddenFolders = function (files) {
         var self = this;
+        if (!Array.isArray(files)) return [];
 
-        // If showHidden is true, return all files without filtering
         if (self.options.showHidden) {
             return files;
         }
 
-        // Otherwise filter hidden files/folders (starting with .) except trash
         return files.filter(function (file) {
-            // Skip hidden items starting with dot
-            if (file.name.charAt(0) === '.') {
-                // Always show trash folder regardless of name format
-                if (file.name === self.options.trashPath ||
-                    file.name === '.trash' ||
-                    file.name === '.' + self.options.trashPath) {
+            if (file.name && file.name.charAt(0) === '.') {
+                if (self.isTrashItem(file)) {
                     return true;
                 }
-                return false; // Hide other hidden items
+                return false;
             }
-            return true; // Show all non-hidden items
+            return true;
         });
     };
 
     /**
-    * Sort files
-    */
+     * Sort files
+     */
     MyFileManager.prototype.sortFiles = function (files) {
         var self = this;
         var sorted = files.slice();
@@ -1978,32 +2041,28 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Get file/folder icon class - PNG icons
-    */
+     * Get file/folder icon class
+     */
     MyFileManager.prototype.getFileIcon = function (file) {
         if (file.mime === 'directory') {
-            // Trash folder special case
-            if (file.name === this.options.trashPath ||
-                file.name === '.trash' ||
-                file.path === ('/' + this.options.trashPath)) {
+            if (this.isTrashItem(file)) {
                 var trashHasFiles = file.size > 0 || (file.dirs && file.dirs > 0);
                 return trashHasFiles ? 'icon-trash-full' : 'icon-trash-empty';
             }
-            return 'icon-folder';  // PNG folder
+            return 'icon-folder';
         }
 
-        // Remove .encrypted for icon detection
         var fileName = file.name.endsWith('.encrypted') ?
             file.name.slice(0, -10) : file.name;
         var ext = fileName.split('.').pop().toLowerCase();
 
-        // PNG icons by MIME type (PRIORITY)
-        if (file.mime.startsWith('image/')) return 'icon-image';
-        if (file.mime.startsWith('video/')) return 'icon-video';
-        if (file.mime.startsWith('audio/')) return 'icon-audio';
-        if (file.mime.startsWith('text/')) return 'icon-text';
+        if (file.mime) {
+            if (file.mime.startsWith('image/')) return 'icon-image';
+            if (file.mime.startsWith('video/')) return 'icon-video';
+            if (file.mime.startsWith('audio/')) return 'icon-audio';
+            if (file.mime.startsWith('text/')) return 'icon-text';
+        }
 
-        // PNG icons by extension (FALLBACK)
         switch (ext) {
             case 'jpg': case 'jpeg': case 'png': case 'gif':
             case 'webp': case 'svg': case 'bmp': return 'icon-image';
@@ -2023,35 +2082,27 @@ window.MyFileManagerCrypto = {
             case 'xls': case 'xlsx': return 'icon-excel';
             case 'ppt': case 'pptx': return 'icon-powerpoint';
 
-            default: return 'icon-file';  // Generic file PNG
+            default: return 'icon-file';
         }
     };
 
     /**
-    * Check if current path is trash folder
-    */
+     * Check if current path is trash folder
+     */
     MyFileManager.prototype.isInTrash = function () {
-        var currentPath = this.state.currentPath;
-        var trashPath = this.options.trashPath;
+        var currentPath = (this.state.currentPath || '').replace(/^\/+|\/+$/g, '');
+        var trashPath = (this.options.trashPath || '.trash').replace(/^\/+|\/+$/g, '');
 
-        this._debug('log', 'isInTrash check:', {
-            currentPath: currentPath,
-            trashPath: trashPath
-        });
-
-        // Check various path formats
-        if (currentPath === '/' + trashPath) return true;
+        if (!currentPath) return false;
         if (currentPath === trashPath) return true;
-        if (currentPath.indexOf('/' + trashPath + '/') === 0) return true;
         if (currentPath.indexOf(trashPath + '/') === 0) return true;
 
         return false;
     };
 
     /**
-    * Check if any folder (directory) is in current selection
-    * @return {boolean} True if any folder is selected
-    */
+     * Check if any folder (directory) is in current selection
+     */
     MyFileManager.prototype.hasFolderSelected = function () {
         return this.state.selectedFiles.some(function (file) {
             return file.mime === 'directory';
@@ -2059,177 +2110,151 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Get file type string
-    */
+     * Get file type string
+     */
     MyFileManager.prototype.getFileType = function (file) {
         if (file.mime === 'directory') {
             return this.i18n.folder;
         }
 
-        var ext = file.name.split('.').pop().toUpperCase();
+        var cleanName = file.name.endsWith('.encrypted') ? file.name.slice(0, -10) : file.name;
+        var parts = cleanName.split('.');
+        var ext = parts.length > 1 ? parts.pop().toUpperCase() : '';
 
-        if (file.mime.startsWith('image/')) {
-            return ext + ' ' + this.i18n.image;
+        if (file.mime && file.mime.startsWith('image/')) {
+            return (ext ? ext + ' ' : '') + this.i18n.image;
+        }
+        if (file.mime && file.mime.startsWith('video/')) {
+            return (ext ? ext + ' ' : '') + this.i18n.video;
+        }
+        if (file.mime && file.mime.startsWith('audio/')) {
+            return (ext ? ext + ' ' : '') + this.i18n.audio;
+        }
+        if (file.mime && file.mime.startsWith('text/')) {
+            return (ext ? ext + ' ' : '') + this.i18n.textFile;
         }
 
-        if (file.mime.startsWith('video/')) {
-            return ext + ' ' + this.i18n.video;
-        }
-
-        if (file.mime.startsWith('audio/')) {
-            return ext + ' ' + this.i18n.audio;
-        }
-
-        if (file.mime.startsWith('text/')) {
-            return ext + ' ' + this.i18n.textFile;
-        }
-
-        return ext + ' ' + this.i18n.file;
+        return (ext ? ext + ' ' : '') + this.i18n.file;
     };
 
     /**
-    * Show context menu
-    */
+     * Show context menu
+     */
     MyFileManager.prototype.showContextMenu = function (x, y) {
+        var self = this;
         var hasSelection = this.state.selectedFiles.length > 0;
         var hasClipboard = this.state.clipboard !== null;
-        var html = '';
+        var html = [];
 
         if (hasSelection) {
-            // Check if trash folder is selected
             var isTrashSelected = this.state.selectedFiles.some(function (file) {
-                return file.name === this.options.trashPath ||
-                    file.name === '.trash' ||
-                    file.path === this.options.trashPath;
-            }.bind(this));
+                return self.isTrashItem(file);
+            });
 
-            // Check if any folder is selected - prevent download for folders
             var hasFolderSelected = this.hasFolderSelected();
 
-            // Show download only if NO folders are selected (only files can be downloaded)
             if (this.options.features.download && !hasFolderSelected) {
-                html += '<div class="mfm-context-menu-item" data-action="download">';
-                html += this.i18n.download;
-                html += '</div>';
-                html += '<div class="mfm-context-menu-separator"></div>';
+                html.push('<div class="mfm-context-menu-item" data-action="download">');
+                html.push(this.escapeHtml(this.i18n.download));
+                html.push('</div>');
+                html.push('<div class="mfm-context-menu-separator"></div>');
             }
 
-            // Copy option - DISABLED for trash
             if (this.options.features.copy && !isTrashSelected) {
-                html += '<div class="mfm-context-menu-item" data-action="copy">';
-                html += this.i18n.copy;
-                html += '</div>';
+                html.push('<div class="mfm-context-menu-item" data-action="copy">');
+                html.push(this.escapeHtml(this.i18n.copy));
+                html.push('</div>');
             }
 
-            // Cut option - DISABLED for trash
             if (this.options.features.cut && !isTrashSelected) {
-                html += '<div class="mfm-context-menu-item" data-action="cut">';
-                html += this.i18n.cut;
-                html += '</div>';
+                html.push('<div class="mfm-context-menu-item" data-action="cut">');
+                html.push(this.escapeHtml(this.i18n.cut));
+                html.push('</div>');
             }
 
-            // Rename option - DISABLED for trash (only for single selection)
             if (this.state.selectedFiles.length === 1 && this.options.features.rename && !isTrashSelected) {
-                html += '<div class="mfm-context-menu-separator"></div>';
-                html += '<div class="mfm-context-menu-item" data-action="rename">';
-                html += this.i18n.rename;
-                html += '</div>';
+                html.push('<div class="mfm-context-menu-separator"></div>');
+                html.push('<div class="mfm-context-menu-item" data-action="rename">');
+                html.push(this.escapeHtml(this.i18n.rename));
+                html.push('</div>');
             }
 
-            // Get selected file if exactly one selected
             var file = this.state.selectedFiles.length === 1 ? this.state.selectedFiles[0] : null;
-            var trashFolderName = this.options.trashPath.replace('.', ''); // Remove leading dot
+            var inTrashFolder = this.isInTrash();
+            var isTrashFolderIcon = file && this.isTrashItem(file);
 
-            // Check if current folder is the trash folder
-            var inTrashFolder = this.state.currentPath === trashFolderName || this.state.currentPath === ('/' + trashFolderName);
-
-            // Check if the selected file is the trash folder icon itself
-            var isTrashFolderIcon = file && (file.name === trashFolderName || file.name === ('.' + trashFolderName));
-
-            // Delete option
             if (this.options.features.delete) {
-                html += '<div class="mfm-context-menu-separator"></div>';
+                html.push('<div class="mfm-context-menu-separator"></div>');
 
                 if (isTrashFolderIcon && !inTrashFolder) {
-                    // Right-click on the Trash folder icon in main folder list
-                    html += '<div class="mfm-context-menu-item" data-action="delete">';
-                    html += this.i18n.emptyTrash;
-                    html += '</div>';
+                    html.push('<div class="mfm-context-menu-item" data-action="delete">');
+                    html.push(this.escapeHtml(this.i18n.emptyTrash));
+                    html.push('</div>');
                 } else {
-                    // Regular delete for files or folders
-                    html += '<div class="mfm-context-menu-item" data-action="delete">';
-                    html += this.i18n.delete;
-                    html += '</div>';
+                    html.push('<div class="mfm-context-menu-item" data-action="delete">');
+                    html.push(this.escapeHtml(this.i18n.delete));
+                    html.push('</div>');
                 }
             }
 
-            // Info option (only for single selection)
             if (this.state.selectedFiles.length === 1 && this.options.features.info) {
-                html += '<div class="mfm-context-menu-separator"></div>';
-                html += '<div class="mfm-context-menu-item" data-action="info">';
-                html += this.i18n.info;
-                html += '</div>';
+                html.push('<div class="mfm-context-menu-separator"></div>');
+                html.push('<div class="mfm-context-menu-item" data-action="info">');
+                html.push(this.escapeHtml(this.i18n.info));
+                html.push('</div>');
             }
 
-            // CUSTOM CONTEXT MENU ITEMS FROM PLUGINS (with condition checking)
             if (this.options.customContextMenu.length > 0) {
-                var self = this;
                 var addedPluginSeparator = false;
 
                 this.options.customContextMenu.forEach(function (item) {
-                    // Check if item has a condition function
                     var shouldShow = true;
-                    if (item.condition && typeof item.condition === 'function') {
+                    if (typeof item.condition === 'function') {
                         shouldShow = item.condition(self.state.selectedFiles, self);
                     }
 
                     if (shouldShow) {
-                        // Add separator before first plugin item
                         if (!addedPluginSeparator) {
-                            html += '<div class="mfm-context-menu-separator"></div>';
+                            html.push('<div class="mfm-context-menu-separator"></div>');
                             addedPluginSeparator = true;
                         }
 
-                        html += '<div class="mfm-context-menu-item" data-action="' + self.escapeHtml(item.action) + '">';
-                        html += self.escapeHtml(item.label);
-                        html += '</div>';
+                        html.push('<div class="mfm-context-menu-item" data-action="' + self.escapeHtml(item.action) + '">');
+                        html.push(self.escapeHtml(item.label));
+                        html.push('</div>');
                     }
                 });
             }
 
         } else {
-            // No selection - check if inside trash
             var inTrash = this.isInTrash();
 
-            // No selection - show folder actions
-            if (this.options.features.upload) {
-                html += '<div class="mfm-context-menu-item" data-action="upload">';
-                html += this.i18n.upload;
-                html += '</div>';
+            if (this.options.features.upload && !inTrash) {
+                html.push('<div class="mfm-context-menu-item" data-action="upload">');
+                html.push(this.escapeHtml(this.i18n.upload));
+                html.push('</div>');
             }
 
-            if (this.options.features.mkdir) {
-                html += '<div class="mfm-context-menu-item" data-action="mkdir">';
-                html += this.i18n.mkdir;
-                html += '</div>';
+            if (this.options.features.mkdir && !inTrash) {
+                html.push('<div class="mfm-context-menu-item" data-action="mkdir">');
+                html.push(this.escapeHtml(this.i18n.mkdir));
+                html.push('</div>');
             }
 
-            // Paste - DISABLED if inside trash
             if (hasClipboard && this.options.features.paste && !inTrash) {
-                html += '<div class="mfm-context-menu-separator"></div>';
-                html += '<div class="mfm-context-menu-item" data-action="paste">';
-                html += this.i18n.paste;
-                html += '</div>';
+                html.push('<div class="mfm-context-menu-separator"></div>');
+                html.push('<div class="mfm-context-menu-item" data-action="paste">');
+                html.push(this.escapeHtml(this.i18n.paste));
+                html.push('</div>');
             }
 
-            // Refresh option
-            html += '<div class="mfm-context-menu-separator"></div>';
-            html += '<div class="mfm-context-menu-item" data-action="refresh">';
-            html += this.i18n.refresh;
-            html += '</div>';
+            html.push('<div class="mfm-context-menu-separator"></div>');
+            html.push('<div class="mfm-context-menu-item" data-action="refresh">');
+            html.push(this.escapeHtml(this.i18n.refresh));
+            html.push('</div>');
         }
 
-        this.elements.contextMenu.innerHTML = html;
+        this.elements.contextMenu.innerHTML = html.join('');
         this.elements.contextMenu.style.display = 'block';
         this.elements.contextMenu.style.left = x + 'px';
         this.elements.contextMenu.style.top = y + 'px';
@@ -2237,26 +2262,24 @@ window.MyFileManagerCrypto = {
         // Adjust position if out of viewport
         var rect = this.elements.contextMenu.getBoundingClientRect();
         if (rect.right > window.innerWidth) {
-            this.elements.contextMenu.style.left = (x - rect.width) + 'px';
+            this.elements.contextMenu.style.left = Math.max(0, x - rect.width) + 'px';
         }
         if (rect.bottom > window.innerHeight) {
-            this.elements.contextMenu.style.top = (y - rect.height) + 'px';
+            this.elements.contextMenu.style.top = Math.max(0, y - rect.height) + 'px';
         }
     };
 
     /**
-    * Handle context menu action
-    */
+     * Handle context menu action
+     */
     MyFileManager.prototype.handleContextMenuAction = function (action) {
         this.elements.contextMenu.style.display = 'none';
 
-        // Check plugin context menu items first
         for (var i = 0; i < this.options.customContextMenu.length; i++) {
             var item = this.options.customContextMenu[i];
             if (item.action === action && typeof item.handler === 'function') {
-                // Check condition
                 var canExecute = true;
-                if (item.condition && typeof item.condition === 'function') {
+                if (typeof item.condition === 'function') {
                     canExecute = item.condition(this.state.selectedFiles, this);
                 }
 
@@ -2267,7 +2290,6 @@ window.MyFileManagerCrypto = {
             }
         }
 
-        // Default actions
         switch (action) {
             case 'download':
                 this.downloadSelected();
@@ -2291,7 +2313,7 @@ window.MyFileManagerCrypto = {
                 this.showInfo();
                 break;
             case 'upload':
-                this.elements.uploadInput.click();
+                this.openUploadDialog();
                 break;
             case 'mkdir':
                 this.createFolder();
@@ -2300,16 +2322,10 @@ window.MyFileManagerCrypto = {
                 this.refresh();
                 break;
             default:
-                // CHECK CUSTOM CONTEXT MENU ACTIONS
                 var handled = false;
-
-                // Check if action starts with 'custom-'
-                if (action.startsWith('custom-')) {
-                    // Find the custom menu item
-                    for (var i = 0; i < this.options.customContextMenu.length; i++) {
-                        var item = this.options.customContextMenu[i];
-                        if (item.action === action) {
-                            // Call custom handler if defined
+                if (action && action.startsWith('custom-')) {
+                    for (var j = 0; j < this.options.customContextMenu.length; j++) {
+                        if (this.options.customContextMenu[j].action === action) {
                             if (typeof this.options.onContextMenuAction === 'function') {
                                 this.options.onContextMenuAction({
                                     action: action,
@@ -2331,69 +2347,50 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Update breadcrumb navigation
-    */
+     * Update breadcrumb navigation (clicks handled by event delegation in bindEvents)
+     */
     MyFileManager.prototype.updateBreadcrumb = function () {
         var self = this;
-        var html = '';
+        var html = [];
 
-        // Home button (root) - Use customizable homeLabel
-        html += '<div class="mfm-breadcrumb-item" data-hash="">';
-        html += this.options.homeLabel || this.i18n.home;
-        html += '</div>';
+        html.push('<div class="mfm-breadcrumb-item" data-hash="">');
+        html.push(this.escapeHtml(this.options.homeLabel || this.i18n.home || 'Home'));
+        html.push('</div>');
 
-        // Decode currentPath if needed
-        var decodedPath = this.state.currentPath;
-
-        // Split path
+        var decodedPath = this.state.currentPath || '';
         var parts = decodedPath ? decodedPath.split('/').filter(Boolean) : [];
+        var cleanTrash = (this.options.trashPath || '.trash').replace(/^\/+|\/+$/g, '');
 
-        // Build breadcrumb
         var pathSoFar = '';
         parts.forEach(function (folderName, index) {
             pathSoFar += (index > 0 ? '/' : '') + folderName;
+            var hashForNav = utf8ToBase64(pathSoFar);
 
-            // Encode path to base64 for navigation
-            var hashForNav = btoa(pathSoFar);
+            html.push('<span class="mfm-breadcrumb-sep">›</span>');
+            html.push('<div class="mfm-breadcrumb-item" data-hash="' + self.escapeHtml(hashForNav) + '">');
 
-            html += '<span class="mfm-breadcrumb-sep">›</span>';
-            html += '<div class="mfm-breadcrumb-item" data-hash="' + self.escapeHtml(hashForNav) + '">';
-
-            // Check if this is the trash folder and display translated label
             var displayName = folderName;
-            if (folderName === self.options.trashPath ||
-                folderName === '.trash' ||
-                folderName === 'trash') {
-                displayName = self.i18n.trash;
+            if (folderName === cleanTrash || folderName === '.trash' || folderName === 'trash') {
+                displayName = self.i18n.trash || folderName;
             }
 
-            html += self.escapeHtml(displayName);
-            html += '</div>';
+            html.push(self.escapeHtml(displayName));
+            html.push('</div>');
         });
 
-        this.elements.breadcrumb.innerHTML = html;
-
-        // Bind breadcrumb clicks
-        this.elements.breadcrumb.querySelectorAll('.mfm-breadcrumb-item').forEach(function (item) {
-            item.addEventListener('click', function () {
-                var hash = this.getAttribute('data-hash');
-                self.open(hash); // Pass the hash to open
-            });
-        });
+        this.elements.breadcrumb.innerHTML = html.join('');
     };
 
     /**
-    * Update status bar with file count and selection info
-    */
+     * Update status bar with file count and selection info
+     */
     MyFileManager.prototype.updateStatusBar = function () {
         var itemCount = this.state.files.length;
         var selectedCount = this.state.selectedFiles.length;
         var itemText = itemCount === 1 ? this.i18n.item : this.i18n.items;
 
-        // Always show total items count
         var leftText = itemCount + ' ' + itemText;
 
-        // Add selection info if items are selected
         if (selectedCount > 0) {
             var selectedText = selectedCount === 1 ? this.i18n.selected : this.i18n.selectedPlural;
             leftText += ': ' + selectedCount + ' ' + selectedText;
@@ -2401,7 +2398,6 @@ window.MyFileManagerCrypto = {
 
         this.container.querySelector('.mfm-status-items').textContent = leftText;
 
-        // Update quota info if available
         if (this.state.quota) {
             var usedText = this.formatSize(this.state.quota.used);
             var totalText = this.formatSize(this.state.quota.total);
@@ -2409,18 +2405,18 @@ window.MyFileManagerCrypto = {
             var maxUploadText = this.formatSizeBinary(this.state.quota.maxUpload);
 
             var quotaHtml = '';
-            quotaHtml += '<span title="' + this.i18n.spaceUsed + '">' + this.i18n.used + ' ' + usedText + '</span>';
-            quotaHtml += '<span title="' + this.i18n.spaceFree + '">' + this.i18n.free + ' ' + freeText + '</span>';
-            quotaHtml += '<span title="' + this.i18n.spaceTotal + '">' + this.i18n.total + ' ' + totalText + '</span>';
-            quotaHtml += '<span title="' + this.i18n.maxUploadSize + '">' + this.i18n.maxUpload + ' ' + maxUploadText + '</span>';
+            quotaHtml += '<span title="' + this.escapeHtml(this.i18n.spaceUsed) + '">' + this.escapeHtml(this.i18n.used + ' ' + usedText) + '</span>';
+            quotaHtml += '<span title="' + this.escapeHtml(this.i18n.spaceFree) + '">' + this.escapeHtml(this.i18n.free + ' ' + freeText) + '</span>';
+            quotaHtml += '<span title="' + this.escapeHtml(this.i18n.spaceTotal) + '">' + this.escapeHtml(this.i18n.total + ' ' + totalText) + '</span>';
+            quotaHtml += '<span title="' + this.escapeHtml(this.i18n.maxUploadSize) + '">' + this.escapeHtml(this.i18n.maxUpload + ' ' + maxUploadText) + '</span>';
 
             this.container.querySelector('.mfm-status-quota').innerHTML = quotaHtml;
         }
     };
 
     /**
-    * Select all files
-    */
+     * Select all files
+     */
     MyFileManager.prototype.selectAll = function () {
         var self = this;
         this.clearSelection();
@@ -2429,85 +2425,142 @@ window.MyFileManagerCrypto = {
         fileElements.forEach(function (el) {
             var hash = el.getAttribute('data-hash');
             var file = self.getFileByHash(hash);
-            self.selectFile(el, file);
+            if (file) {
+                self.selectFile(el, file);
+            }
         });
     };
 
     /**
-    * Format file size (Decimal - base 10)
-    */
-    MyFileManager.prototype.formatSize = function (bytes) {
-        if (bytes === 0) return '0 Bytes';
+     * Select range of files (Shift+Click)
+     */
+    MyFileManager.prototype.selectRange = function (targetEl) {
+        var fileElements = Array.prototype.slice.call(
+            this.elements.filesContainer.querySelectorAll('.mfm-file')
+        );
+        if (fileElements.length === 0) return;
 
-        // Decimal (base 10) - 1 GB = 1,000,000,000 bytes
+        var anchorHash = this._lastSelectedHash || (this.state.selectedFiles[0] && this.state.selectedFiles[0].hash);
+        var startIdx = fileElements.findIndex(function (el) {
+            return el.getAttribute('data-hash') === anchorHash;
+        });
+        var endIdx = fileElements.indexOf(targetEl);
+
+        if (startIdx === -1 || endIdx === -1) {
+            var singleFile = this.getFileByHash(targetEl.getAttribute('data-hash'));
+            if (singleFile) {
+                this.clearSelection();
+                this.selectFile(targetEl, singleFile);
+            }
+            return;
+        }
+
+        var minIdx = Math.min(startIdx, endIdx);
+        var maxIdx = Math.max(startIdx, endIdx);
+
+        this.clearSelection();
+        for (var i = minIdx; i <= maxIdx; i++) {
+            var el = fileElements[i];
+            var file = this.getFileByHash(el.getAttribute('data-hash'));
+            if (file) {
+                this.selectFile(el, file);
+            }
+        }
+    };
+
+    /**
+     * Format file size (Decimal - base 10)
+     */
+    MyFileManager.prototype.formatSize = function (bytes) {
+        if (!bytes || bytes === 0) return '0 Bytes';
+
         var k = 1000;
         var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-        var i = Math.floor(Math.log(bytes) / Math.log(k));
+        var i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
     /**
-    * Format file size in binary (for max upload from PHP)
-    */
+     * Format file size in binary (for max upload from PHP)
+     */
     MyFileManager.prototype.formatSizeBinary = function (bytes) {
-        if (bytes === 0) return '0 Bytes';
+        if (!bytes || bytes === 0) return '0 Bytes';
 
-        // Binary (base 2) - 1 GiB = 1,073,741,824 bytes
         var k = 1024;
         var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-        var i = Math.floor(Math.log(bytes) / Math.log(k));
+        var i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
     /**
-    * Format date
-    */
+     * Format date
+     */
     MyFileManager.prototype.formatDate = function (timestamp) {
+        if (!timestamp) return '';
         var date = new Date(timestamp * 1000);
         var now = new Date();
         var diff = now - date;
 
-        // If less than 24 hours, show time
-        if (diff < 86400000) {
+        if (diff >= 0 && diff < 86400000) {
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        // Otherwise show date
         return date.toLocaleDateString();
     };
 
     /**
-    * Escape HTML
-    */
+     * Escape HTML
+     */
     MyFileManager.prototype.escapeHtml = function (text) {
+        if (text === null || text === undefined) return '';
         var div = document.createElement('div');
-        div.textContent = text;
+        div.textContent = String(text);
         return div.innerHTML;
     };
 
     /**
-    * Get file by hash
-    */
+     * Validate URL safety (allows relative paths starting with single '/' and http/https)
+     */
+    MyFileManager.prototype.isSafeUrl = function (url) {
+        if (!url || typeof url !== 'string') return false;
+        var trimmed = url.trim();
+        if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+            return true;
+        }
+        try {
+            var parsed = new URL(trimmed, window.location.origin);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch (e) {
+            return false;
+        }
+    };
+
+    /**
+     * Get file by hash
+     */
     MyFileManager.prototype.getFileByHash = function (hash) {
         return this.state.files.find(function (f) { return f.hash === hash; });
     };
 
     /**
-    * Select file
-    */
+     * Select file
+     */
     MyFileManager.prototype.selectFile = function (element, file) {
-        element.classList.add('mfm-selected');
-        this.state.selectedFiles.push(file);
-        this.trigger('onFileSelect', file);
-        this.updateMenuStates();
-        this.updateStatusBar();
+        if (!element || !file) return;
+        if (!element.classList.contains('mfm-selected')) {
+            element.classList.add('mfm-selected');
+            this.state.selectedFiles.push(file);
+            this.trigger('onFileSelect', file);
+            this.updateMenuStates();
+            this.updateStatusBar();
+        }
     };
 
     /**
-    * Clear selection
-    */
+     * Clear selection
+     */
     MyFileManager.prototype.clearSelection = function () {
         this.elements.filesContainer.querySelectorAll('.mfm-selected').forEach(function (el) {
             el.classList.remove('mfm-selected');
@@ -2518,24 +2571,24 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Toggle file selection
-    */
+     * Toggle file selection
+     */
     MyFileManager.prototype.toggleFileSelection = function (element, file) {
         if (element.classList.contains('mfm-selected')) {
             element.classList.remove('mfm-selected');
             this.state.selectedFiles = this.state.selectedFiles.filter(function (f) {
                 return f.hash !== file.hash;
             });
+            this.updateMenuStates();
+            this.updateStatusBar();
         } else {
             this.selectFile(element, file);
         }
-        this.updateMenuStates();
-        this.updateStatusBar();
     };
 
     /**
-    * Trigger callback
-    */
+     * Trigger callback
+     */
     MyFileManager.prototype.trigger = function (event, data) {
         if (typeof this.options[event] === 'function') {
             this.options[event].call(this, data);
@@ -2543,27 +2596,30 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Open directory/file
-    */
+     * Open directory/file
+     */
     MyFileManager.prototype.open = function (target, addToHistory) {
         var self = this;
 
-        // Default: add to history unless explicitly false
         if (addToHistory === undefined) {
             addToHistory = true;
         }
 
+        // Clear active search state on navigation
+        if (this.elements && this.elements.search && this.elements.search.value) {
+            this.elements.search.value = '';
+        }
+        this.state.isSearching = false;
+
         this.request({
             cmd: 'open',
-            target: target
+            target: target || ''
         }, function (response) {
-            // Save the HASH for navigation
-            self.state.currentHash = response.cwd.hash;
+            self.state.currentHash = response.cwd.hash || '';
 
-            // Decode hash to get the real path for breadcrumb
             if (response.cwd.hash) {
                 try {
-                    self.state.currentPath = atob(response.cwd.hash);
+                    self.state.currentPath = base64ToUtf8(response.cwd.hash);
                 } catch (e) {
                     self.state.currentPath = '';
                 }
@@ -2571,58 +2627,53 @@ window.MyFileManagerCrypto = {
                 self.state.currentPath = '';
             }
 
-            // Add to history
             if (addToHistory) {
-                // Remove any forward history
                 self.state.history = self.state.history.slice(0, self.state.historyIndex + 1);
-
-                // Add current location
                 self.state.history.push({
-                    hash: response.cwd.hash,
+                    hash: self.state.currentHash,
                     path: self.state.currentPath
                 });
-
                 self.state.historyIndex = self.state.history.length - 1;
             }
 
-            // Filter hidden folders before storing
             self.state.files = self.filterHiddenFolders(response.files) || [];
             self.state.quota = response.quota;
 
             self.updateBreadcrumb();
             self.renderFiles();
             self.clearSelection();
-            self.updateNavigationButtons(); // update button states
-            self.updateTrashToolbar();  // Update trash toolbar visibility
+            self._lastSelectedHash = null;
+            self.updateNavigationButtons();
+            self.updateTrashToolbar();
             self.trigger('onChange', response);
         });
     };
 
     /**
-    * Navigate back in history
-    */
+     * Navigate back in history
+     */
     MyFileManager.prototype.navigateBack = function () {
         if (this.state.historyIndex > 0) {
             this.state.historyIndex--;
             var location = this.state.history[this.state.historyIndex];
-            this.open(location.hash, false); // Don't add to history
+            this.open(location.hash, false);
         }
     };
 
     /**
-    * Navigate forward in history
-    */
+     * Navigate forward in history
+     */
     MyFileManager.prototype.navigateForward = function () {
         if (this.state.historyIndex < this.state.history.length - 1) {
             this.state.historyIndex++;
             var location = this.state.history[this.state.historyIndex];
-            this.open(location.hash, false); // Don't add to history
+            this.open(location.hash, false);
         }
     };
 
     /**
-    * Update navigation button states
-    */
+     * Update navigation button states
+     */
     MyFileManager.prototype.updateNavigationButtons = function () {
         var backBtn = this.container.querySelector('[data-action="back"]');
         var forwardBtn = this.container.querySelector('[data-action="forward"]');
@@ -2637,24 +2688,27 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Refresh current directory
-    */
+     * Refresh current directory
+     */
     MyFileManager.prototype.refresh = function () {
-        // SAVE selection before refresh
+        var self = this;
         var selectedHashes = this.state.selectedFiles.map(function (file) {
             return file.hash;
         });
 
-        var self = this;
+        this.state.isSearching = false;
+        if (this.elements && this.elements.search && this.elements.search.value) {
+            this.elements.search.value = '';
+        }
+
         this.request({
             cmd: 'open',
-            target: this.state.currentHash
+            target: this.state.currentHash || ''
         }, function (response) {
-            // Update state
-            self.state.currentHash = response.cwd.hash;
+            self.state.currentHash = response.cwd.hash || '';
             if (response.cwd.hash) {
                 try {
-                    self.state.currentPath = atob(response.cwd.hash);
+                    self.state.currentPath = base64ToUtf8(response.cwd.hash);
                 } catch (e) {
                     self.state.currentPath = '';
                 }
@@ -2667,14 +2721,11 @@ window.MyFileManagerCrypto = {
 
             self.updateBreadcrumb();
             self.renderFiles();
-
-            // CLEAR selection FIRST!
             self.clearSelection();
 
-            // RESTORE selection (now no duplicates!)
             if (selectedHashes.length > 0) {
                 selectedHashes.forEach(function (hash) {
-                    var fileEl = self.elements.filesContainer.querySelector('[data-hash="' + hash + '"]');
+                    var fileEl = self.elements.filesContainer.querySelector('[data-hash="' + CSS.escape(hash) + '"]');
                     var file = self.getFileByHash(hash);
                     if (fileEl && file) {
                         self.selectFile(fileEl, file);
@@ -2689,51 +2740,37 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Navigate up
-    */
+     * Navigate up
+     */
     MyFileManager.prototype.navigateUp = function () {
-        // If we're at root, do nothing
         if (!this.state.currentPath || this.state.currentPath === '') {
             return;
         }
 
-        // Split path and remove last folder
         var parts = this.state.currentPath.split('/').filter(Boolean);
-
         if (parts.length === 0) {
-            // Already at root
             return;
         }
 
-        // Remove last part
         parts.pop();
-
-        // Build parent path
         var parentPath = parts.join('/');
-
-        // Encode to base64 for navigation
-        var parentHash = parentPath ? btoa(parentPath) : '';
-
-        // Navigate to parent
+        var parentHash = parentPath ? utf8ToBase64(parentPath) : '';
         this.open(parentHash);
     };
 
     /**
-    * Open file or folder
-    * This method is used by both double-click and Enter key.
-    */
+     * Open file or folder
+     */
     MyFileManager.prototype.openFile = function (file) {
         if (!file) {
             return;
         }
 
-        // If it's a directory, navigate into it
         if (file.mime === 'directory') {
             this.open(file.hash);
             return;
         }
 
-        // If it's a file, handle with custom opener or default download
         if (typeof this.options.customFileOpener === 'function') {
             this.options.customFileOpener(file);
         } else {
@@ -2744,78 +2781,92 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Set encryption key for cryptFiles mode
-    */
-    MyFileManager.prototype.setEncryptionKey = async function (password) {
+     * Set encryption key for cryptFiles mode
+     */
+    MyFileManager.prototype.setEncryptionKey = async function (password, silent) {
+        var self = this;
+
         if (!this.options.cryptFiles) {
-            alert('Encryption disabled');
+            if (!silent) alert('Encryption disabled');
             return;
         }
 
         try {
-            const salt = crypto.getRandomValues(new Uint8Array(16));
-            this.options.encryptionKey = await deriveKeyFromPassword(password, salt);
+            var salt = window.MyFileManagerCrypto.generateSalt();
+            this._encryptionPassword = password;
+            this.options.encryptionKey = await this.deriveKeyFromPassword(password, salt);
             this.options.encryptionSalt = salt;
 
             self._debug('log', 'Encryption key set successfully');
-
             this.updateMenuStates();
 
-            alert('Encryption enabled! Files will be automatically encrypted/decrypted.');
-
+            if (!silent) {
+                alert(this.i18n.encryptionEnabled || 'Encryption enabled! Files will be automatically encrypted/decrypted.');
+            }
         } catch (error) {
+            this._encryptionPassword = null;
             alert('Failed to set encryption key: ' + error.message);
         }
     };
 
-
     /**
-    * Copy selected files
-    */
+     * Copy selected files
+     */
     MyFileManager.prototype.copySelected = function () {
         if (this.state.selectedFiles.length === 0) return;
 
+        var self = this;
+        var validFiles = this.state.selectedFiles.filter(function (f) {
+            return !self.isTrashItem(f);
+        });
+        if (validFiles.length === 0) return;
+
         this.state.clipboard = {
             operation: 'copy',
-            files: this.state.selectedFiles.slice()
+            files: validFiles.slice()
         };
 
         this.updateMenuStates();
-        this._debug('log', 'Copied ' + this.state.selectedFiles.length + ' files');
+        this._debug('log', 'Copied ' + validFiles.length + ' files');
     };
 
     /**
-    * Cut selected files
-    */
+     * Cut selected files
+     */
     MyFileManager.prototype.cutSelected = function () {
         if (this.state.selectedFiles.length === 0) return;
 
+        var self = this;
+        var validFiles = this.state.selectedFiles.filter(function (f) {
+            return !self.isTrashItem(f);
+        });
+        if (validFiles.length === 0) return;
+
         this.state.clipboard = {
             operation: 'cut',
-            files: this.state.selectedFiles.slice()
+            files: validFiles.slice()
         };
 
         this.updateMenuStates();
-        this._debug('log', 'Cut ' + this.state.selectedFiles.length + ' files');
+        this._debug('log', 'Cut ' + validFiles.length + ' files');
     };
 
     /**
-    * Paste clipboard
-    */
+     * Paste clipboard
+     */
     MyFileManager.prototype.pasteClipboard = function () {
-        if (!this.state.clipboard) return;
+        if (!this.state.clipboard || this.isInTrash()) return;
 
         var self = this;
         var operation = this.state.clipboard.operation;
         var targets = this.state.clipboard.files.map(function (f) { return f.hash; });
-
         var cmd = operation === 'copy' ? 'copy' : 'cut';
 
         this.request({
             cmd: cmd,
             targets: targets,
             dst: this.state.currentHash
-        }, function (response) {
+        }, function () {
             self.refresh();
 
             if (operation === 'cut') {
@@ -2826,15 +2877,15 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Delete selected files
-    */
-    MyFileManager.prototype.deleteSelected = function () {
+     * Delete selected files
+     */
+    MyFileManager.prototype.deleteSelected = function (skipConfirm) {
         if (this.state.selectedFiles.length === 0) return;
 
         var self = this;
-        var message = this.i18n.confirmDelete;
+        var message = this.i18n.confirmDelete || 'Are you sure you want to delete the selected items?';
 
-        if (confirm(message)) {
+        if (skipConfirm === true || confirm(message)) {
             var targets = this.state.selectedFiles.map(function (f) { return f.hash; });
 
             var requestData = {
@@ -2842,15 +2893,14 @@ window.MyFileManagerCrypto = {
                 targets: targets
             };
 
-            // Aggiungi token se presente
             if (this.options.token) {
                 requestData.token = this.options.token;
             }
 
-            console.log("DELETE REQUEST:", requestData); // DEBUG
+            this._debug('log', 'DELETE REQUEST:', requestData);
 
             this.request(requestData, function (response) {
-                console.log("DELETE RESPONSE:", response); // DEBUG
+                self._debug('log', 'DELETE RESPONSE:', response);
                 self.refresh();
                 self.updateTrashIcon();
             });
@@ -2858,27 +2908,23 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Update trash icon by checking actual content (not just size/dirs from server)
-    */
+     * Update trash icon by checking actual content
+     */
     MyFileManager.prototype.updateTrashIcon = function () {
         var self = this;
 
-        // Find trash folder in current view
         var trashFolder = this.state.files.find(function (f) {
-            return f.name === '.trash' || f.name === self.options.trashPath;
+            return self.isTrashItem(f);
         });
 
         if (!trashFolder) return;
 
-        // Request trash folder content to count files
         this.request({
             cmd: 'open',
             target: trashFolder.hash
         }, function (response) {
             var hasContent = response.files && response.files.length > 0;
-
-            // Update icon in DOM directly
-            var trashElement = self.elements.filesContainer.querySelector('[data-hash="' + trashFolder.hash + '"]');
+            var trashElement = self.elements.filesContainer.querySelector('[data-hash="' + CSS.escape(trashFolder.hash) + '"]');
             if (trashElement) {
                 var iconElement = trashElement.querySelector('.mfm-file-icon');
                 if (iconElement) {
@@ -2889,19 +2935,22 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Rename selected file
-    */
+     * Rename selected file
+     */
     MyFileManager.prototype.renameSelected = function () {
         if (this.state.selectedFiles.length !== 1) return;
 
         var self = this;
         var file = this.state.selectedFiles[0];
+        if (this.isTrashItem(file)) return;
+
         var newName = prompt(this.i18n.enterNewName, file.name);
 
-        if (newName && newName !== file.name) {
-            // SECURITY: Check banned extensions BEFORE rename
+        if (newName && newName.trim() !== '' && newName !== file.name) {
+            newName = newName.trim();
+
             if (this.isBannedExtension(newName)) {
-                alert('Dangerous extension detected! Cannot rename to: ' + newName);
+                alert((this.i18n.dangerousExtension || 'Dangerous extension detected! Cannot rename to:') + ' ' + newName);
                 return;
             }
 
@@ -2909,28 +2958,37 @@ window.MyFileManagerCrypto = {
                 cmd: 'rename',
                 target: file.hash,
                 name: newName
-            }, function (response) {
+            }, function () {
                 self.refresh();
             });
         }
     };
 
-    // Security: Check if filename has banned extension
+    /**
+     * Security: Check if filename has banned extension (client-side guard; enforce on server too)
+     */
     MyFileManager.prototype.isBannedExtension = function (filename) {
-        var ext = filename.split('.').pop().toLowerCase();
-        return this.options.banExtensions.includes(ext);
+        if (!filename) return false;
+        var cleanName = filename.trim().toLowerCase();
+        var parts = cleanName.split('.');
+        if (parts.length < 2) return false;
+        var ext = parts.pop();
+        return this.options.banExtensions.indexOf(ext) !== -1;
     };
 
-
     /**
-    * Create new folder
-    */
+     * Create new folder
+     */
     MyFileManager.prototype.createFolder = function () {
+        if (this.isInTrash()) return;
+
         var self = this;
         var name = prompt(this.i18n.enterFolderName, this.i18n.newFolder);
 
         if (name) {
-            // Prevent creating folders starting with dot
+            name = name.trim();
+            if (!name) return;
+
             if (name.charAt(0) === '.') {
                 alert('Folder names cannot start with a dot (.)');
                 return;
@@ -2940,15 +2998,15 @@ window.MyFileManagerCrypto = {
                 cmd: 'mkdir',
                 target: this.state.currentHash,
                 name: name
-            }, function (response) {
+            }, function () {
                 self.refresh();
             });
         }
     };
 
     /**
-    * Show file info
-    */
+     * Show file info
+     */
     MyFileManager.prototype.showInfo = function () {
         if (this.state.selectedFiles.length !== 1) return;
 
@@ -2960,23 +3018,24 @@ window.MyFileManagerCrypto = {
             target: file.hash
         }, function (response) {
             var html = '<div class="mfm-info">';
-            html += '<p><strong>' + self.i18n.properties + '</strong></p>';
+            html += '<p><strong>' + self.escapeHtml(self.i18n.properties) + '</strong></p>';
             html += '<p><strong>' + self.escapeHtml(response.name) + '</strong></p>';
-            html += '<p>' + self.i18n.type + ': ' + (response.mime === 'directory' ? self.i18n.folder : response.mime) + '</p>';
+            html += '<p>' + self.escapeHtml(self.i18n.type) + ': ' + self.escapeHtml(response.mime === 'directory' ? self.i18n.folder : response.mime) + '</p>';
 
             if (response.mime !== 'directory') {
-                html += '<p>' + self.i18n.size + ': ' + self.formatSize(response.size) + '</p>';
+                html += '<p>' + self.escapeHtml(self.i18n.size) + ': ' + self.escapeHtml(self.formatSize(response.size)) + '</p>';
             }
 
-            html += '<p>' + self.i18n.dateModified + ': ' + self.formatDate(response.ts) + '</p>';
+            html += '<p>' + self.escapeHtml(self.i18n.dateModified) + ': ' + self.escapeHtml(self.formatDate(response.ts)) + '</p>';
 
-            // Show URL only if option is enabled
-            if (self.options.showUrlOnProperties && response.url) {
-                html += '<p>URL: <a href="' + response.url + '" target="_blank">' + response.url + '</a></p>';
+            // Show URL only if option is enabled and URL protocol is safe
+            if (self.options.showUrlOnProperties && response.url && self.isSafeUrl(response.url)) {
+                var safeUrl = self.escapeHtml(response.url);
+                html += '<p>URL: <a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + safeUrl + '</a></p>';
             }
 
             if (response.dim) {
-                html += '<p>' + self.i18n.size + ': ' + response.dim + '</p>';
+                html += '<p>' + self.escapeHtml(self.i18n.size) + ': ' + self.escapeHtml(response.dim) + '</p>';
             }
 
             html += '</div>';
@@ -2986,8 +3045,8 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Show modal
-    */
+     * Show modal
+     */
     MyFileManager.prototype.showModal = function (title, content) {
         var html = '';
         html += '<div class="mfm-modal-overlay"></div>';
@@ -3012,24 +3071,27 @@ window.MyFileManagerCrypto = {
     };
 
     /**
- * Show download progress modal
- */
+     * Show download progress modal
+     */
     MyFileManager.prototype.showDownloadProgress = function (filename, filesize) {
         var modal = this.elements.downloadModal;
         var filenameEl = modal.querySelector('.mfm-download-filename');
         var filesizeEl = modal.querySelector('.mfm-download-filesize');
         var statusDiv = modal.querySelector('.mfm-download-status');
         var actionsDiv = modal.querySelector('.mfm-download-actions');
+        var progressContainer = modal.querySelector('.mfm-progress-container');
 
         if (filenameEl) {
             filenameEl.textContent = filename;
         }
 
         if (filesizeEl) {
-            filesizeEl.textContent = 'Size: ' + this.formatSize(filesize);
+            filesizeEl.textContent = (this.i18n.size || 'Size') + ': ' + this.formatSize(filesize || 0);
         }
 
-        // Reset status and actions
+        if (progressContainer) {
+            progressContainer.style.display = 'block';
+        }
         if (statusDiv) {
             statusDiv.style.display = 'none';
         }
@@ -3038,7 +3100,7 @@ window.MyFileManagerCrypto = {
         }
 
         modal.style.display = 'flex';
-        this.updateDownloadProgress(0, 0, 0);
+        this.updateDownloadProgress(0, 0, Infinity);
     };
 
     /**
@@ -3059,22 +3121,30 @@ window.MyFileManagerCrypto = {
         var speedEl = modal.querySelector('.mfm-download-speed');
         var timeEl = modal.querySelector('.mfm-download-time');
 
+        var clamped = Math.min(100, Math.max(0, percent || 0));
+
         if (progressFill) {
-            progressFill.style.width = percent + '%';
+            progressFill.style.width = clamped + '%';
         }
 
         if (progressText) {
-            progressText.textContent = Math.round(percent) + '%';
+            progressText.textContent = Math.round(clamped) + '%';
         }
 
         if (speedEl) {
-            speedEl.textContent = this.formatSize(speed) + '/s';
+            speedEl.textContent = this.formatSize(speed || 0) + '/s';
         }
 
-        if (timeEl && timeRemaining < Infinity) {
-            var minutes = Math.floor(timeRemaining / 60);
-            var seconds = Math.floor(timeRemaining % 60);
-            timeEl.textContent = minutes + 'm ' + seconds + 's remaining';
+        if (timeEl) {
+            if (timeRemaining !== undefined && timeRemaining < Infinity && timeRemaining >= 0 && speed > 0) {
+                var minutes = Math.floor(timeRemaining / 60);
+                var seconds = Math.floor(timeRemaining % 60);
+                timeEl.textContent = (minutes > 0 ? minutes + 'm ' : '') + seconds + 's remaining';
+            } else if (clamped >= 100) {
+                timeEl.textContent = '0s';
+            } else {
+                timeEl.textContent = this.i18n.calculating || 'Calculating...';
+            }
         }
     };
 
@@ -3095,7 +3165,6 @@ window.MyFileManagerCrypto = {
         if (statusDiv && statusMsg) {
             statusMsg.innerHTML = '<strong>Error:</strong> ' + this.escapeHtml(message);
             statusDiv.style.display = 'block';
-            statusDiv.style.color = '#d32f2f';
         }
 
         if (actionsDiv) {
@@ -3114,315 +3183,344 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-     * Upload files
+     * Enqueue files for sequential upload
      */
     MyFileManager.prototype.uploadFiles = function (files) {
-        var self = this;
+        if (!this.options.features.upload || this.isInTrash()) {
+            return;
+        }
 
-        Array.from(files).forEach(function (file) {
-            self.uploadFile(file);
-        });
+        var list = Array.from(files || []);
+        if (list.length === 0) return;
+
+        for (var i = 0; i < list.length; i++) {
+            this.state.uploadQueue.push(list[i]);
+        }
+
+        if (!this.state.isUploading) {
+            this.processUploadQueue();
+        }
     };
 
     /**
-    * Chunked file upload function - Compatible with original server
-    * Handles large files by splitting into configurable chunks
-    * @param {File} file - File object to upload
-    */
-    MyFileManager.prototype.uploadFile = async function (file) {
-        var self = this;
+     * Process upload queue sequentially
+     */
+    MyFileManager.prototype.processUploadQueue = async function () {
+        if (this.state.isUploading) return;
 
-        // RESET upload stats for new upload
+        this.state.isUploading = true;
+        this._uploadCancelled = false;
+        await this.requestWakeLock();
+
+        var totalQueued = this.state.uploadQueue.length;
+        var processed = 0;
+        var hadError = false;
+        var lastUploadedName = null;
+
+        try {
+            while (this.state.uploadQueue.length > 0 && !this._uploadCancelled) {
+                var nextFile = this.state.uploadQueue.shift();
+                processed++;
+                var labelPrefix = totalQueued > 1 ? ('(' + processed + '/' + totalQueued + ') ') : '';
+
+                var uploadedName = await this.uploadFile(nextFile, labelPrefix);
+                if (uploadedName) {
+                    lastUploadedName = uploadedName;
+                } else if (this._lastUploadErrored) {
+                    hadError = true;
+                }
+            }
+        } finally {
+            this.state.isUploading = false;
+            this.currentUploadXHR = null;
+            if (!this.currentDownloadController) {
+                this.releaseWakeLock();
+            }
+
+            if (!hadError && !this._uploadCancelled) {
+                this.hideUploadProgress();
+                this.refresh();
+                if (lastUploadedName) {
+                    var self = this;
+                    setTimeout(function () {
+                        self.selectUploadedFile(lastUploadedName);
+                    }, 500);
+                }
+            }
+        }
+    };
+
+    /**
+     * Sanitize filename preserving extension and avoiding empty/hidden names
+     */
+    MyFileManager.prototype._sanitizeFilename = function (originalName) {
+        var lastDotIndex = originalName.lastIndexOf('.');
+        var fileName = originalName;
+        var fileExt = '';
+
+        if (lastDotIndex > 0) {
+            fileExt = originalName.substring(lastDotIndex);
+            fileName = originalName.substring(0, lastDotIndex);
+        }
+
+        // Normalize Unicode accents (e.g. "caffè" -> "caffe") before replacing special chars
+        var normalized = typeof fileName.normalize === 'function'
+            ? fileName.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            : fileName;
+
+        var sanitizedName = normalized
+            .replace(/['"]/g, '')
+            .replace(/[^\w\s.-]/g, '_')
+            .replace(/\.+/g, '_')
+            .replace(/\s+/g, '_')
+            .replace(/_{2,}/g, '_')
+            .replace(/^_+|_+$/g, '');
+
+        // Fallback if filename consists only of stripped characters (prevent ".ext" hidden file)
+        if (!sanitizedName) {
+            sanitizedName = 'file_' + Date.now();
+        }
+
+        return sanitizedName + fileExt;
+    };
+
+    /**
+     * Chunked file upload function - Compatible with original server
+     * @param {File} file - File object to upload
+     * @param {string} [labelPrefix] - Optional queue counter prefix
+     * @return {Promise<string|null>} Uploaded filename or null on skip/error
+     */
+    MyFileManager.prototype.uploadFile = async function (file, labelPrefix) {
+        var self = this;
+        this._lastUploadErrored = false;
+
+        // Reset upload stats for new upload
         this.uploadStats = {
             startTime: 0,
             totalBytes: 0,
             uploadedBytes: 0,
             speedSamples: [],
             avgSpeed: 0,
-            maxSamples: 10  // Adjust for smoother/faster response (5-15 optimal)
+            maxSamples: 10
         };
 
-        // Find extension from right (last dot) - DO NOT MODIFY extension!
-        const lastDotIndex = file.name.lastIndexOf('.');
-        let fileName = file.name;
-        let fileExt = '';
+        var finalName = this._sanitizeFilename(file.name);
 
-        if (lastDotIndex > 0) {
-            // Split: keep extension UNTOUCHED, sanitize only filename
-            fileExt = file.name.substring(lastDotIndex);  // Keep original extension ".mp4"
-            fileName = file.name.substring(0, lastDotIndex);  // Get filename without extension
-        }
-
-        // Sanitize ONLY the filename part (leave extension untouched!)
-        let sanitizedName = fileName
-            .replace(/['"]/g, '')  // Remove quotes/apostrophes
-            .replace(/[^\w\s.-]/g, '_')  // Replace special chars with _
-            .replace(/\.+/g, '_')  // Replace multiple dots with _
-            .replace(/\s+/g, '_')  // Replace spaces with _
-            .replace(/_{2,}/g, '_')  // Remove double underscores
-            .replace(/^_+|_+$/g, '');  // Remove leading/trailing underscores
-
-        // Rebuild: sanitized name + ORIGINAL extension (never modified!)
-        const finalName = sanitizedName + fileExt;
-
-        // Create new file with sanitized name but KEEP original MIME type
-        let sanitizedFile = new File([file], finalName, {
-            type: file.type,  // Keep original type from browser
+        var sanitizedFile = new File([file], finalName, {
+            type: file.type,
             lastModified: file.lastModified
         });
 
-        // Debug logging
-        self._debug('log', 'Original name:', file.name);
-        self._debug('log', 'Sanitized name:', finalName);
-        self._debug('log', 'Extension (untouched):', fileExt);
-        self._debug('log', 'MIME type:', sanitizedFile.type);
+        self._debug('log', 'Original name:', file.name, '-> Sanitized:', finalName, 'MIME:', sanitizedFile.type);
 
         if (this.isBannedExtension(sanitizedFile.name)) {
             alert('Upload blocked! Dangerous extension: ' + sanitizedFile.name);
-            return;
+            return null;
         }
 
-        // Debug: Check if function is called (use sanitized name)
-        self._debug('log', 'uploadFile CALLED!', sanitizedFile.name, sanitizedFile.size);
-        self._debug('log', 'URL:', this.options.url);
-        self._debug('log', 'Token:', this.options.token ? 'EXISTS' : 'MISSING');
-        self._debug('log', 'Target hash:', this.state.currentHash);
-
-        // Validate file size against max limit
         if (sanitizedFile.size > this.options.maxFileSize) {
             alert('File too large: ' + sanitizedFile.name);
-            return;
+            return null;
         }
 
-        // Show upload progress modal and trigger start event (use sanitized)
-        this.showUploadProgress(sanitizedFile.name);
+        this.showUploadProgress((labelPrefix || '') + sanitizedFile.name);
         this.trigger('onUploadStart', { file: sanitizedFile });
-        await this.requestWakeLock(); // Keep screen on during upload
         self.currentUploadXHR = null;
 
         try {
-            let uploadFile = sanitizedFile;  // START with sanitized file
+            var uploadFileObj = sanitizedFile;
 
             // Encrypt file if encryption enabled for this file type
-            if (this.shouldEncrypt(uploadFile.type)) {
-                const arrayBuffer = await uploadFile.arrayBuffer();
-                const encryptedBuffer = await this.encryptFileData(new Uint8Array(arrayBuffer), this.options.encryptionKey);
-                uploadFile = new File([encryptedBuffer], uploadFile.name + '.encrypted', {
+            if (this.shouldEncrypt(uploadFileObj.type)) {
+                var arrayBuffer = await uploadFileObj.arrayBuffer();
+                var encryptedBuffer = await this._encryptBytes(new Uint8Array(arrayBuffer));
+                uploadFileObj = new File([encryptedBuffer], uploadFileObj.name + '.encrypted', {
                     type: 'application/octet-stream',
                     lastModified: Date.now()
                 });
-                self._debug('log', 'Encrypted file before upload:', uploadFile.name, uploadFile.size);
+                self._debug('log', 'Encrypted file before upload:', uploadFileObj.name, uploadFileObj.size);
             }
 
-            // Chunk settings - 5MB chunks for better compatibility
-            const chunkSize = 5 * 1024 * 1024;  // 5MB chunks
-            const chunks = Math.ceil(uploadFile.size / chunkSize);
-            let currentChunk = 0;
-            const uploadId = uploadFile.name.replace(/[^a-z0-9]/gi, '') + '_' + Date.now();
-            let lastTime = new Date().getTime();
-            let lastLoaded = 0;
+            // Use configured chunkSize (fallback to 1MB if invalid)
+            var chunkSize = (typeof this.options.chunkSize === 'number' && this.options.chunkSize > 0)
+                ? this.options.chunkSize
+                : 1048576;
+            var chunks = Math.max(1, Math.ceil(uploadFileObj.size / chunkSize));
+            var currentChunk = 0;
+            var uploadId = uploadFileObj.name.replace(/[^a-z0-9]/gi, '') + '_' + Date.now();
+            var lastTime = Date.now();
+            var lastLoaded = 0;
 
-            /**
-            * Upload single chunk with authentication token
-            */
-            async function uploadChunk() {
-                const start = currentChunk * chunkSize;
-                const end = Math.min(start + chunkSize, uploadFile.size);
-                const chunk = uploadFile.slice(start, end);
+            var uploadChunk = function () {
+                if (self._uploadCancelled) {
+                    return Promise.reject(new Error('Upload cancelled'));
+                }
 
-                // Create FormData with all required parameters including token
-                const formData = new FormData();
+                var start = currentChunk * chunkSize;
+                var end = Math.min(start + chunkSize, uploadFileObj.size);
+                var chunk = uploadFileObj.slice(start, end);
+
+                var formData = new FormData();
                 formData.append('cmd', 'upload');
-                const targetPath = self.state.currentPath || atob(self.state.currentHash || '');
-                formData.append('target', btoa(targetPath));
-                formData.append('upload', chunk, uploadFile.name);
+                formData.append('target', self.state.currentHash || utf8ToBase64(self.state.currentPath || ''));
+                formData.append('upload', chunk, uploadFileObj.name);
                 formData.append('part', currentChunk);
                 formData.append('parts', chunks);
                 formData.append('id', uploadId);
 
-                // Add token to FormData for server authentication
                 if (self.options.token) {
                     formData.append('token', self.options.token);
                 }
 
-                // Debug: Log FormData contents
-                if (self.options.debug) {
-                    self._debug('log', '📤 FormData contents:');
-                    for (let pair of formData.entries()) {
-                        self._debug('log', pair[0] + ':', (pair[1] instanceof File ? pair[1].name : pair[1]));
-                    }
-                }
-
-                const xhr = new XMLHttpRequest();
+                var xhr = new XMLHttpRequest();
                 self.currentUploadXHR = xhr;
 
-                // Track upload progress with SMOOTHED speed calculation
+                // Track upload progress with throttled UI updates & smoothed speed
                 xhr.upload.addEventListener('progress', function (e) {
-                    if (e.lengthComputable) {
-                        const totalLoaded = (currentChunk * chunkSize) + e.loaded;
-                        const percent = Math.min(100, Math.round((totalLoaded / uploadFile.size) * 100));
+                    if (e.lengthComputable && uploadFileObj.size > 0) {
+                        var totalLoaded = Math.min(uploadFileObj.size, (currentChunk * chunkSize) + e.loaded);
+                        var percent = Math.min(100, Math.round((totalLoaded / uploadFileObj.size) * 100));
+                        var now = Date.now();
 
-                        const now = new Date().getTime();
-
-                        // Initialize start time on first progress event
                         if (self.uploadStats.startTime === 0) {
                             self.uploadStats.startTime = now;
-                            self.uploadStats.uploadedBytes = 0;
                             self.uploadStats.speedSamples = [];
-                            self.uploadStats.avgSpeed = 0;
                         }
 
-                        const deltaTime = (now - lastTime) / 1000; // seconds
-                        const deltaLoaded = totalLoaded - lastLoaded;
+                        var deltaTime = (now - lastTime) / 1000;
+                        var deltaLoaded = totalLoaded - lastLoaded;
 
-                        // Calculate instantaneous speed
-                        let instantSpeed = 0;
-                        if (deltaTime > 0 && deltaLoaded > 0) {
-                            instantSpeed = deltaLoaded / deltaTime; // bytes/sec
-                        }
-
-                        // Add to speed samples array (only if speed is valid)
-                        if (instantSpeed > 0) {
-                            self.uploadStats.speedSamples.push(instantSpeed);
-
-                            // Keep only last N samples for moving average
-                            if (self.uploadStats.speedSamples.length > self.uploadStats.maxSamples) {
-                                self.uploadStats.speedSamples.shift(); // Remove oldest
+                        if (deltaTime >= 0.1) {
+                            var instantSpeed = deltaLoaded > 0 ? (deltaLoaded / deltaTime) : 0;
+                            if (instantSpeed > 0) {
+                                self.uploadStats.speedSamples.push(instantSpeed);
+                                if (self.uploadStats.speedSamples.length > self.uploadStats.maxSamples) {
+                                    self.uploadStats.speedSamples.shift();
+                                }
                             }
+
+                            var avgSpeed = 0;
+                            if (self.uploadStats.speedSamples.length > 0) {
+                                avgSpeed = self.uploadStats.speedSamples.reduce(function (a, b) { return a + b; }, 0) /
+                                    self.uploadStats.speedSamples.length;
+                            }
+
+                            var timeRemaining = Infinity;
+                            if (avgSpeed > 0) {
+                                timeRemaining = Math.max(0, (uploadFileObj.size - totalLoaded) / avgSpeed);
+                            }
+
+                            lastTime = now;
+                            lastLoaded = totalLoaded;
+
+                            self.updateUploadProgress(percent, avgSpeed, timeRemaining);
+                            self.trigger('onUploadProgress', {
+                                file: uploadFileObj,
+                                percent: percent,
+                                loaded: totalLoaded,
+                                total: uploadFileObj.size
+                            });
                         }
-
-                        // Calculate average speed from samples
-                        let avgSpeed = 0;
-                        if (self.uploadStats.speedSamples.length > 0) {
-                            const sum = self.uploadStats.speedSamples.reduce((a, b) => a + b, 0);
-                            avgSpeed = sum / self.uploadStats.speedSamples.length;
-                        }
-
-                        // Use average speed for time calculation
-                        let timeRemaining = Infinity;
-                        if (avgSpeed > 0) {
-                            const remainingBytes = uploadFile.size - totalLoaded;
-                            timeRemaining = remainingBytes / avgSpeed; // seconds
-                        }
-
-                        // Update tracking variables
-                        lastTime = now;
-                        lastLoaded = totalLoaded;
-
-                        // Update UI with AVERAGED speed and time
-                        self.updateUploadProgress(percent, avgSpeed, timeRemaining);
                     }
                 });
 
-                return new Promise((resolve, reject) => {
-                    // Handle successful HTTP response
+                return new Promise(function (resolve, reject) {
                     xhr.addEventListener('load', function () {
-                        self._debug('log', `Chunk ${currentChunk}/${chunks - 1}: ${xhr.status}`);
-                        self._debug('log', 'Response:', xhr.responseText);
+                        self._debug('log', 'Chunk ' + currentChunk + '/' + (chunks - 1) + ': ' + xhr.status);
 
                         if (xhr.status === 200) {
                             try {
-                                const response = JSON.parse(xhr.responseText);
+                                var response = JSON.parse(xhr.responseText);
 
-                                // Check for server errors
                                 if (response.error) {
+                                    self._lastUploadErrored = true;
                                     self.showUploadError(response.error);
-                                    self.trigger('onUploadError', { file: uploadFile, error: response.error });
-                                    reject(response.error);
+                                    self.trigger('onUploadError', { file: uploadFileObj, error: response.error });
+                                    reject(new Error(response.error));
                                     return;
                                 }
 
-                                // Last chunk uploaded - complete upload
                                 if (currentChunk === chunks - 1) {
-                                    self.hideUploadProgress();
-                                    self.trigger('onUploadComplete', { file: uploadFile, response: response });
-                                    self.refresh();
-                                    // AUTO-SELECT uploaded file after refresh
-                                    setTimeout(function () {
-                                        self.selectUploadedFile(uploadFile.name);
-                                    }, 500);
-                                    resolve();
+                                    self.updateUploadProgress(100, 0, 0);
+                                    self.trigger('onUploadComplete', { file: uploadFileObj, response: response });
+                                    resolve(uploadFileObj.name);
                                 } else {
-                                    // Continue with next chunk
                                     currentChunk++;
                                     uploadChunk().then(resolve).catch(reject);
                                 }
                             } catch (e) {
+                                self._lastUploadErrored = true;
                                 self.showUploadError('Invalid server response');
-                                self.trigger('onUploadError', { file: uploadFile, error: e });
+                                self.trigger('onUploadError', { file: uploadFileObj, error: e });
                                 reject(e);
                             }
                         } else {
+                            self._lastUploadErrored = true;
                             self.showUploadError('HTTP Error ' + xhr.status);
-                            self.trigger('onUploadError', { file: uploadFile, error: xhr.status });
-                            reject('HTTP ' + xhr.status);
+                            self.trigger('onUploadError', { file: uploadFileObj, error: xhr.status });
+                            reject(new Error('HTTP ' + xhr.status));
                         }
                     });
 
-                    // Handle network errors
                     xhr.addEventListener('error', function () {
+                        self._lastUploadErrored = true;
                         self.showUploadError('Network error');
-                        self.trigger('onUploadError', { file: uploadFile, error: 'network' });
-                        reject('network');
+                        self.trigger('onUploadError', { file: uploadFileObj, error: 'network' });
+                        reject(new Error('network'));
                     });
 
-                    // Send request with Bearer token authentication
+                    xhr.addEventListener('abort', function () {
+                        reject(new Error('aborted'));
+                    });
+
                     xhr.open('POST', self.options.url);
                     if (self.options.token) {
-                        // Send token as Bearer Authorization header (for myetv_functions.php validation)
                         xhr.setRequestHeader('Authorization', 'Bearer ' + self.options.token);
-                        xhr.setRequestHeader('token', self.options.token);  // Keep for compatibility
+                        xhr.setRequestHeader('token', self.options.token);
                     }
                     xhr.send(formData);
                 });
-            }
+            };
 
-            // Start the chunked upload sequence
-            await uploadChunk();
+            return await uploadChunk();
 
         } catch (error) {
-            self._debug('error', 'Upload failed:', error);
-            self.showUploadError('Upload failed: ' + error);
-            self.trigger('onUploadError', { file: sanitizedFile, error: error });
+            if (error && error.message !== 'aborted' && !this._uploadCancelled) {
+                self._debug('error', 'Upload failed:', error);
+                self._lastUploadErrored = true;
+                self.showUploadError('Upload failed: ' + (error.message || error));
+                self.trigger('onUploadError', { file: sanitizedFile, error: error });
+            }
+            return null;
         } finally {
-            self.releaseWakeLock(); // Release when done (success or error)
-            // Always cleanup XHR reference
             self.currentUploadXHR = null;
         }
     };
 
     /**
-    * Select uploaded file by name after upload completes
-    */
+     * Select uploaded file by name after upload completes
+     */
     MyFileManager.prototype.selectUploadedFile = function (filename) {
-        var self = this;
-
-        // Clear current selection
         this.clearSelection();
 
-        // Find uploaded file by name
         var uploadedFile = this.state.files.find(function (f) {
             return f.name === filename;
         });
 
         if (uploadedFile) {
-            // Find DOM element
-            var fileElement = this.elements.filesContainer.querySelector('[data-hash="' + uploadedFile.hash + '"]');
+            var fileElement = this.elements.filesContainer.querySelector('[data-hash="' + CSS.escape(uploadedFile.hash) + '"]');
             if (fileElement) {
-                // Select file
                 this.selectFile(fileElement, uploadedFile);
-
-                // Scroll into view
+                this._lastSelectedHash = uploadedFile.hash;
                 fileElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-
                 this._debug('log', 'Auto-selected uploaded file:', filename);
             }
         }
     };
 
     /**
-    * Show upload progress modal
-    */
+     * Show upload progress modal
+     */
     MyFileManager.prototype.showUploadProgress = function (filename) {
         var modal = this.elements.uploadModal;
         var filenameEl = modal.querySelector('.mfm-upload-filename');
@@ -3434,7 +3532,6 @@ window.MyFileManagerCrypto = {
             filenameEl.textContent = filename;
         }
 
-        // RESET: Hide status messages and actions from previous upload
         if (statusDiv) {
             statusDiv.style.display = 'none';
             statusDiv.style.color = '';
@@ -3451,26 +3548,22 @@ window.MyFileManagerCrypto = {
             actionsDiv.style.display = 'none';
         }
 
-        // RESET: Show and reset progress bar
         if (progressContainer) {
             progressContainer.style.display = 'block';
         }
 
-        // Reset title to "Uploading Files"
         var title = modal.querySelector('.mfm-upload-modal-title');
         if (title) {
-            title.textContent = 'Uploading File';
+            title.textContent = this.i18n.uploadingFile || 'Uploading File';
         }
 
         modal.style.display = 'flex';
-
-        // Reset progress to 0
-        this.updateUploadProgress(0, 0, 0);
+        this.updateUploadProgress(0, 0, Infinity);
     };
 
     /**
-    * Update upload progress
-    */
+     * Update upload progress
+     */
     MyFileManager.prototype.updateUploadProgress = function (percent, speed, timeRemaining) {
         var modal = this.elements.uploadModal;
         var progressFill = modal.querySelector('.mfm-progress-fill');
@@ -3478,18 +3571,18 @@ window.MyFileManagerCrypto = {
         var speedEl = modal.querySelector('.mfm-upload-speed');
         var timeEl = modal.querySelector('.mfm-upload-time');
 
-        if (progressFill) progressFill.style.width = percent + '%';
-        if (progressText) progressText.textContent = percent + '%';
+        var clamped = Math.min(100, Math.max(0, percent || 0));
 
-        // Format speed (MB/s)
+        if (progressFill) progressFill.style.width = clamped + '%';
+        if (progressText) progressText.textContent = Math.round(clamped) + '%';
+
         if (speedEl) {
-            var speedMB = (speed / 1024 / 1024).toFixed(2);
+            var speedMB = ((speed || 0) / 1024 / 1024).toFixed(2);
             speedEl.textContent = speedMB + ' MB/s';
         }
 
-        // Format time remaining
         if (timeEl) {
-            if (timeRemaining > 0 && timeRemaining < Infinity) {
+            if (timeRemaining > 0 && timeRemaining < Infinity && speed > 0) {
                 var minutes = Math.floor(timeRemaining / 60);
                 var seconds = Math.floor(timeRemaining % 60);
 
@@ -3498,19 +3591,20 @@ window.MyFileManagerCrypto = {
                 } else {
                     timeEl.textContent = seconds + 's remaining';
                 }
+            } else if (clamped >= 100) {
+                timeEl.textContent = '0s';
             } else {
-                timeEl.textContent = 'Calculating...';
+                timeEl.textContent = this.i18n.calculating || 'Calculating...';
             }
         }
     };
 
     /**
-    * Hide upload progress modal
-    */
+     * Hide upload progress modal
+     */
     MyFileManager.prototype.hideUploadProgress = function () {
         var modal = this.elements.uploadModal;
 
-        // Reset all modal state
         var statusDiv = modal.querySelector('.mfm-upload-status');
         if (statusDiv) {
             statusDiv.style.display = 'none';
@@ -3530,25 +3624,26 @@ window.MyFileManagerCrypto = {
             progressContainer.style.display = 'block';
         }
 
-        // Reset progress bar
-        this.updateUploadProgress(0, 0, 0);
-
-        this.elements.uploadModal.style.display = 'none';
+        this.updateUploadProgress(0, 0, Infinity);
+        modal.style.display = 'none';
         this.currentUploadXHR = null;
     };
 
     /**
-    * Cancel current upload
-    */
+     * Cancel current upload and clear pending queue
+     */
     MyFileManager.prototype.cancelUpload = function () {
+        this._uploadCancelled = true;
+        this.state.uploadQueue = [];
         if (this.currentUploadXHR) {
             this.currentUploadXHR.abort();
+            this.currentUploadXHR = null;
         }
     };
 
     /**
-    * Show upload error
-    */
+     * Show upload error
+     */
     MyFileManager.prototype.showUploadError = function (errorMessage) {
         var modal = this.elements.uploadModal;
         var statusDiv = modal.querySelector('.mfm-upload-status');
@@ -3556,12 +3651,10 @@ window.MyFileManagerCrypto = {
         var actionsDiv = modal.querySelector('.mfm-upload-actions');
         var progressContainer = modal.querySelector('.mfm-progress-container');
 
-        // Hide progress
         if (progressContainer) {
             progressContainer.style.display = 'none';
         }
 
-        // Show error message
         if (statusDiv && statusMsg) {
             statusDiv.style.display = 'block';
             statusDiv.style.color = '#d32f2f';
@@ -3571,12 +3664,10 @@ window.MyFileManagerCrypto = {
             statusMsg.innerHTML = '<strong>❌ Error:</strong> ' + this.escapeHtml(errorMessage);
         }
 
-        // Show close button
         if (actionsDiv) {
             actionsDiv.style.display = 'block';
         }
 
-        // Update title
         var title = modal.querySelector('.mfm-upload-modal-title');
         if (title) {
             title.textContent = 'Upload Failed';
@@ -3586,81 +3677,92 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Show upload complete
-    */
-    MyFileManager.prototype.showUploadComplete = function (filename) {
+     * Show upload complete
+     */
+    MyFileManager.prototype.showUploadComplete = function () {
         var modal = this.elements.uploadModal;
         var statusDiv = modal.querySelector('.mfm-upload-status');
         var statusMsg = modal.querySelector('.mfm-upload-status-message');
         var actionsDiv = modal.querySelector('.mfm-upload-actions');
-        var progressContainer = modal.querySelector('.mfm-progress-container');
 
-        // Keep progress visible at 100%
         this.updateUploadProgress(100, 0, 0);
 
-        // Show success message
         if (statusDiv && statusMsg) {
             statusDiv.style.display = 'block';
             statusDiv.style.color = '#2e7d32';
             statusDiv.style.padding = '10px';
             statusDiv.style.background = '#e8f5e9';
             statusDiv.style.borderRadius = '4px';
-            statusMsg.innerHTML = '<strong>Success:</strong> File uploaded successfully!';
+            statusMsg.innerHTML = '<strong>Success:</strong> ' + this.escapeHtml(this.i18n.uploadComplete || 'File uploaded successfully!');
         }
 
-        // Show close button
         if (actionsDiv) {
             actionsDiv.style.display = 'block';
         }
 
-        // Update title
         var title = modal.querySelector('.mfm-upload-modal-title');
         if (title) {
-            title.textContent = 'Upload Complete';
+            title.textContent = this.i18n.uploadComplete || 'Upload Complete';
         }
 
         this.currentUploadXHR = null;
     };
 
     /**
-    * Handle search
-    */
+     * Handle search with debounce and proper directory restore when cleared
+     */
     MyFileManager.prototype.handleSearch = function (query) {
         var self = this;
+        var trimmed = (query || '').trim();
 
-        if (!query) {
-            this.renderFiles();
+        if (this._searchTimer) {
+            clearTimeout(this._searchTimer);
+            this._searchTimer = null;
+        }
+
+        if (!trimmed) {
+            this._searchRequestId++;
+            if (this.state.isSearching) {
+                this.state.isSearching = false;
+                this.refresh();
+            }
             return;
         }
 
-        this.request({
-            cmd: 'search',
-            q: query,
-            target: this.state.currentHash
-        }, function (response) {
-            // Filter hidden folders before storing
-            self.state.files = self.filterHiddenFolders(response.files) || [];
-            self.renderFiles();
-        });
+        this.state.isSearching = true;
+        var reqId = ++this._searchRequestId;
+
+        this._searchTimer = setTimeout(function () {
+            self.request({
+                cmd: 'search',
+                q: trimmed,
+                target: self.state.currentHash || ''
+            }, function (response) {
+                // Ignore stale search responses
+                if (reqId !== self._searchRequestId || !self.state.isSearching) {
+                    return;
+                }
+                self.state.files = self.filterHiddenFolders(response.files) || [];
+                self.clearSelection();
+                self.renderFiles();
+            });
+        }, 250);
     };
 
     /**
-     * Make AJAX request
+     * Make AJAX request (token sent via Authorization header and POST body, not URL query string)
      */
     MyFileManager.prototype.request = function (data, callback) {
         var self = this;
         var xhr = new XMLHttpRequest();
         var url = this.options.url;
 
-        // Add token to URL if present
-        if (this.options.token) {
-            url += (url.indexOf('?') === -1 ? '?' : '&') + 'token=' + encodeURIComponent(this.options.token);
+        var payload = Object.assign({}, data || {});
+        if (this.options.token && !payload.token) {
+            payload.token = this.options.token;
         }
 
-        // DEBUG: Log request details
-        this._debug('log', '=== REQUEST START ===');
-        this._debug('log', 'URL:', url);
-        this._debug('log', 'Data:', data);
+        this._debug('log', '=== REQUEST START ===', url, payload);
 
         xhr.open('POST', url);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -3670,9 +3772,7 @@ window.MyFileManagerCrypto = {
         }
 
         xhr.onload = function () {
-            self._debug('log', '=== RESPONSE RECEIVED ===');
-            self._debug('log', 'Status:', xhr.status);
-            self._debug('log', 'Response Text:', xhr.responseText);
+            self._debug('log', '=== RESPONSE RECEIVED ===', xhr.status);
 
             if (xhr.status === 200) {
                 try {
@@ -3686,7 +3786,6 @@ window.MyFileManagerCrypto = {
                     }
                 } catch (e) {
                     self._debug('error', 'JSON Parse Error:', e);
-                    self._debug('error', 'Raw Response:', xhr.responseText);
                     self.handleError('Invalid response - Check console for details');
                 }
             } else {
@@ -3700,33 +3799,30 @@ window.MyFileManagerCrypto = {
             self.handleError('Network error');
         };
 
-        // Convert data to URL-encoded string, handling arrays correctly for PHP backend
         var params = [];
-        for (var key in data) {
-            if (data.hasOwnProperty(key)) {
-                if (Array.isArray(data[key])) {
-                    data[key].forEach(function (val) {
-                        // Append [] to key for array serialization required by PHP
+        for (var key in payload) {
+            if (Object.prototype.hasOwnProperty.call(payload, key) && payload[key] !== undefined && payload[key] !== null) {
+                if (Array.isArray(payload[key])) {
+                    payload[key].forEach(function (val) {
                         params.push(encodeURIComponent(key) + '[]=' + encodeURIComponent(val));
                     });
                 } else {
-                    params.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
+                    params.push(encodeURIComponent(key) + '=' + encodeURIComponent(payload[key]));
                 }
             }
         }
 
-        self._debug('log', 'Sending params:', params.join('&'));
         xhr.send(params.join('&'));
     };
 
     /**
-    * Restore selected files from trash
-    */
+     * Restore selected files from trash
+     */
     MyFileManager.prototype.restoreSelected = function () {
         var self = this;
 
         if (this.state.selectedFiles.length === 0) {
-            alert("No file selected");
+            alert('No file selected');
             return;
         }
 
@@ -3746,7 +3842,7 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-     * Empty trash - delete all files permanently
+     * Empty trash - delete all files permanently (single confirmation)
      */
     MyFileManager.prototype.emptyTrash = function () {
         var self = this;
@@ -3755,17 +3851,16 @@ window.MyFileManagerCrypto = {
             return;
         }
 
-        // Select ALL files in current folder (trash)
         this.clearSelection();
         this.state.files.forEach(function (file) {
-            var fileEl = self.elements.filesContainer.querySelector('[data-hash="' + file.hash + '"]');
+            var fileEl = self.elements.filesContainer.querySelector('[data-hash="' + CSS.escape(file.hash) + '"]');
             if (fileEl) {
                 self.selectFile(fileEl, file);
             }
         });
 
-        // Reuse existing deleteSelected()
-        this.deleteSelected();
+        // Skip second confirmation dialog
+        this.deleteSelected(true);
     };
 
     /**
@@ -3777,31 +3872,20 @@ window.MyFileManagerCrypto = {
         }
 
         var inTrash = this.isInTrash();
-        this._debug('log', 'updateTrashToolbar', inTrash, 'currentPath', this.state.currentPath);
-
-        if (inTrash) {
-            this.elements.trashToolbar.style.display = 'flex';
-            this.elements.toolbar.style.display = 'flex';
-        } else {
-            this.elements.trashToolbar.style.display = 'none';
-            this.elements.toolbar.style.display = 'flex';
-        }
+        this.elements.trashToolbar.style.display = inTrash ? 'flex' : 'none';
+        this.elements.toolbar.style.display = 'flex';
     };
 
     /**
-    * Initialize all registered plugins
-    */
+     * Initialize all registered plugins
+     */
     MyFileManager.prototype.initPlugins = function () {
         var self = this;
 
-        // Check if global plugin registry exists
         if (window.MyFileManagerPlugins && Array.isArray(window.MyFileManagerPlugins)) {
             window.MyFileManagerPlugins.forEach(function (pluginInitializer) {
                 try {
-                    // Call plugin initializer with file manager instance
                     var plugin = pluginInitializer(self);
-
-                    // Store plugin instance
                     if (plugin) {
                         self.plugins.push(plugin);
                         self._debug('log', 'Plugin initialized:', plugin.name || 'Unknown');
@@ -3814,10 +3898,8 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Register a plugin
-    * Plugins can add context menu items and toolbar menu items
-    * @param {Object} plugin - Plugin configuration
-    */
+     * Register a plugin
+     */
     MyFileManager.prototype.registerPlugin = function (plugin) {
         if (!plugin || typeof plugin !== 'object') {
             this._debug('error', 'Invalid plugin object');
@@ -3826,17 +3908,14 @@ window.MyFileManagerCrypto = {
 
         var self = this;
 
-        // Add context menu items from plugin
         if (plugin.contextMenuItems && Array.isArray(plugin.contextMenuItems)) {
             plugin.contextMenuItems.forEach(function (item) {
                 self.options.customContextMenu.push(item);
             });
         }
 
-        // Add toolbar menu items from plugin
         if (plugin.toolbarMenuItems && Array.isArray(plugin.toolbarMenuItems)) {
             plugin.toolbarMenuItems.forEach(function (menuConfig) {
-                // Check if menu already exists (e.g., "Plugins" menu)
                 var existingMenuIndex = -1;
                 for (var i = 0; i < self.options.customMenus.length; i++) {
                     if (self.options.customMenus[i].id === menuConfig.id) {
@@ -3846,46 +3925,50 @@ window.MyFileManagerCrypto = {
                 }
 
                 if (existingMenuIndex !== -1) {
-                    // Merge items into existing menu
                     var existingMenu = self.options.customMenus[existingMenuIndex];
                     menuConfig.items.forEach(function (item) {
                         existingMenu.items.push(item);
                     });
                 } else {
-                    // Add new menu
                     self.options.customMenus.push(menuConfig);
                 }
             });
+
+            // Rebuild menubar if DOM is already mounted
+            if (this.elements && this.elements.menubar) {
+                this.elements.menubar.innerHTML = this.buildMenuBar();
+                this.updateMenuStates();
+            }
         }
 
-        // Store plugin
         this.plugins.push(plugin);
-
         this._debug('log', 'Plugin registered:', plugin.name || 'Unknown');
 
         return plugin;
     };
 
-
     /**
-     * Setup auto-refresh functionality
-     * Refreshes the file view at specified intervals
+     * Setup auto-refresh functionality (pauses when tab is hidden, searching, or transferring)
      */
     MyFileManager.prototype.setupAutoRefresh = function () {
         var self = this;
 
-        // Clear any existing interval
         if (this.autoRefreshInterval) {
             clearInterval(this.autoRefreshInterval);
             this.autoRefreshInterval = null;
         }
 
-        // Check if autoRefresh is enabled and is a number
         if (this.options.autoRefresh && typeof this.options.autoRefresh === 'number' && this.options.autoRefresh > 0) {
             this._debug('log', 'Auto-refresh enabled: ' + this.options.autoRefresh + 'ms');
 
-            // Setup interval
             this.autoRefreshInterval = setInterval(function () {
+                if (document.hidden ||
+                    self.state.isUploading ||
+                    self.currentDownloadController ||
+                    self.state.isSearching ||
+                    (self.elements && self.elements.modal && self.elements.modal.style.display === 'block')) {
+                    return;
+                }
                 self._debug('log', 'Auto-refresh triggered');
                 self.refresh();
             }, this.options.autoRefresh);
@@ -3905,7 +3988,6 @@ window.MyFileManagerCrypto = {
 
     /**
      * Start or restart auto-refresh with new interval
-     * @param {number} interval - Interval in milliseconds
      */
     MyFileManager.prototype.startAutoRefresh = function (interval) {
         if (interval && typeof interval === 'number' && interval > 0) {
@@ -3915,16 +3997,32 @@ window.MyFileManagerCrypto = {
     };
 
     /**
-    * Destroy file manager instance and cleanup
-    */
+     * Destroy file manager instance and cleanup listeners/transfers
+     */
     MyFileManager.prototype.destroy = function () {
-        // Stop auto-refresh
         this.stopAutoRefresh();
+        this.cancelUpload();
+        this.cancelDownload();
+        this.releaseWakeLock();
 
-        // Clear plugins
+        if (this._searchTimer) {
+            clearTimeout(this._searchTimer);
+            this._searchTimer = null;
+        }
+
+        if (this._boundDocHandlers.click) {
+            document.removeEventListener('click', this._boundDocHandlers.click);
+        }
+        if (this._boundDocHandlers.visibilitychange) {
+            document.removeEventListener('visibilitychange', this._boundDocHandlers.visibilitychange);
+        }
+        if (this._boundDocHandlers.keydown) {
+            document.removeEventListener('keydown', this._boundDocHandlers.keydown);
+        }
+        this._boundDocHandlers = {};
+
         this.plugins = [];
 
-        // Clear DOM
         if (this.container) {
             this.container.innerHTML = '';
         }

@@ -1,7 +1,8 @@
 /**
+ * // js/plugins/myfilemanager-text-editor.js
  * MyFileManager Text Editor Plugin
  * Adds text editing functionality to the file manager
- * 
+ *
  * @author Oscar Cosimo & MYETV Team
  * @license MIT
  */
@@ -10,15 +11,54 @@
     'use strict';
 
     /**
+     * UTF-8 safe Base64 helpers (compatible with PHP base64_encode/decode)
+     */
+    function utf8ToBase64(str) {
+        if (!str) return '';
+        var bytes = new TextEncoder().encode(str);
+        var binary = '';
+        for (var i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+
+    function base64ToUtf8(b64) {
+        if (!b64) return '';
+        var normalized = b64.replace(/-/g, '+').replace(/_/g, '/');
+        while (normalized.length % 4 !== 0) {
+            normalized += '=';
+        }
+        var binary = atob(normalized);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+    }
+
+    function getParentHashFromFile(file, fileManager) {
+        try {
+            var decoded = base64ToUtf8(file.hash || '');
+            var lastSlash = decoded.lastIndexOf('/');
+            if (lastSlash !== -1) {
+                return utf8ToBase64(decoded.substring(0, lastSlash));
+            }
+            return '';
+        } catch (e) {
+            return (fileManager && fileManager.state && fileManager.state.currentHash) || '';
+        }
+    }
+
+    /**
      * Inject CSS styles for the plugin
      */
     function injectStyles() {
         if (document.getElementById('mfm-text-editor-styles')) return;
 
         var css = `
-            /* Text Editor Plugin Styles */
             .mfm-text-editor-modal .mfm-modal-dialog { max-width: 95%; max-height: 95vh; height: 95vh; }
-            .mfm-text-editor-container { display: flex; flex-direction: column; height: 100%; }
+            .mfm-text-editor-container { display: flex; flex-direction: column; height: 100%; min-height: 500px; }
             .mfm-text-editor-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ddd; }
             .mfm-text-editor-header h3 { margin: 0; font-size: 18px; }
             .mfm-text-editor-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0; width: 30px; height: 30px; line-height: 1; }
@@ -46,11 +86,12 @@
     }
 
     /**
-     * Check if file is a text file (GLOBAL)
+     * Check if file is a text file
      */
     function isTextFile(files) {
         if (!files || files.length !== 1) return false;
         var file = files[0];
+        if (file.mime === 'directory') return false;
         if (file.mime && file.mime.startsWith('text/')) return true;
         var textExtensions = ['txt', 'md', 'log', 'json', 'xml', 'csv', 'html', 'htm', 'css', 'js', 'php', 'py', 'java', 'c', 'cpp', 'h', 'sh', 'bat', 'yaml', 'yml', 'ini', 'conf', 'cfg'];
         var ext = file.name.split('.').pop().toLowerCase();
@@ -58,33 +99,21 @@
     }
 
     /**
-     * Open text editor (GLOBAL)
+     * Open text editor
      */
     function openTextEditor(files, fileManager) {
-        if (!files || files.length === 0) { alert('Please select a text file'); return; }
-        var file = files[0];
-        if (file.size && file.size > 1048576) { alert('File is too large to edit (max 1MB)'); return; }
-
-        // Build file URL with tokens
-        var baseUrl = fileManager.options.downloadUrl || fileManager.options.url;
-        var cleanBaseUrl = baseUrl.split('?')[0];
-        var existingParams = [];
-        if (baseUrl.indexOf('?') !== -1) {
-            var queryString = baseUrl.split('?')[1];
-            var pairs = queryString.split('&');
-            for (var i = 0; i < pairs.length; i++) {
-                var pair = pairs[i].split('=');
-                if (pair[0] === 'token1') existingParams.push('token1=' + pair[1]);
-            }
+        if (!files || files.length === 0) {
+            alert('Please select a text file');
+            return;
         }
-        existingParams.push('token2=' + Date.now());
-        var downloadParams = ['cmd=download', 'target=' + encodeURIComponent(file.hash)];
-        if (fileManager.options.token) downloadParams.push('token=' + encodeURIComponent(fileManager.options.token));
-        var fileUrl = cleanBaseUrl + '?' + existingParams.concat(downloadParams).join('&');
+        var file = files[0];
+        if (file.size && file.size > 1048576) {
+            alert('File is too large to edit (max 1MB)');
+            return;
+        }
 
         injectStyles();
 
-        // Modal HTML con numeri riga e checkbox overwrite
         var modalHtml = '<div class="mfm-text-editor-modal"><div class="mfm-text-editor-container">';
         modalHtml += '<div class="mfm-text-editor-header"><h3>Edit Text: ' + fileManager.escapeHtml(file.name) + '</h3><button class="mfm-text-editor-close">&times;</button></div>';
         modalHtml += '<div class="mfm-text-editor-body">';
@@ -97,7 +126,7 @@
         modalHtml += '<button class="mfm-btn" data-action="wrap" title="Toggle Word Wrap">Word Wrap</button>';
         modalHtml += '<span class="mfm-text-editor-info">Lines: <span class="mfm-text-editor-line-count">0</span></span>';
         modalHtml += '</div>';
-        modalHtml += '<textarea class="mfm-text-editor-textarea" placeholder="Loading..."></textarea>';
+        modalHtml += '<textarea class="mfm-text-editor-textarea" placeholder="Loading..." disabled></textarea>';
         modalHtml += '</div></div>';
         modalHtml += '<div class="mfm-text-editor-footer">';
         modalHtml += '<div class="mfm-overwrite-container">';
@@ -110,159 +139,263 @@
         modalHtml += '</div></div>';
 
         fileManager.showModal('Text Editor', modalHtml);
-        loadFileContent(fileManager, file, fileUrl);
+        loadFileContent(fileManager, file);
     }
 
-    function loadFileContent(fileManager, file, fileUrl) {
+    function loadFileContent(fileManager, file) {
         var textarea = document.querySelector('.mfm-text-editor-textarea');
         var lineCount = document.querySelector('.mfm-text-editor-line-count');
         var linesContainer = document.querySelector('.mfm-lines-container');
-        var history = [], historyIndex = -1, wordWrap = false;
+        var history = [];
+        var historyIndex = -1;
+        var initialContent = '';
+        var isLoaded = false;
+        var wordWrap = false;
 
-        // Update line numbers
         function updateLineNumbers() {
             var lines = textarea.value.split('\n').length;
-            var html = '';
+            var parts = [];
             for (var i = 1; i <= lines; i++) {
-                html += '<span>' + i + '</span>';
+                parts.push('<span>' + i + '</span>');
             }
-            linesContainer.innerHTML = html;
+            linesContainer.innerHTML = parts.join('');
         }
 
-        fetch(fileUrl, { method: 'GET', credentials: 'same-origin' })
-            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-            .then(content => {
-                textarea.value = content; textarea.placeholder = '';
-                updateLineCount(); updateLineNumbers();
-                history.push(content); historyIndex = 0;
-            })
-            .catch(e => { alert('Failed to load file: ' + e.message); fileManager.closeModal(); });
+        function updateLineCount() {
+            lineCount.textContent = textarea.value.split('\n').length;
+            updateLineNumbers();
+        }
 
-        function updateLineCount() { lineCount.textContent = textarea.value.split('\n').length; updateLineNumbers(); }
-        function toggleWordWrap() { wordWrap = !wordWrap; textarea.style.whiteSpace = wordWrap ? 'pre-wrap' : 'pre'; }
-        function undo() { if (historyIndex > 0) { historyIndex--; textarea.value = history[historyIndex]; updateLineCount(); } }
-        function redo() { if (historyIndex < history.length - 1) { historyIndex++; textarea.value = history[historyIndex]; updateLineCount(); } }
+        function toggleWordWrap() {
+            wordWrap = !wordWrap;
+            textarea.style.whiteSpace = wordWrap ? 'pre-wrap' : 'pre';
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                textarea.value = history[historyIndex];
+                updateLineCount();
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                textarea.value = history[historyIndex];
+                updateLineCount();
+            }
+        }
+
         function addToHistory() {
+            if (history[historyIndex] === textarea.value) return;
             history = history.slice(0, historyIndex + 1);
-            history.push(textarea.value); historyIndex = history.length - 1;
-            if (history.length > 50) { history.shift(); historyIndex--; }
+            history.push(textarea.value);
+            historyIndex = history.length - 1;
+            if (history.length > 50) {
+                history.shift();
+                historyIndex--;
+            }
         }
+
+        // Fetch file via POST FormData with Authorization header
+        var downloadUrl = fileManager.options.downloadUrl || fileManager.options.url;
+        var cleanBaseUrl = downloadUrl.split('?')[0];
+        var formData = new FormData();
+        formData.append('cmd', 'download');
+        formData.append('target', file.hash);
+
+        if (downloadUrl.indexOf('?') !== -1) {
+            var pairs = downloadUrl.split('?')[1].split('&');
+            for (var i = 0; i < pairs.length; i++) {
+                var pair = pairs[i].split('=');
+                if (pair[0] === 'token1' && pair[1]) {
+                    formData.append('token1', decodeURIComponent(pair[1]));
+                }
+            }
+        }
+        formData.append('token2', Date.now().toString());
+        if (fileManager.options.token) {
+            formData.append('token', fileManager.options.token);
+        }
+
+        var fetchHeaders = {};
+        if (fileManager.options.token) {
+            fetchHeaders['Authorization'] = 'Bearer ' + fileManager.options.token;
+        }
+
+        fetch(cleanBaseUrl, {
+            method: 'POST',
+            headers: fetchHeaders,
+            body: formData,
+            credentials: 'same-origin'
+        })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (content) {
+                initialContent = content;
+                textarea.value = content;
+                textarea.placeholder = '';
+                textarea.disabled = false;
+                isLoaded = true;
+                updateLineCount();
+                history.push(content);
+                historyIndex = 0;
+            })
+            .catch(function (e) {
+                alert('Failed to load file: ' + e.message);
+                fileManager.closeModal();
+            });
 
         textarea.addEventListener('input', updateLineCount);
-        textarea.addEventListener('scroll', () => {
+        textarea.addEventListener('scroll', function () {
             linesContainer.parentElement.scrollTop = textarea.scrollTop;
         });
-        var historyTimeout; textarea.addEventListener('input', () => {
-            clearTimeout(historyTimeout); historyTimeout = setTimeout(addToHistory, 1000);
+
+        var historyTimeout;
+        textarea.addEventListener('input', function () {
+            clearTimeout(historyTimeout);
+            historyTimeout = setTimeout(addToHistory, 600);
         });
 
-        document.querySelector('.mfm-text-editor-toolbar').addEventListener('click', e => {
-            var btn = e.target.closest('[data-action]'), action = btn ? btn.getAttribute('data-action') : null;
-            switch (action) { case 'undo': undo(); break; case 'redo': redo(); break; case 'wrap': toggleWordWrap(); break; }
+        document.querySelector('.mfm-text-editor-toolbar').addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-action]');
+            var action = btn ? btn.getAttribute('data-action') : null;
+            switch (action) {
+                case 'undo': undo(); break;
+                case 'redo': redo(); break;
+                case 'wrap': toggleWordWrap(); break;
+            }
         });
 
-        document.querySelector('.mfm-text-editor-footer').addEventListener('click', e => {
-            var btn = e.target.closest('[data-action]'), action = btn ? btn.getAttribute('data-action') : null;
+        function handleCloseRequest() {
+            if (isLoaded && textarea.value !== initialContent && !confirm('You have unsaved changes. Are you sure?')) {
+                return;
+            }
+            fileManager.closeModal();
+        }
+
+        document.querySelector('.mfm-text-editor-footer').addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-action]');
+            var action = btn ? btn.getAttribute('data-action') : null;
             if (action === 'save') {
+                if (!isLoaded) return;
                 var overwrite = document.getElementById('mfm-overwrite').checked;
                 saveFileContent(fileManager, file, textarea.value, overwrite);
             } else if (action === 'cancel') {
-                if (textarea.value !== history[0] && !confirm('You have unsaved changes. Are you sure?')) return;
-                fileManager.closeModal();
+                handleCloseRequest();
             }
         });
 
-        document.querySelector('.mfm-text-editor-close').addEventListener('click', () => {
-            if (textarea.value !== history[0] && !confirm('You have unsaved changes. Are you sure?')) return;
-            fileManager.closeModal();
-        });
+        document.querySelector('.mfm-text-editor-close').addEventListener('click', handleCloseRequest);
 
-        textarea.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveFileContent(fileManager, file, textarea.value, document.getElementById('mfm-overwrite').checked); } });
+        textarea.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                if (!isLoaded) return;
+                saveFileContent(fileManager, file, textarea.value, document.getElementById('mfm-overwrite').checked);
+            }
+        });
     }
 
     function saveFileContent(fileManager, file, content, overwrite) {
         var textarea = document.querySelector('.mfm-text-editor-textarea');
-        textarea.disabled = true;
-
-        // if checkbox overwrite is checked
-        if (overwrite) {
-            var deleteFormData = new FormData();
-            deleteFormData.append('cmd', 'delete');
-            deleteFormData.append('targets[]', file.hash);
-
-            if (fileManager.options.token) {
-                deleteFormData.append('token', fileManager.options.token);
-            }
-
-            fetch(fileManager.options.url, { method: 'POST', body: deleteFormData })
-                .then(r => r.json())
-                .then(deleteData => {
-                    if (deleteData.error) throw new Error(deleteData.error);
-
-                    // upload new file after deletion in the same place
-                    return uploadNewFile(fileManager, file, content);
-                })
-        } else {
-            // just upload new file without deleting
-            return uploadNewFile(fileManager, file, content);
+        if (content.length === 0) {
+            alert('Cannot save an empty (0-byte) file.');
+            return;
         }
 
-        function uploadNewFile(fileManager, file, content) {
-            var parentDir = file.hash.substring(0, file.hash.lastIndexOf('/'));
-            var blob = new Blob([content], { type: 'text/plain' });
+        textarea.disabled = true;
+
+        var fetchHeaders = {};
+        if (fileManager.options.token) {
+            fetchHeaders['Authorization'] = 'Bearer ' + fileManager.options.token;
+        }
+
+        function uploadNewFile() {
+            var parentHash = getParentHashFromFile(file, fileManager);
+            var blob = new Blob([content], { type: file.mime || 'text/plain' });
             var formData = new FormData();
 
             formData.append('cmd', 'upload');
-            formData.append('target', btoa(parentDir));
-            formData.append('upload[]', blob, file.name);
+            formData.append('target', parentHash);
+            formData.append('upload', blob, file.name);
+            formData.append('part', '0');
+            formData.append('parts', '1');
+            formData.append('id', 'textedit_' + Date.now());
 
             if (fileManager.options.token) {
                 formData.append('token', fileManager.options.token);
             }
 
-            return fetch(fileManager.options.url, { method: 'POST', credentials: 'same-origin', body: formData })
-                .then(r => r.json())
-                .then(data => {
+            return fetch(fileManager.options.url, {
+                method: 'POST',
+                headers: fetchHeaders,
+                credentials: 'same-origin',
+                body: formData
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
                     if (data.error) throw new Error(data.error);
                     alert('File saved!');
                     fileManager.closeModal();
                     fileManager.refresh();
                 });
         }
+
+        var savePromise;
+        if (overwrite) {
+            var deleteFormData = new FormData();
+            deleteFormData.append('cmd', 'delete');
+            deleteFormData.append('targets[]', file.hash);
+            if (fileManager.options.token) {
+                deleteFormData.append('token', fileManager.options.token);
+            }
+
+            savePromise = fetch(fileManager.options.url, {
+                method: 'POST',
+                headers: fetchHeaders,
+                credentials: 'same-origin',
+                body: deleteFormData
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (deleteData) {
+                    if (deleteData.error) throw new Error(deleteData.error);
+                    return uploadNewFile();
+                });
+        } else {
+            savePromise = uploadNewFile();
+        }
+
+        savePromise.catch(function (err) {
+            console.error('Text editor save error:', err);
+            textarea.disabled = false;
+            alert('Failed to save file: ' + err.message);
+        });
     }
 
-
-    // PLUGIN DUAL MODE
+    // Plugin registration
     window.MyFileManagerTextEditorPlugin = function (fm) {
         injectStyles();
         var plugin = {
             name: 'Text Editor',
-            version: '1.0.0',
-            contextMenuItems: [{ action: 'edit-text', label: '📝 Edit Text', condition: isTextFile, handler: openTextEditor }]
+            version: '1.1.0',
+            contextMenuItems: [{
+                action: 'edit-text',
+                label: '📝 Edit Text',
+                condition: isTextFile,
+                handler: openTextEditor
+            }]
         };
-        if (fm && typeof fm.registerPlugin === 'function') fm.registerPlugin(plugin);
+        if (fm && typeof fm.registerPlugin === 'function') {
+            fm.registerPlugin(plugin);
+        }
         return plugin;
     };
 
-    (function () {
-        function autoRegister() {
-            document.querySelectorAll('.myfilemanager').forEach(container => {
-                if (container.MyFileManagerInstance && typeof container.MyFileManagerInstance.registerPlugin === 'function') {
-                    container.MyFileManagerInstance.registerPlugin({
-                        name: 'Text Editor',
-                        version: '1.0.0',
-                        contextMenuItems: [{ action: 'edit-text', label: '📝 Edit Text', condition: isTextFile, handler: openTextEditor }]
-                    });
-                    console.log('✅ Text Editor auto-registered');
-                }
-            });
-        }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', autoRegister);
-        else autoRegister();
-
-        if (!window.MyFileManagerPlugins) window.MyFileManagerPlugins = [];
-        window.MyFileManagerPlugins.push(window.MyFileManagerTextEditorPlugin);
-        console.log('📝 Text Editor Plugin loaded');
-    })();
+    if (!window.MyFileManagerPlugins) window.MyFileManagerPlugins = [];
+    window.MyFileManagerPlugins.push(window.MyFileManagerTextEditorPlugin);
 
 })(window);

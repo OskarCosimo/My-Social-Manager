@@ -1,9 +1,10 @@
 /**
+ * // i18n.js
  * My File Manager - Internationalization
  * All languages in single file
- * 
+ *
  * @package MyFileManager
- * @author Osacr Csoimo & MYETV Team
+ * @author Oscar Cosimo & MYETV Team
  * @license MIT
  */
 
@@ -55,9 +56,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Yes',
         no: 'No',
+        close: 'Close',
         confirmDelete: 'Are you sure you want to delete the selected items?',
         enterFolderName: 'Enter folder name:',
         enterNewName: 'Enter new name:',
+        uploadingFile: 'Uploading File',
+        downloadingFile: 'Downloading File',
+        calculating: 'Calculating...',
+        confirmCancelUpload: 'Upload in progress. Cancel upload?',
+        confirmCancelDownload: 'Download in progress. Cancel download?',
         uploadComplete: 'Upload complete',
         uploadError: 'Upload error',
         fileExists: 'File already exists',
@@ -85,8 +92,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Are you sure you want to empty the Recycle Bin? This cannot be undone.',
         restoreSuccess: 'File restored successfully',
         emptyTrashSuccess: 'Recycle Bin emptied successfully',
+        // Encryption & security messages
         setEncryptionKey: 'Set Encryption Key',
-        encryptionEnabled: 'Encryption enabled. Files will be automatically encrypted/decrypted.'
+        enterEncryptionPassword: 'Enter encryption password:',
+        encryptionEnabled: 'Encryption enabled. Files will be automatically encrypted/decrypted.',
+        actionNotAllowed: 'This action cannot be performed on the selected file(s).',
+        foldersCannotDownload: 'Folders cannot be downloaded. Please select only files.',
+        dangerousExtension: 'Dangerous extension detected! Cannot rename to:'
     },
 
     // Italian
@@ -136,9 +148,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Sì',
         no: 'No',
+        close: 'Chiudi',
         confirmDelete: 'Sei sicuro di voler eliminare gli elementi selezionati?',
         enterFolderName: 'Inserisci il nome della cartella:',
         enterNewName: 'Inserisci il nuovo nome:',
+        uploadingFile: 'Caricamento File',
+        downloadingFile: 'Scaricamento File',
+        calculating: 'Calcolo in corso...',
+        confirmCancelUpload: 'Caricamento in corso. Annullare il caricamento?',
+        confirmCancelDownload: 'Download in corso. Annullare il download?',
         uploadComplete: 'Caricamento completato',
         uploadError: 'Errore di caricamento',
         fileExists: 'Il file esiste già',
@@ -166,8 +184,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Sei sicuro di voler svuotare il cestino? Questa operazione non può essere annullata.',
         restoreSuccess: 'File ripristinato con successo',
         emptyTrashSuccess: 'Cestino svuotato con successo',
+        // Encryption & security messages
         setEncryptionKey: 'Imposta chiave di crittografia',
-        encryptionEnabled: 'Crittografia abilitata. I file saranno automaticamente cifrati/decifrati.'
+        enterEncryptionPassword: 'Inserisci la password di crittografia:',
+        encryptionEnabled: 'Crittografia abilitata. I file saranno automaticamente cifrati/decifrati.',
+        actionNotAllowed: 'Questa azione non può essere eseguita sui file selezionati.',
+        foldersCannotDownload: 'Le cartelle non possono essere scaricate. Seleziona solo file.',
+        dangerousExtension: 'Estensione pericolosa rilevata! Impossibile rinominare in:'
     },
 
     // Spanish
@@ -217,9 +240,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Sí',
         no: 'No',
+        close: 'Cerrar',
         confirmDelete: '¿Estás seguro de que quieres eliminar los elementos seleccionados?',
         enterFolderName: 'Introduce el nombre de la carpeta:',
         enterNewName: 'Introduce el nuevo nombre:',
+        uploadingFile: 'Subiendo Archivo',
+        downloadingFile: 'Descargando Archivo',
+        calculating: 'Calculando...',
+        confirmCancelUpload: 'Subida en curso. ¿Cancelar la subida?',
+        confirmCancelDownload: 'Descarga en curso. ¿Cancelar la descarga?',
         uploadComplete: 'Carga completada',
         uploadError: 'Error de carga',
         fileExists: 'El archivo ya existe',
@@ -247,8 +276,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: '¿Estás seguro de que quieres vaciar la papelera? Esta acción no se puede deshacer.',
         restoreSuccess: 'Archivo restaurado correctamente',
         emptyTrashSuccess: 'Papelera vaciada correctamente',
+        // Encryption & security messages
         setEncryptionKey: 'Establecer clave de cifrado',
-        encryptionEnabled: 'Cifrado habilitado. Los archivos se cifrarán/descifrarán automáticamente.'
+        enterEncryptionPassword: 'Introduce la contraseña de cifrado:',
+        encryptionEnabled: 'Cifrado habilitado. Los archivos se cifrarán/descifrarán automáticamente.',
+        actionNotAllowed: 'Esta acción no se puede realizar en los archivos seleccionados.',
+        foldersCannotDownload: 'No se pueden descargar carpetas. Selecciona solo archivos.',
+        dangerousExtension: '¡Extensión peligrosa detectada! No se puede renombrar a:'
     },
 
     // French
@@ -298,9 +332,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Oui',
         no: 'Non',
+        close: 'Fermer',
         confirmDelete: 'Êtes-vous sûr de vouloir supprimer les éléments sélectionnés?',
         enterFolderName: 'Entrez le nom du dossier:',
         enterNewName: 'Entrez le nouveau nom:',
+        uploadingFile: 'Envoi du Fichier',
+        downloadingFile: 'Téléchargement du Fichier',
+        calculating: 'Calcul en cours...',
+        confirmCancelUpload: 'Envoi en cours. Annuler l\'envoi ?',
+        confirmCancelDownload: 'Téléchargement en cours. Annuler le téléchargement ?',
         uploadComplete: 'Téléchargement terminé',
         uploadError: 'Erreur de téléchargement',
         fileExists: 'Le fichier existe déjà',
@@ -328,8 +368,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Êtes-vous sûr de vouloir vider la corbeille? Cette action est irréversible.',
         restoreSuccess: 'Fichier restauré avec succès',
         emptyTrashSuccess: 'Corbeille vidée avec succès',
+        // Encryption & security messages
         setEncryptionKey: 'Définir la clé de cryptage',
-        encryptionEnabled: 'Cryptage activé. Les fichiers seront automatiquement cryptés/décryptés.'
+        enterEncryptionPassword: 'Entrez le mot de passe de chiffrement :',
+        encryptionEnabled: 'Cryptage activé. Les fichiers seront automatiquement cryptés/décryptés.',
+        actionNotAllowed: 'Cette action ne peut pas être effectuée sur les fichiers sélectionnés.',
+        foldersCannotDownload: 'Les dossiers ne peuvent pas être téléchargés. Veuillez sélectionner uniquement des fichiers.',
+        dangerousExtension: 'Extension dangereuse détectée ! Impossible de renommer en :'
     },
 
     // German
@@ -379,9 +424,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Ja',
         no: 'Nein',
+        close: 'Schließen',
         confirmDelete: 'Möchten Sie die ausgewählten Elemente wirklich löschen?',
         enterFolderName: 'Ordnername eingeben:',
         enterNewName: 'Neuen Namen eingeben:',
+        uploadingFile: 'Datei wird hochgeladen',
+        downloadingFile: 'Datei wird heruntergeladen',
+        calculating: 'Berechnung läuft...',
+        confirmCancelUpload: 'Upload läuft. Upload abbrechen?',
+        confirmCancelDownload: 'Download läuft. Download abbrechen?',
         uploadComplete: 'Upload abgeschlossen',
         uploadError: 'Upload-Fehler',
         fileExists: 'Datei existiert bereits',
@@ -409,8 +460,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Möchten Sie den Papierkorb wirklich leeren? Dies kann nicht rückgängig gemacht werden.',
         restoreSuccess: 'Datei erfolgreich wiederhergestellt',
         emptyTrashSuccess: 'Papierkorb erfolgreich geleert',
+        // Encryption & security messages
         setEncryptionKey: 'Verschlüsselungsschlüssel festlegen',
-        encryptionEnabled: 'Verschlüsselung aktiviert. Dateien werden automatisch verschlüsselt/entschlüsselt.'
+        enterEncryptionPassword: 'Verschlüsselungspasswort eingeben:',
+        encryptionEnabled: 'Verschlüsselung aktiviert. Dateien werden automatisch verschlüsselt/entschlüsselt.',
+        actionNotAllowed: 'Diese Aktion kann für die ausgewählten Dateien nicht ausgeführt werden.',
+        foldersCannotDownload: 'Ordner können nicht heruntergeladen werden. Bitte wählen Sie nur Dateien aus.',
+        dangerousExtension: 'Gefährliche Erweiterung erkannt! Umbenennen nicht möglich in:'
     },
 
     // Portuguese
@@ -460,9 +516,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Sim',
         no: 'Não',
+        close: 'Fechar',
         confirmDelete: 'Tem certeza de que deseja excluir os itens selecionados?',
         enterFolderName: 'Digite o nome da pasta:',
         enterNewName: 'Digite o novo nome:',
+        uploadingFile: 'Enviando Arquivo',
+        downloadingFile: 'Baixando Arquivo',
+        calculating: 'Calculando...',
+        confirmCancelUpload: 'Envio em andamento. Cancelar envio?',
+        confirmCancelDownload: 'Download em andamento. Cancelar download?',
         uploadComplete: 'Upload concluído',
         uploadError: 'Erro no upload',
         fileExists: 'O arquivo já existe',
@@ -490,8 +552,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Tem certeza de que deseja esvaziar a lixeira? Esta ação não pode ser desfeita.',
         restoreSuccess: 'Arquivo restaurado com sucesso',
         emptyTrashSuccess: 'Lixeira esvaziada com sucesso',
+        // Encryption & security messages
         setEncryptionKey: 'Definir chave de criptografia',
-        encryptionEnabled: 'Criptografia ativada. Os arquivos serão automaticamente criptografados/descriptografados.'
+        enterEncryptionPassword: 'Digite a senha de criptografia:',
+        encryptionEnabled: 'Criptografia ativada. Os arquivos serão automaticamente criptografados/descriptografados.',
+        actionNotAllowed: 'Esta ação não pode ser executada nos arquivos selecionados.',
+        foldersCannotDownload: 'Pastas não podem ser baixadas. Selecione apenas arquivos.',
+        dangerousExtension: 'Extensão perigosa detectada! Não é possível renomear para:'
     },
 
     // Russian
@@ -541,9 +608,15 @@ window.MyFileManagerI18n = {
         ok: 'ОК',
         yes: 'Да',
         no: 'Нет',
+        close: 'Закрыть',
         confirmDelete: 'Вы уверены, что хотите удалить выбранные элементы?',
         enterFolderName: 'Введите имя папки:',
         enterNewName: 'Введите новое имя:',
+        uploadingFile: 'Загрузка файла',
+        downloadingFile: 'Скачивание файла',
+        calculating: 'Вычисление...',
+        confirmCancelUpload: 'Идёт загрузка. Отменить загрузку?',
+        confirmCancelDownload: 'Идёт скачивание. Отменить скачивание?',
         uploadComplete: 'Загрузка завершена',
         uploadError: 'Ошибка загрузки',
         fileExists: 'Файл уже существует',
@@ -571,8 +644,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Вы уверены, что хотите очистить корзину? Это действие нельзя отменить.',
         restoreSuccess: 'Файл успешно восстановлен',
         emptyTrashSuccess: 'Корзина успешно очищена',
+        // Encryption & security messages
         setEncryptionKey: 'Установить ключ шифрования',
-        encryptionEnabled: 'Шифрование включено. Файлы будут автоматически зашифрованы/расшифрованы.'
+        enterEncryptionPassword: 'Введите пароль шифрования:',
+        encryptionEnabled: 'Шифрование включено. Файлы будут автоматически зашифрованы/расшифрованы.',
+        actionNotAllowed: 'Это действие невозможно выполнить с выбранными файлами.',
+        foldersCannotDownload: 'Папки нельзя скачать. Выберите только файлы.',
+        dangerousExtension: 'Обнаружено опасное расширение! Невозможно переименовать в:'
     },
 
     // Japanese
@@ -622,9 +700,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'はい',
         no: 'いいえ',
+        close: '閉じる',
         confirmDelete: '選択した項目を削除してもよろしいですか？',
         enterFolderName: 'フォルダー名を入力:',
         enterNewName: '新しい名前を入力:',
+        uploadingFile: 'ファイルをアップロード中',
+        downloadingFile: 'ファイルをダウンロード中',
+        calculating: '計算中...',
+        confirmCancelUpload: 'アップロード中です。キャンセルしますか？',
+        confirmCancelDownload: 'ダウンロード中です。キャンセルしますか？',
         uploadComplete: 'アップロード完了',
         uploadError: 'アップロードエラー',
         fileExists: 'ファイルは既に存在します',
@@ -652,8 +736,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'ごみ箱を空にしてもよろしいですか？この操作は元に戻せません。',
         restoreSuccess: 'ファイルが正常に復元されました',
         emptyTrashSuccess: 'ごみ箱が正常に空になりました',
+        // Encryption & security messages
         setEncryptionKey: '暗号化キーを設定',
-        encryptionEnabled: '暗号化が有効になりました。ファイルは自動的に暗号化/復号化されます。'
+        enterEncryptionPassword: '暗号化パスワードを入力:',
+        encryptionEnabled: '暗号化が有効になりました。ファイルは自動的に暗号化/復号化されます。',
+        actionNotAllowed: '選択したファイルに対してこの操作を実行できません。',
+        foldersCannotDownload: 'フォルダーはダウンロードできません。ファイルのみを選択してください。',
+        dangerousExtension: '危険な拡張子が検出されました！名前を変更できません:'
     },
 
     // Chinese (Simplified)
@@ -703,9 +792,15 @@ window.MyFileManagerI18n = {
         ok: '确定',
         yes: '是',
         no: '否',
+        close: '关闭',
         confirmDelete: '确定要删除选定的项目吗？',
         enterFolderName: '输入文件夹名称：',
         enterNewName: '输入新名称：',
+        uploadingFile: '正在上传文件',
+        downloadingFile: '正在下载文件',
+        calculating: '计算中...',
+        confirmCancelUpload: '正在上传。要取消上传吗？',
+        confirmCancelDownload: '正在下载。要取消下载吗？',
         uploadComplete: '上传完成',
         uploadError: '上传错误',
         fileExists: '文件已存在',
@@ -733,8 +828,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: '确定要清空回收站吗？此操作无法撤销。',
         restoreSuccess: '文件已成功还原',
         emptyTrashSuccess: '回收站已成功清空',
+        // Encryption & security messages
         setEncryptionKey: '设置加密密钥',
-        encryptionEnabled: '已启用加密。文件将自动加密/解密。'
+        enterEncryptionPassword: '输入加密密码：',
+        encryptionEnabled: '已启用加密。文件将自动加密/解密。',
+        actionNotAllowed: '无法对所选文件执行此操作。',
+        foldersCannotDownload: '无法下载文件夹。请仅选择文件。',
+        dangerousExtension: '检测到危险扩展名！无法重命名为：'
     },
 
     // Arabic
@@ -784,9 +884,15 @@ window.MyFileManagerI18n = {
         ok: 'موافق',
         yes: 'نعم',
         no: 'لا',
+        close: 'إغلاق',
         confirmDelete: 'هل أنت متأكد من حذف العناصر المحددة؟',
         enterFolderName: 'أدخل اسم المجلد:',
         enterNewName: 'أدخل الاسم الجديد:',
+        uploadingFile: 'جارٍ رفع الملف',
+        downloadingFile: 'جارٍ تنزيل الملف',
+        calculating: 'جارٍ الحساب...',
+        confirmCancelUpload: 'الرفع قيد التقدم. هل تريد إلغاء الرفع؟',
+        confirmCancelDownload: 'التنزيل قيد التقدم. هل تريد إلغاء التنزيل؟',
         uploadComplete: 'اكتمل الرفع',
         uploadError: 'خطأ في الرفع',
         fileExists: 'الملف موجود بالفعل',
@@ -814,8 +920,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'هل أنت متأكد من إفراغ سلة المحذوفات؟ لا يمكن التراجع عن هذا الإجراء.',
         restoreSuccess: 'تمت استعادة الملف بنجاح',
         emptyTrashSuccess: 'تم إفراغ سلة المحذوفات بنجاح',
+        // Encryption & security messages
         setEncryptionKey: 'تعيين مفتاح التشفير',
-        encryptionEnabled: 'تم تمكين التشفير. سيتم تشفير/فك تشفير الملفات تلقائيًا.'
+        enterEncryptionPassword: 'أدخل كلمة مرور التشفير:',
+        encryptionEnabled: 'تم تمكين التشفير. سيتم تشفير/فك تشفير الملفات تلقائيًا.',
+        actionNotAllowed: 'لا يمكن تنفيذ هذا الإجراء على الملفات المحددة.',
+        foldersCannotDownload: 'لا يمكن تنزيل المجلدات. يرجى تحديد الملفات فقط.',
+        dangerousExtension: 'تم اكتشاف امتداد خطير! لا يمكن إعادة التسمية إلى:'
     },
 
     // Hindi
@@ -865,9 +976,15 @@ window.MyFileManagerI18n = {
         ok: 'ठीक है',
         yes: 'हाँ',
         no: 'नहीं',
+        close: 'बंद करें',
         confirmDelete: 'क्या आप वाकई चयनित आइटम हटाना चाहते हैं?',
         enterFolderName: 'फ़ोल्डर का नाम दर्ज करें:',
         enterNewName: 'नया नाम दर्ज करें:',
+        uploadingFile: 'फ़ाइल अपलोड हो रही है',
+        downloadingFile: 'फ़ाइल डाउनलोड हो रही है',
+        calculating: 'गणना हो रही है...',
+        confirmCancelUpload: 'अपलोड जारी है। क्या अपलोड रद्द करें?',
+        confirmCancelDownload: 'डाउनलोड जारी है। क्या डाउनलोड रद्द करें?',
         uploadComplete: 'अपलोड पूर्ण',
         uploadError: 'अपलोड त्रुटि',
         fileExists: 'फ़ाइल पहले से मौजूद है',
@@ -895,8 +1012,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'क्या आप रीसायकल बिन खाली करना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।',
         restoreSuccess: 'फ़ाइल सफलतापूर्वक पुनर्स्थापित हो गई',
         emptyTrashSuccess: 'रीसायकल बिन सफलतापूर्वक खाली हो गया',
+        // Encryption & security messages
         setEncryptionKey: 'एन्क्रिप्शन कुंजी सेट करें',
-        encryptionEnabled: 'एन्क्रिप्शन सक्षम है। फ़ाइलें स्वचालित रूप से एन्क्रिप्ट/डिक्रिप्ट की जाएंगी।'
+        enterEncryptionPassword: 'एन्क्रिप्शन पासवर्ड दर्ज करें:',
+        encryptionEnabled: 'एन्क्रिप्शन सक्षम है। फ़ाइलें स्वचालित रूप से एन्क्रिप्ट/डिक्रिप्ट की जाएंगी।',
+        actionNotAllowed: 'चयनित फ़ाइलों पर यह क्रिया नहीं की जा सकती।',
+        foldersCannotDownload: 'फ़ोल्डर डाउनलोड नहीं किए जा सकते। कृपया केवल फ़ाइलें चुनें।',
+        dangerousExtension: 'खतरनाक एक्सटेंशन का पता चला! नाम बदलना संभव नहीं:'
     },
 
     // Korean
@@ -946,9 +1068,15 @@ window.MyFileManagerI18n = {
         ok: '확인',
         yes: '예',
         no: '아니요',
+        close: '닫기',
         confirmDelete: '선택한 항목을 삭제하시겠습니까?',
         enterFolderName: '폴더 이름 입력:',
         enterNewName: '새 이름 입력:',
+        uploadingFile: '파일 업로드 중',
+        downloadingFile: '파일 다운로드 중',
+        calculating: '계산 중...',
+        confirmCancelUpload: '업로드가 진행 중입니다. 업로드를 취소하시겠습니까?',
+        confirmCancelDownload: '다운로드가 진행 중입니다. 다운로드를 취소하시겠습니까?',
         uploadComplete: '업로드 완료',
         uploadError: '업로드 오류',
         fileExists: '파일이 이미 존재합니다',
@@ -976,8 +1104,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: '휴지통을 비우시겠습니까? 이 작업은 취소할 수 없습니다.',
         restoreSuccess: '파일이 성공적으로 복원되었습니다',
         emptyTrashSuccess: '휴지통이 성공적으로 비워졌습니다',
+        // Encryption & security messages
         setEncryptionKey: '암호화 키 설정',
-        encryptionEnabled: '암호화가 활성화되었습니다. 파일은 자동으로 암호화/복호화됩니다.'
+        enterEncryptionPassword: '암호화 비밀번호를 입력하세요:',
+        encryptionEnabled: '암호화가 활성화되었습니다. 파일은 자동으로 암호화/복호화됩니다.',
+        actionNotAllowed: '선택한 파일에 이 작업을 수행할 수 없습니다.',
+        foldersCannotDownload: '폴더는 다운로드할 수 없습니다. 파일만 선택하세요.',
+        dangerousExtension: '위험한 확장자가 감지되었습니다! 이름을 바꿀 수 없습니다:'
     },
 
     // Dutch
@@ -1027,9 +1160,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Ja',
         no: 'Nee',
+        close: 'Sluiten',
         confirmDelete: 'Weet u zeker dat u de geselecteerde items wilt verwijderen?',
         enterFolderName: 'Voer mapnaam in:',
         enterNewName: 'Voer nieuwe naam in:',
+        uploadingFile: 'Bestand uploaden',
+        downloadingFile: 'Bestand downloaden',
+        calculating: 'Berekenen...',
+        confirmCancelUpload: 'Upload bezig. Upload annuleren?',
+        confirmCancelDownload: 'Download bezig. Download annuleren?',
         uploadComplete: 'Upload voltooid',
         uploadError: 'Upload fout',
         fileExists: 'Bestand bestaat al',
@@ -1057,8 +1196,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Weet u zeker dat u de prullenbak wilt legen? Dit kan niet ongedaan worden gemaakt.',
         restoreSuccess: 'Bestand succesvol hersteld',
         emptyTrashSuccess: 'Prullenbak succesvol geleegd',
+        // Encryption & security messages
         setEncryptionKey: 'Instellen van encryptiesleutel',
-        encryptionEnabled: 'Encryptie ingeschakeld. Bestanden worden automatisch versleuteld/ontsleuteld.'
+        enterEncryptionPassword: 'Voer encryptiewachtwoord in:',
+        encryptionEnabled: 'Encryptie ingeschakeld. Bestanden worden automatisch versleuteld/ontsleuteld.',
+        actionNotAllowed: 'Deze actie kan niet worden uitgevoerd op de geselecteerde bestanden.',
+        foldersCannotDownload: 'Mappen kunnen niet worden gedownload. Selecteer alleen bestanden.',
+        dangerousExtension: 'Gevaarlijke extensie gedetecteerd! Kan niet hernoemen naar:'
     },
 
     // Turkish
@@ -1108,9 +1252,15 @@ window.MyFileManagerI18n = {
         ok: 'Tamam',
         yes: 'Evet',
         no: 'Hayır',
+        close: 'Kapat',
         confirmDelete: 'Seçili öğeleri silmek istediğinizden emin misiniz?',
         enterFolderName: 'Klasör adını girin:',
         enterNewName: 'Yeni adı girin:',
+        uploadingFile: 'Dosya Yükleniyor',
+        downloadingFile: 'Dosya İndiriliyor',
+        calculating: 'Hesaplanıyor...',
+        confirmCancelUpload: 'Yükleme devam ediyor. Yükleme iptal edilsin mi?',
+        confirmCancelDownload: 'İndirme devam ediyor. İndirme iptal edilsin mi?',
         uploadComplete: 'Yükleme tamamlandı',
         uploadError: 'Yükleme hatası',
         fileExists: 'Dosya zaten var',
@@ -1138,8 +1288,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Geri dönüşüm kutusunu boşaltmak istediğinizden emin misiniz? Bu işlem geri alınamaz.',
         restoreSuccess: 'Dosya başarıyla geri yüklendi',
         emptyTrashSuccess: 'Geri dönüşüm kutusu başarıyla boşaltıldı',
+        // Encryption & security messages
         setEncryptionKey: 'Şifreleme Anahtarını Ayarla',
-        encryptionEnabled: 'Şifreleme etkinleştirildi. Dosyalar otomatik olarak şifrelenecek/deşifrelenecek.'
+        enterEncryptionPassword: 'Şifreleme parolasını girin:',
+        encryptionEnabled: 'Şifreleme etkinleştirildi. Dosyalar otomatik olarak şifrelenecek/deşifrelenecek.',
+        actionNotAllowed: 'Bu işlem seçili dosyalar üzerinde gerçekleştirilemez.',
+        foldersCannotDownload: 'Klasörler indirilemez. Lütfen yalnızca dosya seçin.',
+        dangerousExtension: 'Tehlikeli uzantı algılandı! Yeniden adlandırılamıyor:'
     },
 
     // Polish
@@ -1189,9 +1344,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Tak',
         no: 'Nie',
+        close: 'Zamknij',
         confirmDelete: 'Czy na pewno chcesz usunąć wybrane elementy?',
         enterFolderName: 'Wprowadź nazwę folderu:',
         enterNewName: 'Wprowadź nową nazwę:',
+        uploadingFile: 'Przesyłanie Pliku',
+        downloadingFile: 'Pobieranie Pliku',
+        calculating: 'Obliczanie...',
+        confirmCancelUpload: 'Trwa przesyłanie. Anulować przesyłanie?',
+        confirmCancelDownload: 'Trwa pobieranie. Anulować pobieranie?',
         uploadComplete: 'Przesyłanie zakończone',
         uploadError: 'Błąd przesyłania',
         fileExists: 'Plik już istnieje',
@@ -1219,8 +1380,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Czy na pewno chcesz opróżnić kosz? Tej operacji nie można cofnąć.',
         restoreSuccess: 'Plik został pomyślnie przywrócony',
         emptyTrashSuccess: 'Kosz został pomyślnie opróżniony',
+        // Encryption & security messages
         setEncryptionKey: 'Ustaw klucz szyfrowania',
-        encryptionEnabled: 'Szyfrowanie włączone. Pliki będą automatycznie szyfrowane/odszyfrowywane.'
+        enterEncryptionPassword: 'Wprowadź hasło szyfrowania:',
+        encryptionEnabled: 'Szyfrowanie włączone. Pliki będą automatycznie szyfrowane/odszyfrowywane.',
+        actionNotAllowed: 'Tej akcji nie można wykonać na wybranych plikach.',
+        foldersCannotDownload: 'Nie można pobierać folderów. Wybierz tylko pliki.',
+        dangerousExtension: 'Wykryto niebezpieczne rozszerzenie! Nie można zmienić nazwy na:'
     },
 
     // Swedish
@@ -1270,9 +1436,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Ja',
         no: 'Nej',
+        close: 'Stäng',
         confirmDelete: 'Är du säker på att du vill ta bort de markerade objekten?',
         enterFolderName: 'Ange mappnamn:',
         enterNewName: 'Ange nytt namn:',
+        uploadingFile: 'Laddar upp fil',
+        downloadingFile: 'Laddar ner fil',
+        calculating: 'Beräknar...',
+        confirmCancelUpload: 'Uppladdning pågår. Avbryta uppladdningen?',
+        confirmCancelDownload: 'Nedladdning pågår. Avbryta nedladdningen?',
         uploadComplete: 'Uppladdning klar',
         uploadError: 'Uppladdningsfel',
         fileExists: 'Filen finns redan',
@@ -1300,8 +1472,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Är du säker på att du vill tömma papperskorgen? Detta kan inte ångras.',
         restoreSuccess: 'Filen har återställts',
         emptyTrashSuccess: 'Papperskorgen har tömts',
+        // Encryption & security messages
         setEncryptionKey: 'Ange krypteringsnyckel',
-        encryptionEnabled: 'Kryptering aktiverad. Filer kommer automatiskt att krypteras/dekrypteras.'
+        enterEncryptionPassword: 'Ange krypteringslösenord:',
+        encryptionEnabled: 'Kryptering aktiverad. Filer kommer automatiskt att krypteras/dekrypteras.',
+        actionNotAllowed: 'Den här åtgärden kan inte utföras på de valda filerna.',
+        foldersCannotDownload: 'Mappar kan inte laddas ner. Välj endast filer.',
+        dangerousExtension: 'Farlig filändelse upptäckt! Kan inte byta namn till:'
     },
 
     // Greek
@@ -1351,9 +1528,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Ναι',
         no: 'Όχι',
+        close: 'Κλείσιμο',
         confirmDelete: 'Είστε βέβαιοι ότι θέλετε να διαγράψετε τα επιλεγμένα στοιχεία;',
         enterFolderName: 'Εισαγάγετε όνομα φακέλου:',
         enterNewName: 'Εισαγάγετε νέο όνομα:',
+        uploadingFile: 'Μεταφόρτωση αρχείου',
+        downloadingFile: 'Λήψη αρχείου',
+        calculating: 'Υπολογισμός...',
+        confirmCancelUpload: 'Η μεταφόρτωση βρίσκεται σε εξέλιξη. Ακύρωση μεταφόρτωσης;',
+        confirmCancelDownload: 'Η λήψη βρίσκεται σε εξέλιξη. Ακύρωση λήψης;',
         uploadComplete: 'Η μεταφόρτωση ολοκληρώθηκε',
         uploadError: 'Σφάλμα μεταφόρτωσης',
         fileExists: 'Το αρχείο υπάρχει ήδη',
@@ -1381,8 +1564,13 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Είστε βέβαιοι ότι θέλετε να αδειάσετε τον κάδο ανακύκλωσης; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.',
         restoreSuccess: 'Το αρχείο επαναφέρθηκε επιτυχώς',
         emptyTrashSuccess: 'Ο κάδος ανακύκλωσης αδειάστηκε επιτυχώς',
+        // Encryption & security messages
         setEncryptionKey: 'Ορισμός κλειδιού κρυπτογράφησης',
-        encryptionEnabled: 'Η κρυπτογράφηση είναι ενεργοποιημένη. Τα αρχεία θα κρυπτογραφούνται/αποκρυπτογραφούνται αυτόματα.'
+        enterEncryptionPassword: 'Εισαγάγετε κωδικό κρυπτογράφησης:',
+        encryptionEnabled: 'Η κρυπτογράφηση είναι ενεργοποιημένη. Τα αρχεία θα κρυπτογραφούνται/αποκρυπτογραφούνται αυτόματα.',
+        actionNotAllowed: 'Αυτή η ενέργεια δεν μπορεί να εκτελεστεί στα επιλεγμένα αρχεία.',
+        foldersCannotDownload: 'Δεν είναι δυνατή η λήψη φακέλων. Επιλέξτε μόνο αρχεία.',
+        dangerousExtension: 'Εντοπίστηκε επικίνδυνη επέκταση! Αδύνατη η μετονομασία σε:'
     },
 
     // Vietnamese
@@ -1432,9 +1620,15 @@ window.MyFileManagerI18n = {
         ok: 'OK',
         yes: 'Có',
         no: 'Không',
+        close: 'Đóng',
         confirmDelete: 'Bạn có chắc chắn muốn xóa các mục đã chọn?',
         enterFolderName: 'Nhập tên thư mục:',
         enterNewName: 'Nhập tên mới:',
+        uploadingFile: 'Đang tải tập tin lên',
+        downloadingFile: 'Đang tải tập tin xuống',
+        calculating: 'Đang tính toán...',
+        confirmCancelUpload: 'Đang tải lên. Hủy tải lên?',
+        confirmCancelDownload: 'Đang tải xuống. Hủy tải xuống?',
         uploadComplete: 'Tải lên hoàn tất',
         uploadError: 'Lỗi tải lên',
         fileExists: 'Tập tin đã tồn tại',
@@ -1462,7 +1656,12 @@ window.MyFileManagerI18n = {
         confirmEmptyTrash: 'Bạn có chắc chắn muốn làm rỗng thùng rác? Hành động này không thể hoàn tác.',
         restoreSuccess: 'Tập tin đã được khôi phục thành công',
         emptyTrashSuccess: 'Thùng rác đã được làm rỗng thành công',
+        // Encryption & security messages
         setEncryptionKey: 'Đặt khóa mã hóa',
-        encryptionEnabled: 'Đã bật mã hóa. Các file sẽ tự động mã hóa/giải mã.'
+        enterEncryptionPassword: 'Nhập mật khẩu mã hóa:',
+        encryptionEnabled: 'Đã bật mã hóa. Các file sẽ tự động mã hóa/giải mã.',
+        actionNotAllowed: 'Không thể thực hiện thao tác này trên các tập tin đã chọn.',
+        foldersCannotDownload: 'Không thể tải xuống thư mục. Vui lòng chỉ chọn tập tin.',
+        dangerousExtension: 'Phát hiện phần mở rộng nguy hiểm! Không thể đổi tên thành:'
     }
 };
