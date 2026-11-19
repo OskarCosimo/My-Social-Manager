@@ -1,7 +1,8 @@
 /**
+ * // myfilemanager.css
  * My File Manager - Enhanced Stylesheet
  * Custom File Manager Style
- * 
+ *
  * @package MyFileManager
  * @author Oscar Cosimo & MYETV Team
  * @license MIT
@@ -19,10 +20,26 @@
     background: #fff;
     position: relative;
     overflow: hidden;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
     .myfilemanager * {
         box-sizing: border-box;
+    }
+
+    /* Re-enable text selection in modals and input fields */
+    .mfm-modal,
+    .mfm-modal *,
+    .mfm-search,
+    .myfilemanager input,
+    .myfilemanager textarea {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
     }
 
 /* Menu Bar - Windows Style */
@@ -32,7 +49,7 @@
     border-bottom: 1px solid #ddd;
     padding: 0;
     user-select: none;
-    justify-content: space-between; /* Space between menus and logo */
+    justify-content: space-between;
     align-items: center;
 }
 
@@ -47,12 +64,14 @@
     border: none;
     background: none;
     font-size: 14px;
+    color: inherit;
 }
 
     .mfm-menu-trigger:hover {
         background: #e9ecef;
     }
 
+    .mfm-menu.active .mfm-menu-trigger,
     .mfm-menu-trigger.active {
         background: #dee2e6;
     }
@@ -93,14 +112,13 @@
     }
 
 .mfm-menu-item-icon {
-    width: 16px;
+    min-width: 20px;
     text-align: center;
 }
 
+/* Shortcut display hidden - shown via tooltip */
 .mfm-menu-item-shortcut {
-    margin-left: auto;
-    font-size: 12px;
-    color: #6c757d;
+    display: none;
 }
 
 .mfm-menu-separator {
@@ -109,43 +127,13 @@
     margin: 4px 0;
 }
 
-/* Menu item improvements */
-.mfm-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.mfm-menu-item:hover {
-    background-color: #f0f0f0;
-}
-
-.mfm-menu-item.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.mfm-menu-item-icon {
-    min-width: 20px;
-    text-align: center;
-}
-
-/* Remove shortcut display - now in tooltip only */
-.mfm-menu-item-shortcut {
-    display: none;
-}
-
 /* Brand Logo */
 .mfm-menubar-brand {
     display: flex;
     align-items: center;
     padding: 4px 12px;
     border-left: 1px solid #ddd;
-    margin-left: auto; /* Push to right */
+    margin-left: auto;
 }
 
 .mfm-brand-link {
@@ -167,43 +155,11 @@
     display: block;
 }
 
-/* Dark theme - Brand */
-.mfm-theme-dark .mfm-menubar-brand {
-    border-left-color: #444;
-}
-
-/* Responsive - Brand logo */
-@media (max-width: 768px) {
-    .mfm-brand-logo {
-        max-width: 100px;
-        max-height: 20px;
-    }
-
-    .mfm-menubar-brand {
-        padding: 4px 8px;
-    }
-}
-
-@media (max-width: 480px) {
-    .mfm-brand-logo {
-        max-width: 80px;
-        max-height: 18px;
-    }
-
-    .mfm-menubar-brand {
-        padding: 4px 6px;
-    }
-
-    .mfm-menu-trigger {
-        padding: 6px 8px;
-        font-size: 13px;
-    }
-}
-
 /* Toolbar */
 .mfm-toolbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 8px 12px;
     border-bottom: 1px solid #ddd;
     background: #f8f9fa;
@@ -214,6 +170,7 @@
 .mfm-toolbar-right {
     display: flex;
     gap: 4px;
+    align-items: center;
 }
 
 .mfm-toolbar-center {
@@ -229,6 +186,9 @@
     cursor: pointer;
     transition: all 0.2s;
     font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
     .mfm-btn:hover:not(:disabled) {
@@ -312,12 +272,13 @@
 
 .mfm-files {
     padding: 8px;
+    min-height: 100%;
 }
 
-/* List view Explorer */
-.mfm-view-list .mfm-files {
-    padding: 0;
-}
+    /* List view Explorer */
+    .mfm-files.mfm-view-list {
+        padding: 0;
+    }
 
 .mfm-view-list .mfm-file {
     display: flex;
@@ -379,95 +340,108 @@
 }
 
 /* Grid view Explorer */
-.mfm-view-grid {
+.mfm-files.mfm-view-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-auto-rows: max-content;
     gap: 16px;
     padding: 16px;
+    align-content: start;
 }
 
-    .mfm-view-grid .mfm-file {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 12px;
-        cursor: pointer;
-        border-radius: 4px;
-        text-align: center;
-        transition: background-color 0.15s;
+.mfm-view-grid .mfm-file {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    text-align: center;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+    .mfm-view-grid .mfm-file:hover {
+        background: #f3f4f6;
     }
 
-        .mfm-view-grid .mfm-file:hover {
-            background: #f3f4f6;
+    .mfm-view-grid .mfm-file.mfm-selected {
+        background: #cce8ff;
+        border-color: #007bff;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    }
+
+        .mfm-view-grid .mfm-file.mfm-selected .mfm-file-name {
+            font-weight: 600;
+            color: #0056b3;
         }
 
-        /* Grid view - Selected file highlight */
-        .mfm-view-grid .mfm-file.mfm-selected {
-            background: #cce8ff;
-            border: 2px solid #007bff;
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
-        }
+.mfm-view-grid .mfm-file-icon {
+    width: 64px;
+    height: 64px;
+    font-size: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
 
-            /* Grid view selected - name highlight */
-            .mfm-view-grid .mfm-file.mfm-selected .mfm-file-name {
-                font-weight: 600;
-                color: #0056b3;
-            }
-
-    .mfm-view-grid .mfm-file-icon {
-        width: 64px;
-        height: 64px;
-        font-size: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 8px;
-    }
-
-    .mfm-view-grid .mfm-file-name {
-        width: 100%;
-        font-size: 12px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        word-wrap: break-word;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        line-height: 1.3;
-        max-height: 2.6em;
-    }
+.mfm-view-grid .mfm-file-name {
+    width: 100%;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    max-height: 2.6em;
+}
 
 /* Trash functionality */
 .mfm-trash-toolbar {
     display: none;
     justify-content: flex-end;
-    margin-top: 5px;
+    align-items: center;
+    gap: 8px;
     padding: 8px 16px;
     background: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-    border-radius: 0 0 6px 6px;
+    border-bottom: 1px solid #dee2e6;
 }
 
     .mfm-trash-toolbar .mfm-toolbar-btn {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 8px 16px;
+        padding: 6px 14px;
         font-weight: 500;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        background: #fff;
+        color: #212529;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
-.mfm-btn-danger {
-    background: #dc3545;
-    color: white;
-    border-color: #dc3545;
-}
+        .mfm-trash-toolbar .mfm-toolbar-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
 
-    .mfm-btn-danger:hover {
-        background: #c82333;
-        border-color: #bd2130;
+    .mfm-trash-toolbar .mfm-btn-danger {
+        background: #dc3545;
+        color: #fff;
+        border-color: #dc3545;
     }
 
-/* icons png 32x32 px */
+        .mfm-trash-toolbar .mfm-btn-danger:hover {
+            background: #c82333;
+            border-color: #bd2130;
+        }
+
+/* File icons - scale dynamically to .mfm-file-icon container (20px list / 64px grid) */
 .icon-trash-empty::before,
 .icon-trash-full::before,
 .icon-folder::before,
@@ -480,24 +454,27 @@
 .icon-word::before,
 .icon-excel::before,
 .icon-powerpoint::before,
-.icon-file::before{
+.icon-file::before {
     content: "";
     display: inline-block;
-    width: 32px;
-    height: 32px;
+    width: 100%;
+    height: 100%;
+    min-width: 20px;
+    min-height: 20px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
 }
-/* icons png toolbar 24x24 px */
+
+/* Toolbar icons 24x24 px */
 .mfm-icon-back::before,
 .mfm-icon-forward::before,
 .mfm-icon-up::before,
 .mfm-icon-refresh::before {
     content: "";
     display: inline-block;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -555,7 +532,6 @@
     background-image: url('../assets/file.png');
 }
 
-/* Icons */
 .mfm-icon-back::before {
     background-image: url('../assets/Folder-arrow-back.png');
 }
@@ -574,6 +550,7 @@
 
 /* Empty folder */
 .mfm-empty {
+    grid-column: 1 / -1;
     text-align: center;
     padding: 48px;
     color: #6c757d;
@@ -634,39 +611,16 @@
     background: #f8f9fa;
     font-size: 12px;
     color: #6c757d;
-    height: 26px;
+    min-height: 26px;
 }
 
-/* Status left */
 .mfm-status-left {
     white-space: nowrap;
 }
 
-/* Status right */
 .mfm-status-right {
     white-space: nowrap;
     text-align: right;
-}
-
-/* MEDIA QUERY: (< 600px) */
-@media (max-width: 600px) {
-    .mfm-statusbar {
-        flex-wrap: wrap;
-        align-items: flex-start;
-        height: auto;
-        min-height: 26px;
-        gap: 4px;
-    }
-
-    .mfm-status-left {
-        flex: 1 1 100%;
-        min-width: 0;
-    }
-
-    .mfm-status-right {
-        flex: 1 1 100%;
-        min-width: 0;
-    }
 }
 
 .mfm-status-quota span {
@@ -677,7 +631,7 @@
         color: #495057;
     }
 
-/* Modal */
+/* Info Modal */
 .mfm-modal {
     position: fixed;
     top: 0;
@@ -744,8 +698,9 @@
     padding: 20px;
 }
 
-/* Upload Progress Modal */
-.mfm-upload-modal {
+/* Upload & Download Progress Modals */
+.mfm-upload-modal,
+.mfm-download-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -758,15 +713,17 @@
     z-index: 10000;
 }
 
-.mfm-upload-modal-content {
-    background: white;
+.mfm-upload-modal-content,
+.mfm-download-modal-content {
+    background: #fff;
     border-radius: 8px;
     width: 500px;
     max-width: 90%;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.mfm-upload-modal-header {
+.mfm-upload-modal-header,
+.mfm-download-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -774,13 +731,15 @@
     border-bottom: 1px solid #e0e0e0;
 }
 
-.mfm-upload-modal-title {
+.mfm-upload-modal-title,
+.mfm-download-modal-title {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
 }
 
-.mfm-upload-modal-close {
+.mfm-upload-modal-close,
+.mfm-download-modal-close {
     background: none;
     border: none;
     font-size: 28px;
@@ -790,38 +749,36 @@
     padding: 0;
 }
 
-    .mfm-upload-modal-close:hover {
+    .mfm-upload-modal-close:hover,
+    .mfm-download-modal-close:hover {
         color: #333;
     }
 
-.mfm-upload-modal-body {
+.mfm-upload-modal-body,
+.mfm-download-modal-body {
     padding: 20px;
 }
 
-.mfm-upload-close-btn {
-    padding: 8px 20px;
-    background: #2196F3;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
+.mfm-download-info {
+    margin-bottom: 15px;
 }
 
-    .mfm-upload-close-btn:hover {
-        background: #1976D2;
-    }
-
-.mfm-upload-filename {
+.mfm-upload-filename,
+.mfm-download-filename {
     font-size: 14px;
     font-weight: 500;
     color: #333;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     word-wrap: break-word;
     overflow-wrap: break-word;
     max-width: 100%;
     white-space: normal;
     line-height: 1.4;
+}
+
+.mfm-download-filesize {
+    font-size: 13px;
+    color: #666;
 }
 
 .mfm-progress-container {
@@ -844,7 +801,7 @@
 .mfm-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #DAA520, #B8860B);
-    transition: width 0.3s ease;
+    transition: width 0.2s ease;
     border-radius: 8px;
     position: relative;
 }
@@ -860,7 +817,8 @@
     z-index: 1;
 }
 
-.mfm-upload-stats {
+.mfm-upload-stats,
+.mfm-download-stats {
     display: flex;
     justify-content: space-between;
     font-size: 13px;
@@ -869,163 +827,180 @@
 }
 
 .mfm-upload-speed,
-.mfm-upload-time {
+.mfm-upload-time,
+.mfm-download-speed,
+.mfm-download-time {
     font-weight: 500;
+}
+
+.mfm-upload-close-btn,
+.mfm-download-close-btn {
+    padding: 8px 20px;
+    background: #2196F3;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+    .mfm-upload-close-btn:hover,
+    .mfm-download-close-btn:hover {
+        background: #1976D2;
+    }
+
+.mfm-download-status,
+.mfm-upload-status {
+    padding: 12px;
+    border-radius: 4px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.mfm-download-status-message,
+.mfm-upload-status-message {
+    font-size: 13px;
+    color: #721c24;
 }
 
 /* Info display */
 .mfm-info p {
     margin: 8px 0;
     font-size: 13px;
+    word-break: break-word;
 }
 
-.mfm-info a {
-    color: #007bff;
-    text-decoration: none;
-}
-
-    .mfm-info a:hover {
-        text-decoration: underline;
-    }
-
-/* Disable text selection in file manager */
-.myfilemanager {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-/* Re-enable text selection in modals */
-.mfm-modal,
-.mfm-modal * {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: none;
-    user-select: text;
-}
-
-/* Re-enable text selection in input fields */
-.mfm-search,
-.myfilemanager input,
-.myfilemanager textarea {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-}
-
-/* Info row links */
+.mfm-info a,
 .mfm-info-row a {
     color: #007bff;
     text-decoration: none;
     word-break: break-all;
 }
 
-.mfm-info-row a:hover {
+    .mfm-info a:hover,
+    .mfm-info-row a:hover {
         text-decoration: underline;
-}
+    }
 
-/* Dark theme */
+/* =========================================================
+   Dark Theme
+   ========================================================= */
 .mfm-theme-dark {
     background: #1e1e1e;
     color: #e0e0e0;
     border-color: #444;
 }
 
-    .mfm-theme-dark .mfm-menubar {
+    .mfm-theme-dark .mfm-menubar,
+    .mfm-theme-dark .mfm-toolbar,
+    .mfm-theme-dark .mfm-addressbar,
+    .mfm-theme-dark .mfm-trash-toolbar {
         background: #2d2d2d;
         border-bottom-color: #444;
     }
 
+    .mfm-theme-dark .mfm-menubar-brand {
+        border-left-color: #444;
+    }
+
     .mfm-theme-dark .mfm-menu-trigger {
-        color: #e0e0e0; /* text color */
+        color: #e0e0e0;
     }
 
         .mfm-theme-dark .mfm-menu-trigger:hover {
             background: #3d3d3d;
         }
 
+        .mfm-theme-dark .mfm-menu.active .mfm-menu-trigger,
         .mfm-theme-dark .mfm-menu-trigger.active {
             background: #1a3a52;
         }
 
-    .mfm-theme-dark .mfm-menu-dropdown {
+    .mfm-theme-dark .mfm-menu-dropdown,
+    .mfm-theme-dark .mfm-context-menu {
         background: #2d2d2d;
         border-color: #444;
     }
 
-    .mfm-theme-dark .mfm-menu-item {
-        color: #e0e0e0; /* text color */
-    }
-
-        .mfm-theme-dark .mfm-menu-item:hover:not(.disabled) {
-            background: #1a3a52;
-        }
-
-    .mfm-theme-dark .mfm-menu-item-shortcut {
-        color: #999; /* shortcut color */
-    }
-
-    .mfm-theme-dark .mfm-toolbar {
-        background: #2d2d2d;
-        border-bottom-color: #444;
-    }
-
-    .mfm-theme-dark .mfm-addressbar {
-        background: #2d2d2d;
-        border-bottom-color: #444;
-    }
-
-    .mfm-theme-dark .mfm-addressbar-label {
-        color: #999; /* label color */
-    }
-
-    .mfm-theme-dark .mfm-breadcrumb {
-        background: #1e1e1e;
-        border-color: #444;
-        color: #e0e0e0; /* breadcrumb text color */
-    }
-
-    .mfm-theme-dark .mfm-breadcrumb-item {
-        color: #e0e0e0; /* breadcrumb item color */
-    }
-
-        .mfm-theme-dark .mfm-breadcrumb-item:hover {
-            background: #3d3d3d;
-        }
-
-    .mfm-theme-dark .mfm-breadcrumb-sep {
-        color: #999; /* separator color */
-    }
-
-    .mfm-theme-dark .mfm-btn {
-        background: #2d2d2d;
-        border-color: #444;
+    .mfm-theme-dark .mfm-menu-item,
+    .mfm-theme-dark .mfm-context-menu-item {
         color: #e0e0e0;
     }
 
-        .mfm-theme-dark .mfm-btn:hover:not(:disabled) {
-            background: #3d3d3d;
-            border-color: #555;
+        .mfm-theme-dark .mfm-menu-item:hover:not(.disabled),
+        .mfm-theme-dark .mfm-context-menu-item:hover:not(.disabled) {
+            background: #1a3a52;
         }
 
+    .mfm-theme-dark .mfm-menu-separator,
+    .mfm-theme-dark .mfm-context-menu-separator {
+        background: #444;
+    }
+
+    .mfm-theme-dark .mfm-menu-item-shortcut,
+    .mfm-theme-dark .mfm-addressbar-label,
+    .mfm-theme-dark .mfm-breadcrumb-sep,
+    .mfm-theme-dark .mfm-file-size,
+    .mfm-theme-dark .mfm-file-type,
+    .mfm-theme-dark .mfm-file-date,
+    .mfm-theme-dark .mfm-empty {
+        color: #999;
+    }
+
+    .mfm-theme-dark .mfm-breadcrumb,
     .mfm-theme-dark .mfm-search {
         background: #1e1e1e;
         border-color: #444;
         color: #e0e0e0;
     }
 
-        .mfm-theme-dark .mfm-search::placeholder {
-            color: #999; /* placeholder color */
+    .mfm-theme-dark .mfm-breadcrumb-item {
+        color: #e0e0e0;
+    }
+
+        .mfm-theme-dark .mfm-breadcrumb-item:hover {
+            background: #3d3d3d;
+        }
+
+    .mfm-theme-dark .mfm-search::placeholder {
+        color: #999;
+    }
+
+    .mfm-theme-dark .mfm-btn,
+    .mfm-theme-dark .mfm-trash-toolbar .mfm-toolbar-btn {
+        background: #2d2d2d;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+
+        .mfm-theme-dark .mfm-btn:hover:not(:disabled),
+        .mfm-theme-dark .mfm-trash-toolbar .mfm-toolbar-btn:hover {
+            background: #3d3d3d;
+            border-color: #555;
+        }
+
+    .mfm-theme-dark .mfm-trash-toolbar .mfm-btn-danger {
+        background: #c82333;
+        border-color: #bd2130;
+        color: #fff;
+    }
+
+        .mfm-theme-dark .mfm-trash-toolbar .mfm-btn-danger:hover {
+            background: #a71d2a;
+            border-color: #9b1a26;
         }
 
     .mfm-theme-dark .mfm-content {
         background: #1e1e1e;
     }
 
+    .mfm-theme-dark .mfm-drag-over {
+        background: #1a2d3d;
+        outline-color: #4da3ff;
+    }
+
     .mfm-theme-dark .mfm-file {
-        color: #e0e0e0; /* file text color */
+        color: #e0e0e0;
     }
 
         .mfm-theme-dark .mfm-file:hover {
@@ -1036,23 +1011,12 @@
             background: #1a3a52;
         }
 
-    .mfm-theme-dark .mfm-file-size,
-    .mfm-theme-dark .mfm-file-type,
-    .mfm-theme-dark .mfm-file-date {
-        color: #999; /* metadata color */
+    .mfm-theme-dark .mfm-view-grid .mfm-file.mfm-selected {
+        border-color: #4da3ff;
     }
 
-    .mfm-theme-dark .mfm-context-menu {
-        background: #2d2d2d;
-        border-color: #444;
-    }
-
-    .mfm-theme-dark .mfm-context-menu-item {
-        color: #e0e0e0; /* context menu text color */
-    }
-
-        .mfm-theme-dark .mfm-context-menu-item:hover:not(.disabled) {
-            background: #1a3a52;
+        .mfm-theme-dark .mfm-view-grid .mfm-file.mfm-selected .mfm-file-name {
+            color: #80bdff;
         }
 
     .mfm-theme-dark .mfm-statusbar {
@@ -1065,32 +1029,73 @@
         color: #e0e0e0;
     }
 
-    .mfm-theme-dark .mfm-modal-dialog {
+    /* Dark theme - Modals (Info, Upload, Download) */
+    .mfm-theme-dark .mfm-modal-dialog,
+    .mfm-theme-dark .mfm-upload-modal-content,
+    .mfm-theme-dark .mfm-download-modal-content {
         background: #2d2d2d;
-        color: #e0e0e0; /* modal text color */
+        color: #e0e0e0;
     }
 
-    .mfm-theme-dark .mfm-modal-header {
+    .mfm-theme-dark .mfm-modal-header,
+    .mfm-theme-dark .mfm-upload-modal-header,
+    .mfm-theme-dark .mfm-download-modal-header {
         border-bottom-color: #444;
     }
 
-        .mfm-theme-dark .mfm-modal-header h3 {
-            color: #e0e0e0; /* modal title color */
-        }
-
-    .mfm-theme-dark .mfm-modal-close {
-        color: #999; /* close button color */
-    }
-
-        .mfm-theme-dark .mfm-modal-close:hover {
+        .mfm-theme-dark .mfm-modal-header h3,
+        .mfm-theme-dark .mfm-upload-modal-title,
+        .mfm-theme-dark .mfm-download-modal-title,
+        .mfm-theme-dark .mfm-upload-filename,
+        .mfm-theme-dark .mfm-download-filename {
             color: #e0e0e0;
         }
 
-    .mfm-theme-dark .mfm-empty {
-        color: #999; /* empty folder text color */
+    .mfm-theme-dark .mfm-modal-close,
+    .mfm-theme-dark .mfm-upload-modal-close,
+    .mfm-theme-dark .mfm-download-modal-close,
+    .mfm-theme-dark .mfm-upload-speed,
+    .mfm-theme-dark .mfm-upload-time,
+    .mfm-theme-dark .mfm-download-filesize,
+    .mfm-theme-dark .mfm-download-speed,
+    .mfm-theme-dark .mfm-download-time {
+        color: #999;
     }
 
-/* Responsive */
+        .mfm-theme-dark .mfm-modal-close:hover,
+        .mfm-theme-dark .mfm-upload-modal-close:hover,
+        .mfm-theme-dark .mfm-download-modal-close:hover {
+            color: #e0e0e0;
+        }
+
+    .mfm-theme-dark .mfm-upload-status,
+    .mfm-theme-dark .mfm-download-status {
+        background: #3d2426 !important;
+        border-color: #5c3638 !important;
+        color: #f8d7da !important;
+    }
+
+    .mfm-theme-dark .mfm-upload-status-message,
+    .mfm-theme-dark .mfm-download-status-message {
+        color: #f8d7da;
+    }
+
+    .mfm-theme-dark .mfm-progress-container {
+        background-color: #1e1e1e;
+    }
+
+    .mfm-theme-dark .mfm-progress-text {
+        color: #e0e0e0;
+    }
+
+    .mfm-theme-dark .mfm-info a,
+    .mfm-theme-dark .mfm-info-row a {
+        color: #66b3ff;
+    }
+
+/* =========================================================
+   Responsive Breakpoints
+   ========================================================= */
 @media (max-width: 768px) {
     .mfm-addressbar {
         display: none;
@@ -1100,7 +1105,7 @@
         width: 120px;
     }
 
-    .mfm-view-grid .mfm-files {
+    .mfm-files.mfm-view-grid {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     }
 
@@ -1108,187 +1113,69 @@
     .mfm-view-list .mfm-file-date {
         display: none;
     }
-}
 
-/* Download Progress Modal */
-.mfm-download-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-}
-
-.mfm-download-modal-content {
-    background: white;
-    border-radius: 8px;
-    width: 500px;
-    max-width: 90%;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.mfm-download-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.mfm-download-modal-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.mfm-download-modal-close {
-    background: none;
-    border: none;
-    font-size: 28px;
-    cursor: pointer;
-    color: #999;
-    line-height: 1;
-    padding: 0;
-}
-
-    .mfm-download-modal-close:hover {
-        color: #333;
+    .mfm-brand-logo {
+        max-width: 100px;
+        max-height: 20px;
     }
 
-.mfm-download-modal-body {
-    padding: 20px;
-}
-
-.mfm-download-info {
-    margin-bottom: 15px;
-}
-
-.mfm-download-filename {
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 5px;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    max-width: 100%;
-    white-space: normal;
-    line-height: 1.4;
-}
-
-.mfm-download-filesize {
-    font-size: 13px;
-    color: #666;
-}
-
-.mfm-download-stats {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #666;
-    margin-top: 10px;
-}
-
-.mfm-download-speed,
-.mfm-download-time {
-    font-weight: 500;
-}
-
-.mfm-download-close-btn {
-    padding: 8px 20px;
-    background: #2196F3;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-    .mfm-download-close-btn:hover {
-        background: #1976D2;
+    .mfm-menubar-brand {
+        padding: 4px 8px;
     }
-
-.mfm-download-status {
-    padding: 12px;
-    border-radius: 4px;
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
 }
 
-.mfm-download-status-message {
-    font-size: 13px;
-    color: #721c24;
-}
-
-/* Dark theme - Download Modal */
-.mfm-theme-dark .mfm-download-modal-content {
-    background: #2d2d2d;
-    color: #e0e0e0;
-}
-
-.mfm-theme-dark .mfm-download-modal-header {
-    border-bottom-color: #444;
-}
-
-.mfm-theme-dark .mfm-download-modal-title {
-    color: #e0e0e0;
-}
-
-.mfm-theme-dark .mfm-download-modal-close {
-    color: #999;
-}
-
-    .mfm-theme-dark .mfm-download-modal-close:hover {
-        color: #e0e0e0;
-    }
-
-.mfm-theme-dark .mfm-download-filename {
-    color: #e0e0e0;
-}
-
-.mfm-theme-dark .mfm-download-filesize,
-.mfm-theme-dark .mfm-download-speed,
-.mfm-theme-dark .mfm-download-time {
-    color: #999;
-}
-
-.mfm-theme-dark .mfm-download-status {
-    background: #3d2426;
-    border-color: #5c3638;
-}
-
-.mfm-theme-dark .mfm-download-status-message {
-    color: #f8d7da;
-}
-
-.mfm-theme-dark .mfm-progress-container {
-    background-color: #1e1e1e;
-}
-
-.mfm-theme-dark .mfm-progress-text {
-    color: #e0e0e0;
-}
-
-/* Responsive - Download Modal */
 @media (max-width: 600px) {
+    .mfm-statusbar {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        height: auto;
+        min-height: 26px;
+        gap: 4px;
+    }
+
+    .mfm-status-left,
+    .mfm-status-right {
+        flex: 1 1 100%;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .mfm-modal-dialog {
+        min-width: 0;
+        width: 95%;
+    }
+
+    .mfm-upload-modal-content,
     .mfm-download-modal-content {
         width: 95%;
     }
 
-    .mfm-download-modal-header {
-        padding: 15px;
-    }
-
+    .mfm-upload-modal-header,
+    .mfm-download-modal-header,
+    .mfm-upload-modal-body,
     .mfm-download-modal-body {
         padding: 15px;
     }
 
+    .mfm-upload-stats,
     .mfm-download-stats {
         flex-direction: column;
         gap: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mfm-brand-logo {
+        max-width: 80px;
+        max-height: 18px;
+    }
+
+    .mfm-menubar-brand {
+        padding: 4px 6px;
+    }
+
+    .mfm-menu-trigger {
+        padding: 6px 8px;
+        font-size: 13px;
     }
 }
