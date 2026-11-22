@@ -4,7 +4,7 @@ if (!isset($_SESSION['user_id'])) exit;
 require_once __DIR__ . '/../partials/header.php'; 
 ?>
 
-<div class="d-flex main-wrapper bg-light">
+<div class="d-flex main-wrapper bg-body-tertiary">
     
     <?php 
     $activeMenu = 'groups'; 
@@ -12,7 +12,7 @@ require_once __DIR__ . '/../partials/header.php';
     ?>
 
     <main class="content-area w-100 p-4">
-        <h1 class="h2 mb-4 fw-bold text-dark d-inline-flex align-items-center gap-2">
+        <h1 class="h2 mb-4 fw-bold text-body d-inline-flex align-items-center gap-2">
             <i class="bi bi-collection text-primary"></i> <?= __('groups_management') ?>
         </h1>
 
@@ -29,9 +29,9 @@ require_once __DIR__ . '/../partials/header.php';
             
             <!-- Left Column: Form to Create/Edit Groups -->
             <div class="col-lg-5">
-                <div class="card shadow-sm border-0 position-sticky" style="top: 1.5rem;">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0 fw-bold text-secondary d-inline-flex align-items-center gap-2" id="form-title">
+                <div class="card shadow-sm border-0 bg-body position-sticky" style="top: 1.5rem;">
+                    <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 fw-bold text-body-secondary d-inline-flex align-items-center gap-2" id="form-title">
                             <i class="bi bi-plus-circle text-primary"></i> <?= __('create_new_group') ?>
                         </h5>
                         <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="cancel-edit-btn">
@@ -44,27 +44,27 @@ require_once __DIR__ . '/../partials/header.php';
                             <input type="hidden" name="group_id" id="form-group-id" value="">
 
                             <div class="mb-4">
-                                <label for="groupName" class="form-label fw-bold text-dark"><?= __('group_name') ?></label>
+                                <label for="groupName" class="form-label fw-bold text-body"><?= __('group_name') ?></label>
                                 <input type="text" class="form-control form-control-lg shadow-sm border-secondary-subtle" id="groupName" name="name" required placeholder="<?= __('group_name_placeholder') ?>">
                             </div>
                             
                             <div class="mb-4">
-                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-share"></i> <?= __('select_social_accounts') ?>
                                 </label>
                                 
                                 <?php if (empty($accounts)): ?>
                                     <div class="alert alert-warning border-warning shadow-sm">
-                                        <p class="text-dark small mb-0">
+                                        <p class="small mb-0">
                                             <?= __('no_accounts_connected_yet') ?><br>
                                             <a href="/accounts" class="fw-bold"><?= __('connect_one_now') ?></a>
                                         </p>
                                     </div>
                                 <?php else: ?>
                                     <!-- DataTable for Account Selection -->
-                                    <div class="table-responsive bg-light border rounded p-2 shadow-sm">
+                                    <div class="table-responsive bg-body-tertiary border rounded p-2 shadow-sm">
                                         <table class="table table-hover align-middle mb-0 dt-table w-100" id="group-accounts-table">
-                                            <thead class="table-light">
+                                            <thead>
                                                 <tr>
                                                     <th style="width: 40px;" class="text-center">✓</th>
                                                     <th><?= __('account_details') ?></th>
@@ -84,7 +84,7 @@ require_once __DIR__ . '/../partials/header.php';
                                                         </td>
                                                         <td>
                                                             <label class="form-check-label w-100 cursor-pointer d-flex flex-row align-items-center gap-2" for="acc_<?= $accId ?>">
-                                                                <span class="fw-bold text-dark"><?= htmlspecialchars($platformName) ?></span>
+                                                                <span class="fw-bold text-body"><?= htmlspecialchars($platformName) ?></span>
                                                                 <?php if (!empty($pluginId)): ?>
                                                                     <span class="badge bg-secondary" style="font-size: 0.7em;">
                                                                         <?= htmlspecialchars(ucfirst($pluginId)) ?>
@@ -97,7 +97,7 @@ require_once __DIR__ . '/../partials/header.php';
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div class="form-text mt-2 text-muted small">
+                                    <div class="form-text mt-2 text-body-secondary small">
                                         <?= __('group_accounts_help') ?>
                                     </div>
                                 <?php endif; ?>
@@ -113,15 +113,15 @@ require_once __DIR__ . '/../partials/header.php';
 
             <!-- Right Column: Existing Groups List -->
             <div class="col-lg-7">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                        <h5 class="card-title mb-0 fw-bold text-secondary d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border-0 bg-body">
+                    <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                        <h5 class="card-title mb-0 fw-bold text-body-secondary d-inline-flex align-items-center gap-2">
                             <i class="bi bi-list-task text-primary"></i> <?= __('your_existing_groups') ?>
                         </h5>
                     </div>
                     <div class="card-body p-4">
                         <?php if (empty($groups)): ?>
-                            <div class="text-center text-muted p-5 bg-light rounded border border-dashed">
+                            <div class="text-center text-body-secondary p-5 bg-body-tertiary rounded border border-dashed">
                                 <h4><?= __('no_groups_found') ?></h4>
                                 <p class="mb-0"><?= __('no_groups_found_sub') ?></p>
                             </div>
@@ -129,7 +129,7 @@ require_once __DIR__ . '/../partials/header.php';
                             <!-- DataTable for Group List -->
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0 dt-table w-100">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
                                             <th><?= __('group_name') ?></th>
                                             <th><?= __('accounts_linked') ?></th>
