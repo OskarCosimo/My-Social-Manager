@@ -88,62 +88,62 @@ setTimeout(window.checkAdminHash, 50);
         <!-- Main Navigation Tabs with Direct Switch -->
         <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link active fw-bold text-dark d-inline-flex align-items-center gap-2" id="users-tab" data-tab-id="users" onclick="showAdminTab('users', this)">
+                <button type="button" class="nav-link active fw-bold d-inline-flex align-items-center gap-2" id="users-tab" data-tab-id="users" onclick="showAdminTab('users', this)">
                     <i class="bi bi-people text-primary"></i> <?= __('admin_tab_users') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="branding-tab" data-tab-id="branding" onclick="showAdminTab('branding', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="branding-tab" data-tab-id="branding" onclick="showAdminTab('branding', this)">
                     <i class="bi bi-palette text-danger"></i> <?= __('admin_tab_branding') ?? 'Branding & Logo' ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="legal-tab" data-tab-id="legal" onclick="showAdminTab('legal', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="legal-tab" data-tab-id="legal" onclick="showAdminTab('legal', this)">
                     <i class="bi bi-file-earmark-text text-primary"></i> <?= __('admin_tab_legal') ?? 'Privacy & Terms' ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="auth-tab" data-tab-id="auth" onclick="showAdminTab('auth', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="auth-tab" data-tab-id="auth" onclick="showAdminTab('auth', this)">
                     <i class="bi bi-shield-check text-success"></i> <?= __('admin_tab_security') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="plugins-tab" data-tab-id="plugins" onclick="showAdminTab('plugins', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="plugins-tab" data-tab-id="plugins" onclick="showAdminTab('plugins', this)">
                     <i class="bi bi-plugin text-warning"></i> <?= __('admin_tab_plugins') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="payments-tab" data-tab-id="payments" onclick="showAdminTab('payments', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="payments-tab" data-tab-id="payments" onclick="showAdminTab('payments', this)">
                     <i class="bi bi-credit-card-2-front text-info"></i> <?= __('admin_tab_payments') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="translations-tab" data-tab-id="translations" onclick="showAdminTab('translations', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="translations-tab" data-tab-id="translations" onclick="showAdminTab('translations', this)">
                     <i class="bi bi-globe text-secondary"></i> <?= __('admin_tab_translations') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="ai-tab" data-tab-id="ai" onclick="showAdminTab('ai', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="ai-tab" data-tab-id="ai" onclick="showAdminTab('ai', this)">
                     <i class="bi bi-robot text-primary"></i> <?= __('admin_tab_ai') ?? 'AI & Translation APIs' ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="cron-tab" data-tab-id="cron" onclick="showAdminTab('cron', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="cron-tab" data-tab-id="cron" onclick="showAdminTab('cron', this)">
                     <i class="bi bi-clock-history text-danger"></i> <?= __('admin_tab_cronjobs') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="email-tab" data-tab-id="email" onclick="showAdminTab('email', this)">
-                    <i class="bi bi-envelope-at text-dark"></i> <?= __('admin_tab_email') ?>
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="email-tab" data-tab-id="email" onclick="showAdminTab('email', this)">
+                    <i class="bi bi-envelope-at text-info"></i> <?= __('admin_tab_email') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="scripts-tab" data-tab-id="scripts" onclick="showAdminTab('scripts', this)">
-                    <i class="bi bi-code-slash" style="color: #6f42c1;"></i> <?= __('admin_tab_scripts') ?>
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="scripts-tab" data-tab-id="scripts" onclick="showAdminTab('scripts', this)">
+                    <i class="bi bi-code-slash" style="color: #8b5cf6;"></i> <?= __('admin_tab_scripts') ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button type="button" class="nav-link fw-bold text-dark d-inline-flex align-items-center gap-2" id="updater-tab" data-tab-id="updater" onclick="showAdminTab('updater', this)">
+                <button type="button" class="nav-link fw-bold d-inline-flex align-items-center gap-2" id="updater-tab" data-tab-id="updater" onclick="showAdminTab('updater', this)">
                     <i class="bi bi-cloud-arrow-down-fill text-primary"></i> <?= __('admin_tab_updater') ?? 'System Updates' ?>
                 </button>
             </li>
@@ -153,11 +153,11 @@ setTimeout(window.checkAdminHash, 50);
             
             <!-- Users Tab -->
             <div class="tab-pane fade show active" id="users" role="tabpanel" style="display: block;">
-                <div class="card shadow-sm border-0">
+                <div class="card shadow-sm border">
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
+                                <thead>
                                     <tr>
                                         <th><?= __('table_id') ?></th>
                                         <th><?= __('table_email') ?></th>
@@ -187,12 +187,12 @@ setTimeout(window.checkAdminHash, 50);
                                         </td>
                                         <td><span class="badge bg-<?= $u['role'] === 'admin' ? 'danger' : 'secondary' ?>"><?= strtoupper($u['role']) ?></span></td>
                                         <td>
-                                            <span class="badge bg-<?= $u['status'] === 'active' ? 'success' : 'dark' ?>">
+                                            <span class="badge bg-<?= $u['status'] === 'active' ? 'success' : 'secondary' ?>">
                                                 <?= strtoupper($u['status']) ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light text-dark border">
+                                            <span class="badge bg-body-secondary text-body border">
                                                 <?= htmlspecialchars($plansMap[$u['plan_id']] ?? 'Default') ?>
                                             </span>
                                         </td>
@@ -212,8 +212,8 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Branding & Logo Tab -->
             <div class="tab-pane fade" id="branding" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-palette text-danger"></i> <?= __('branding_logo_favicon') ?? 'Branding, Logo & Favicon' ?>
                     </div>
                     <div class="card-body">
@@ -227,16 +227,16 @@ setTimeout(window.checkAdminHash, 50);
                             $displayFavicon = !empty($currentFavicon) ? $currentFavicon : $defaultFavicon;
                         ?>
                         <form action="/admin/settings/branding" method="POST" enctype="multipart/form-data">
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
+                                <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-image text-primary"></i> <?= __('app_header_logo') ?? 'Application Header Logo' ?>
                                 </h6>
                                 <div class="row align-items-center g-3 mb-3">
                                     <div class="col-md-4 text-center">
-                                        <div class="p-3 bg-dark rounded d-inline-block">
+                                        <div class="p-3 bg-dark border rounded d-inline-block">
                                             <img src="<?= htmlspecialchars($displayLogo) ?>" alt="Current Logo Preview" style="max-width: 200px; max-height: 60px; object-fit: contain;">
                                         </div>
-                                        <small class="d-block text-muted mt-1">Default: <code>mysocialmanager_logo.png</code></small>
+                                        <small class="d-block text-body-secondary mt-1">Default: <code>mysocialmanager_logo.png</code></small>
                                     </div>
                                     <div class="col-md-8">
                                         <div class="mb-3">
@@ -261,23 +261,23 @@ setTimeout(window.checkAdminHash, 50);
 
                                 <div class="form-check form-switch pt-2 border-top">
                                     <input class="form-check-input" type="checkbox" name="hide_sidebar_logo" id="hideSidebarLogo" value="1" <?= ($sysSettings['hide_sidebar_logo'] ?? '0') === '1' ? 'checked' : '' ?>>
-                                    <label class="form-check-label fw-bold text-dark small" for="hideSidebarLogo">
+                                    <label class="form-check-label fw-bold small" for="hideSidebarLogo">
                                         <?= __('hide_sidebar_logo') ?? 'Hide Logo in Sidebar' ?>
                                     </label>
                                     <div class="form-text small"><?= __('hide_sidebar_logo_desc') ?? 'If checked, the logo image will not be rendered in the sidebar header.' ?></div>
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
+                                <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-browser-chrome text-success"></i> <?= __('browser_favicon') ?? 'Browser Favicon (.png / .ico)' ?>
                                 </h6>
                                 <div class="row align-items-center g-3 mb-3">
                                     <div class="col-md-4 text-center">
-                                        <div class="p-3 bg-white border rounded d-inline-block shadow-sm">
+                                        <div class="p-3 bg-body border rounded d-inline-block shadow-sm">
                                             <img src="<?= htmlspecialchars($displayFavicon) ?>" alt="Current Favicon Preview" style="width: 48px; height: 48px; object-fit: contain;">
                                         </div>
-                                        <small class="d-block text-muted mt-1">Default: <code>favicon.png</code></small>
+                                        <small class="d-block text-body-secondary mt-1">Default: <code>favicon.png</code></small>
                                     </div>
                                     <div class="col-md-8">
                                         <div class="mb-3">
@@ -320,12 +320,12 @@ setTimeout(window.checkAdminHash, 50);
                     $termsUrl       = $sysSettings['terms_url'] ?? '';
                     $termsContent   = $sysSettings['terms_content'] ?? '';
                 ?>
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-file-earmark-text text-primary"></i> <?= __('legal_pages_config') ?? 'Privacy Policy & Terms and Conditions' ?>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small mb-4">
+                        <p class="text-body-secondary small mb-4">
                             <?= __('legal_pages_desc') ?? 'Configure Privacy Policy and Terms & Conditions links displayed in the website footer. For each document, you can choose to host a custom page internally or link to an external URL.' ?>
                         </p>
 
@@ -333,9 +333,9 @@ setTimeout(window.checkAdminHash, 50);
                         <form id="legalSettingsForm" action="/admin/settings/legal" method="POST">
 
                             <!-- Privacy Policy Section -->
-                            <div class="border rounded p-3 mb-4 bg-light">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                    <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                                    <h6 class="fw-bold m-0 d-flex align-items-center gap-2">
                                         <i class="bi bi-shield-lock text-primary"></i> <?= __('privacy_policy') ?? 'Privacy Policy' ?>
                                     </h6>
                                     <?php if ($privacyMode === 'internal'): ?>
@@ -362,15 +362,15 @@ setTimeout(window.checkAdminHash, 50);
 
                                 <div id="privacy_internal_box" class="mb-2" style="<?= $privacyMode === 'internal' ? '' : 'display:none;' ?>">
                                     <label class="form-label small fw-bold" for="privacy_content"><?= __('internal_page_content') ?? 'Internal Page Content (Plain Text or HTML)' ?></label>
-                                    <textarea name="privacy_content" id="privacy_content" class="form-control font-monospace bg-white" rows="10" placeholder="<h2>Privacy Policy</h2>&#10;<p>Write your Privacy Policy here...</p>"><?= htmlspecialchars($privacyContent) ?></textarea>
+                                    <textarea name="privacy_content" id="privacy_content" class="form-control font-monospace" rows="10" placeholder="<h2>Privacy Policy</h2>&#10;<p>Write your Privacy Policy here...</p>"><?= htmlspecialchars($privacyContent) ?></textarea>
                                     <div class="form-text small"><?= __('internal_content_help') ?? 'Supports both plain text (line breaks preserved automatically) and standard HTML tags (&lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;a&gt;, &lt;strong&gt;). Accessible at /privacy-policy.' ?></div>
                                 </div>
                             </div>
 
                             <!-- Terms and Conditions Section -->
-                            <div class="border rounded p-3 mb-4 bg-light">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                    <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                                    <h6 class="fw-bold m-0 d-flex align-items-center gap-2">
                                         <i class="bi bi-file-check text-success"></i> <?= __('terms_and_conditions') ?? 'Terms and Conditions' ?>
                                     </h6>
                                     <?php if ($termsMode === 'internal'): ?>
@@ -397,7 +397,7 @@ setTimeout(window.checkAdminHash, 50);
 
                                 <div id="terms_internal_box" class="mb-2" style="<?= $termsMode === 'internal' ? '' : 'display:none;' ?>">
                                     <label class="form-label small fw-bold" for="terms_content"><?= __('internal_page_content') ?? 'Internal Page Content (Plain Text or HTML)' ?></label>
-                                    <textarea name="terms_content" id="terms_content" class="form-control font-monospace bg-white" rows="10" placeholder="<h2>Terms and Conditions</h2>&#10;<p>Write your Terms and Conditions here...</p>"><?= htmlspecialchars($termsContent) ?></textarea>
+                                    <textarea name="terms_content" id="terms_content" class="form-control font-monospace" rows="10" placeholder="<h2>Terms and Conditions</h2>&#10;<p>Write your Terms and Conditions here...</p>"><?= htmlspecialchars($termsContent) ?></textarea>
                                     <div class="form-text small"><?= __('internal_content_help') ?? 'Supports both plain text (line breaks preserved automatically) and standard HTML tags (&lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;a&gt;, &lt;strong&gt;). Accessible at /terms-and-conditions.' ?></div>
                                 </div>
                             </div>
@@ -412,13 +412,13 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Security & Login Tab -->
             <div class="tab-pane fade" id="auth" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-shield-check text-primary"></i> <?= __('social_login_security_config') ?>
                     </div>
                     <div class="card-body">
                         <form action="/admin/settings/auth" method="POST">
-                            <div class="border rounded p-3 mb-3 bg-light">
+                            <div class="border rounded p-3 mb-3 bg-body-tertiary">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" name="enable_social_google" id="enableGoogle" value="1" <?= ($sysSettings['enable_social_google'] ?? '0') === '1' ? 'checked' : '' ?>>
                                     <label class="form-check-label fw-bold" for="enableGoogle"><?= __('enable_google_login') ?></label>
@@ -434,12 +434,12 @@ setTimeout(window.checkAdminHash, 50);
                                 <div class="alert alert-secondary p-2 mb-0">
                                     <small class="fw-bold d-block mb-1"><?= __('authorized_redirect_uri') ?></small>
                                     <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control bg-light" readonly value="<?= Config::APP_URL ?>/auth/callback/google">
+                                        <input type="text" class="form-control bg-body-secondary text-body" readonly value="<?= Config::APP_URL ?>/auth/callback/google">
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-3 bg-light">
+                            <div class="border rounded p-3 mb-3 bg-body-tertiary">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" name="enable_social_facebook" id="enableFacebook" value="1" <?= ($sysSettings['enable_social_facebook'] ?? '0') === '1' ? 'checked' : '' ?>>
                                     <label class="form-check-label fw-bold" for="enableFacebook"><?= __('enable_facebook_login') ?></label>
@@ -455,12 +455,12 @@ setTimeout(window.checkAdminHash, 50);
                                 <div class="alert alert-secondary p-2 mb-0">
                                     <small class="fw-bold d-block mb-1"><?= __('authorized_redirect_uri') ?></small>
                                     <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control bg-light" readonly value="<?= Config::APP_URL ?>/auth/callback/facebook">
+                                        <input type="text" class="form-control bg-body-secondary text-body" readonly value="<?= Config::APP_URL ?>/auth/callback/facebook">
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-3 bg-light">
+                            <div class="border rounded p-3 mb-3 bg-body-tertiary">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" name="enable_social_microsoft" id="enableMicrosoft" value="1" <?= ($sysSettings['enable_social_microsoft'] ?? '0') === '1' ? 'checked' : '' ?>>
                                     <label class="form-check-label fw-bold" for="enableMicrosoft"><?= __('enable_microsoft_login') ?></label>
@@ -476,15 +476,15 @@ setTimeout(window.checkAdminHash, 50);
                                 <div class="alert alert-secondary p-2 mb-0">
                                     <small class="fw-bold d-block mb-1"><?= __('authorized_redirect_uri') ?></small>
                                     <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control bg-light" readonly value="<?= Config::APP_URL ?>/auth/callback/microsoft">
+                                        <input type="text" class="form-control bg-body-secondary text-body" readonly value="<?= Config::APP_URL ?>/auth/callback/microsoft">
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-3 bg-light border-warning">
+                            <div class="border rounded p-3 mb-3 bg-body-tertiary border-warning">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" name="enable_social_myetv" id="enableMyetv" value="1" <?= ($sysSettings['enable_social_myetv'] ?? '0') === '1' ? 'checked' : '' ?>>
-                                    <label class="form-check-label fw-bold text-dark" for="enableMyetv"><?= __('enable_myetv_login') ?></label>
+                                    <label class="form-check-label fw-bold" for="enableMyetv"><?= __('enable_myetv_login') ?></label>
                                 </div>
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-6">
@@ -497,15 +497,15 @@ setTimeout(window.checkAdminHash, 50);
                                 <div class="alert alert-warning p-2 mb-0">
                                     <small class="fw-bold d-block mb-1"><?= __('authorized_redirect_uri') ?></small>
                                     <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control bg-light" readonly value="<?= Config::APP_URL ?>/auth/callback/myetv">
+                                        <input type="text" class="form-control bg-body-secondary text-body" readonly value="<?= Config::APP_URL ?>/auth/callback/myetv">
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-4 bg-light border-info">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary border-info">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" name="enable_turnstile" id="enableTurnstile" value="1" <?= ($sysSettings['enable_turnstile'] ?? '0') === '1' ? 'checked' : '' ?>>
-                                    <label class="form-check-label fw-bold text-dark" for="enableTurnstile"><?= __('enable_turnstile_antibot') ?></label>
+                                    <label class="form-check-label fw-bold" for="enableTurnstile"><?= __('enable_turnstile_antibot') ?></label>
                                 </div>
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-6">
@@ -537,7 +537,7 @@ setTimeout(window.checkAdminHash, 50);
                             $hasGuide = method_exists($plugin, 'getAdminInstructionsHtml');
                         ?>
                         <div class="col-md-6 mb-4">
-                            <div class="card shadow-sm h-100">
+                            <div class="card shadow-sm border h-100">
                                 <form action="/admin/plugin/save" method="POST" class="d-flex flex-column h-100 m-0">
                                     <input type="hidden" name="plugin_id" value="<?= htmlspecialchars($plugin->getId()) ?>">
                                     
@@ -564,7 +564,7 @@ setTimeout(window.checkAdminHash, 50);
                                         <div>
                                             <?php $fields = $plugin->getSettingsFields(); ?>
                                             <?php if (empty($fields)): ?>
-                                                <p class="text-muted small mb-0"><?= __('no_global_api_settings') ?></p>
+                                                <p class="text-body-secondary small mb-0"><?= __('no_global_api_settings') ?></p>
                                             <?php else: ?>
                                                 <?php foreach ($fields as $key => $field): ?>
                                                     <div class="mb-3">
@@ -596,7 +596,7 @@ setTimeout(window.checkAdminHash, 50);
                                         <div class="modal-body p-4 fs-6">
                                             <?= $plugin->getAdminInstructionsHtml() ?>
                                         </div>
-                                        <div class="modal-footer bg-light">
+                                        <div class="modal-footer bg-body-tertiary">
                                             <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal"><?= __('close') ?? 'Close' ?></button>
                                         </div>
                                     </div>
@@ -609,23 +609,23 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Payments & Fees Tab -->
             <div class="tab-pane fade" id="payments" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-credit-card-2-front text-info"></i> <?= __('master_payment_gateways') ?>
                     </div>
                     <div class="card-body">
                         <form action="/admin/settings/payments" method="POST">
-                            <div class="mb-4 p-3 border rounded bg-light">
+                            <div class="mb-4 p-3 border rounded bg-body-tertiary">
                                 <h6 class="fw-bold text-primary mb-2"><?= __('platform_commission') ?></h6>
                                 <div class="input-group" style="max-width: 250px;">
                                     <input type="number" step="0.1" name="platform_commission_percent" class="form-control" value="<?= htmlspecialchars($sysSettings['platform_commission_percent'] ?? '5.0') ?>">
                                     <span class="input-group-text">%</span>
                                 </div>
-                                <small class="text-muted d-block mt-1"><?= __('platform_commission_help') ?></small>
+                                <small class="text-body-secondary d-block mt-1"><?= __('platform_commission_help') ?></small>
                             </div>
 
-                            <div class="mb-4 p-3 border rounded bg-light">
-                                <h6 class="fw-bold text-dark mb-2"><?= __('stripe_master_credentials') ?></h6>
+                            <div class="mb-4 p-3 border rounded bg-body-tertiary">
+                                <h6 class="fw-bold mb-2"><?= __('stripe_master_credentials') ?></h6>
                                 <div class="row g-2">
                                     <div class="col-md-6">
                                         <label class="form-label small"><?= __('stripe_secret_key') ?? 'Secret Key' ?></label>
@@ -642,8 +642,8 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <div class="mb-4 p-3 border rounded bg-light">
-                                <h6 class="fw-bold text-dark mb-2"><?= __('paypal_master_credentials') ?></h6>
+                            <div class="mb-4 p-3 border rounded bg-body-tertiary">
+                                <h6 class="fw-bold mb-2"><?= __('paypal_master_credentials') ?></h6>
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-4">
                                         <label class="form-label small"><?= __('environment_mode') ?? 'Environment Mode' ?></label>
@@ -671,12 +671,12 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Translations Tab -->
             <div class="tab-pane fade" id="translations" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4 bg-white">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2 border-bottom-0 pt-4 pb-0">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-eye text-primary"></i> <?= __('enabled_languages_title') ?? 'Visible Languages in Selectors' ?>
                     </div>
                     <div class="card-body p-4">
-                        <p class="text-muted small mb-3"><?= __('enabled_languages_desc') ?? 'Select which installed languages will appear in the language selection dropdowns across the platform.' ?></p>
+                        <p class="text-body-secondary small mb-3"><?= __('enabled_languages_desc') ?? 'Select which installed languages will appear in the language selection dropdowns across the platform.' ?></p>
 
                         <form action="/admin/settings/languages" method="POST">
                             <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-2 mb-3">
@@ -686,7 +686,7 @@ setTimeout(window.checkAdminHash, 50);
                                 ?>
                                 <?php foreach ($activeLangList as $lCode): ?>
                                     <div class="col">
-                                        <div class="form-check p-2 border rounded bg-light d-flex align-items-center">
+                                        <div class="form-check p-2 border rounded bg-body-tertiary d-flex align-items-center">
                                             <input class="form-check-input ms-1 me-2" type="checkbox" name="enabled_languages[]" value="<?= htmlspecialchars($lCode) ?>" id="enabled_lang_<?= htmlspecialchars($lCode) ?>" <?= in_array($lCode, $curEnabled, true) ? 'checked' : '' ?>>
                                             <label class="form-check-label small fw-bold font-monospace text-uppercase cursor-pointer" for="enabled_lang_<?= htmlspecialchars($lCode) ?>">
                                                 <?= htmlspecialchars($lCode) ?>
@@ -702,20 +702,20 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                 </div>
 
-                <div class="card shadow-sm border-0 mb-4 bg-white">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2 border-bottom-0 pt-4 pb-0">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-globe text-secondary"></i> <?= __('auto_translator_title') ?>
                     </div>
                     <div class="card-body p-4">
-                        <p class="text-muted small mb-3"><?= __('auto_translator_desc') ?></p>
+                        <p class="text-body-secondary small mb-3"><?= __('auto_translator_desc') ?></p>
 
-                        <div class="alert alert-light border mb-4 p-3 d-flex align-items-center gap-2 flex-wrap">
-                            <span class="small fw-bold text-dark"><i class="bi bi-folder-check text-success"></i> <?= __('languages_installed_in_folder') ?? 'Languages installed in the folder /lang/:' ?></span>
+                        <div class="alert alert-secondary border mb-4 p-3 d-flex align-items-center gap-2 flex-wrap">
+                            <span class="small fw-bold"><i class="bi bi-folder-check text-success"></i> <?= __('languages_installed_in_folder') ?? 'Languages installed in the folder /lang/:' ?></span>
                             <?php if (empty($activeLangList)): ?>
                                 <span class="badge bg-warning text-dark"><?= __('no_json_file_found') ?? 'No .json file found' ?></span>
                             <?php else: ?>
                                 <?php foreach ($activeLangList as $activeLang): ?>
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace text-uppercase">
+                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle font-monospace text-uppercase">
                                         <?= htmlspecialchars($activeLang) ?>.json
                                     </span>
                                 <?php endforeach; ?>
@@ -737,15 +737,15 @@ setTimeout(window.checkAdminHash, 50);
                             </button>
                         </div>
 
-                        <div id="translation-progress-box" class="mb-4 p-3 bg-light border rounded d-none">
+                        <div id="translation-progress-box" class="mb-4 p-3 bg-body-tertiary border rounded d-none">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small fw-bold text-dark" id="progress-status-text"><?= __('translating') ?></span>
+                                <span class="small fw-bold" id="progress-status-text"><?= __('translating') ?></span>
                                 <span class="small fw-bold text-primary" id="progress-percent-text">0%</span>
                             </div>
                             <div class="progress" style="height: 10px;">
                                 <div id="translation-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;"></div>
                             </div>
-                            <div id="translation-log" class="small mt-2 text-muted font-monospace" style="max-height: 120px; overflow-y: auto;"></div>
+                            <div id="translation-log" class="small mt-2 text-body-secondary font-monospace" style="max-height: 120px; overflow-y: auto;"></div>
                         </div>
 
                         <?php 
@@ -777,15 +777,15 @@ setTimeout(window.checkAdminHash, 50);
                             <?php foreach ($supportedLangs as $code => $info): ?>
                                 <?php $alreadyExists = in_array($code, $activeLangList, true); ?>
                                 <div class="col">
-                                    <div class="form-check p-2 border rounded bg-light h-100 d-flex align-items-center justify-content-between">
+                                    <div class="form-check p-2 border rounded bg-body-tertiary h-100 d-flex align-items-center justify-content-between">
                                         <div>
                                             <input class="form-check-input lang-checkbox ms-1 me-2" type="checkbox" value="<?= $code ?>" id="chk_lang_<?= $code ?>">
                                             <label class="form-check-label cursor-pointer fw-semibold small" for="chk_lang_<?= $code ?>">
-                                                <?= $info['flag'] ?> <?= $info['name'] ?> <span class="text-muted">(<?= $code ?>)</span>
+                                                <?= $info['flag'] ?> <?= $info['name'] ?> <span class="text-body-secondary">(<?= $code ?>)</span>
                                             </label>
                                         </div>
                                         <?php if ($alreadyExists): ?>
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.65rem;">
+                                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle" style="font-size: 0.65rem;">
                                                 <i class="bi bi-check2"></i> <?= __('file_exists') ?>
                                             </span>
                                         <?php endif; ?>
@@ -800,15 +800,15 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- AI & Translation APIs Tab -->
             <div class="tab-pane fade" id="ai" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-robot text-primary"></i> <?= __('ai_and_translation_settings') ?? 'Artificial Intelligence & Machine Translation Settings' ?>
                     </div>
                     <div class="card-body">
                         <!-- ID aiSettingsForm used by JS to encode URL parameters to bypass ModSecurity CRS false positives -->
                         <form id="aiSettingsForm" action="/admin/settings/ai" method="POST">
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
+                                <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-sliders text-primary"></i> <?= __('active_ai_provider') ?? 'Active AI Provider' ?>
                                 </h6>
                                 <div class="mb-2">
@@ -822,8 +822,8 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
+                                <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-cpu text-success"></i> <?= __('openai_compatible_endpoints') ?? 'OpenAI & Compatible Endpoints' ?>
                                 </h6>
                                 <div class="row g-3">
@@ -843,8 +843,8 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
+                                <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-hdd-network text-warning"></i> <?= __('ollama_native_api') ?? 'Ollama Native API' ?>
                                 </h6>
                                 <div class="row g-3">
@@ -859,8 +859,8 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
+                                <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-stars text-danger"></i> <?= __('google_gemini_api') ?? 'Google Gemini API' ?>
                                 </h6>
                                 <div class="mb-2">
@@ -869,8 +869,8 @@ setTimeout(window.checkAdminHash, 50);
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 mb-4 bg-light">
-                                <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                            <div class="border rounded p-3 mb-4 bg-body-tertiary">
+                                <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
                                     <i class="bi bi-translate text-info"></i> <?= __('libretranslate_server_config') ?? 'LibreTranslate Server Configuration' ?>
                                 </h6>
                                 <div class="row g-3">
@@ -896,8 +896,8 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Cron Tab -->
             <div class="tab-pane fade" id="cron" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-flex justify-content-between align-items-center">
                         <span class="d-inline-flex align-items-center gap-2">
                             <i class="bi bi-cpu text-primary"></i> <?= __('internal_php_cron') ?? 'Internal PHP Cron Runner (Pseudo-Cron)' ?>
                         </span>
@@ -906,7 +906,7 @@ setTimeout(window.checkAdminHash, 50);
                         </span>
                     </div>
                     <div class="card-body">
-                        <p class="small text-muted mb-3">
+                        <p class="small text-body-secondary mb-3">
                             <?= __('internal_cron_desc') ?? 'When enabled, tasks will be triggered automatically during web visits. Disable this if you are already using system Crontab to prevent duplicate executions.' ?>
                         </p>
 
@@ -923,7 +923,7 @@ setTimeout(window.checkAdminHash, 50);
                         <h6 class="fw-bold mb-2"><?= __('internal_tasks_status') ?? 'Worker Tasks Status' ?></h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-bordered align-middle mb-0">
-                                <thead class="table-light">
+                                <thead>
                                     <tr>
                                         <th><?= __('task') ?? 'Task' ?></th>
                                         <th><?= __('interval') ?? 'Interval' ?></th>
@@ -961,12 +961,12 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                 </div>
 
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-terminal text-dark"></i> <?= __('system_crontab_config') ?? 'Server Crontab Configuration' ?>
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-terminal text-primary"></i> <?= __('system_crontab_config') ?? 'Server Crontab Configuration' ?>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small mb-3"><?= __('cron_instructions') ?? 'Add the following lines to your server crontab (crontab -e) to run tasks directly via the CLI.' ?></p>
+                        <p class="text-body-secondary small mb-3"><?= __('cron_instructions') ?? 'Add the following lines to your server crontab (crontab -e) to run tasks directly via the CLI.' ?></p>
                         
                         <?php 
                             $cronPath = realpath(__DIR__ . '/../../../cron');
@@ -976,7 +976,7 @@ setTimeout(window.checkAdminHash, 50);
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-primary"><i class="bi bi-send me-1"></i> Publisher Worker (Every minute)</span>
                             </div>
-                            <div class="bg-dark text-light p-2 rounded font-monospace small" style="user-select: all;">
+                            <div class="bg-dark text-light border p-2 rounded font-monospace small" style="user-select: all;">
                                 * * * * * /usr/bin/php <?= $cronPath ?>/publisher_worker.php >> <?= $cronPath ?>/publisher.log 2>&1
                             </div>
                         </div>
@@ -985,16 +985,16 @@ setTimeout(window.checkAdminHash, 50);
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-info"><i class="bi bi-rss me-1"></i> RSS Feeds Parser (Every 15 minutes)</span>
                             </div>
-                            <div class="bg-dark text-light p-2 rounded font-monospace small" style="user-select: all;">
+                            <div class="bg-dark text-light border p-2 rounded font-monospace small" style="user-select: all;">
                                 */15 * * * * /usr/bin/php <?= $cronPath ?>/rss_worker.php >> <?= $cronPath ?>/rss.log 2>&1
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold small text-warning text-dark"><i class="bi bi-robot me-1"></i> AI Campaign Generator (Every minute)</span>
+                                <span class="fw-bold small text-warning"><i class="bi bi-robot me-1"></i> AI Campaign Generator (Every minute)</span>
                             </div>
-                            <div class="bg-dark text-light p-2 rounded font-monospace small" style="user-select: all;">
+                            <div class="bg-dark text-light border p-2 rounded font-monospace small" style="user-select: all;">
                                 * * * * * /usr/bin/php <?= $cronPath ?>/ai_campaign_worker.php >> <?= $cronPath ?>/ai_campaign.log 2>&1
                             </div>
                         </div>
@@ -1003,7 +1003,7 @@ setTimeout(window.checkAdminHash, 50);
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-danger"><i class="bi bi-arrow-repeat me-1"></i> Usage & Quota Reset (Daily / Hourly check)</span>
                             </div>
-                            <div class="bg-dark text-light p-2 rounded font-monospace small" style="user-select: all;">
+                            <div class="bg-dark text-light border p-2 rounded font-monospace small" style="user-select: all;">
                                 0 0 * * * /usr/bin/php <?= $cronPath ?>/reset_monthly_usage.php >> <?= $cronPath ?>/reset.log 2>&1
                             </div>
                         </div>
@@ -1012,15 +1012,15 @@ setTimeout(window.checkAdminHash, 50);
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold small text-success"><i class="bi bi-broadcast-pin me-1"></i> Channel Automations Worker (Every 15 minutes)</span>
                             </div>
-                            <div class="bg-dark text-light p-2 rounded font-monospace small" style="user-select: all;">
+                            <div class="bg-dark text-light border p-2 rounded font-monospace small" style="user-select: all;">
                                 */15 * * * * /usr/bin/php <?= $cronPath ?>/channel_worker.php >> <?= $cronPath ?>/channel.log 2>&1
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-flex justify-content-between align-items-center">
                         <span class="d-inline-flex align-items-center gap-2">
                             <i class="bi bi-hourglass-split text-info"></i> <?= __('upcoming_queued_posts') ?? 'Upcoming Queued Posts (Top 100)' ?>
                         </span>
@@ -1029,7 +1029,7 @@ setTimeout(window.checkAdminHash, 50);
                     <div class="card-body p-0">
                         <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
                             <table class="table table-hover table-striped table-sm align-middle mb-0 font-sans">
-                                <thead class="table-light sticky-top">
+                                <thead class="sticky-top bg-body-tertiary">
                                     <tr>
                                         <th><?= __('table_id') ?? 'ID' ?></th>
                                         <th><?= __('user_header') ?? 'User' ?></th>
@@ -1042,7 +1042,7 @@ setTimeout(window.checkAdminHash, 50);
                                 <tbody>
                                     <?php if (empty($queuedJobs)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center py-4 text-muted small"><?= __('no_scheduled_posts_queue') ?? 'No scheduled posts currently waiting in queue.' ?></td>
+                                            <td colspan="6" class="text-center py-4 text-body-secondary small"><?= __('no_scheduled_posts_queue') ?? 'No scheduled posts currently waiting in queue.' ?></td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($queuedJobs as $job): ?>
@@ -1055,11 +1055,11 @@ setTimeout(window.checkAdminHash, 50);
                                                 <td class="font-monospace small text-primary fw-semibold"><?= $job['scheduled_for'] ?></td>
                                                 <td>
                                                     <?php if (!empty($job['is_rss'])): ?>
-                                                        <span class="badge bg-info-subtle text-info border">RSS</span>
+                                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">RSS</span>
                                                     <?php elseif (!empty($job['campaign_id'])): ?>
-                                                        <span class="badge bg-warning-subtle text-warning border">AI Campaign #<?= $job['campaign_id'] ?></span>
+                                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">AI Campaign #<?= $job['campaign_id'] ?></span>
                                                     <?php else: ?>
-                                                        <span class="badge bg-light text-dark border"><?= __('manual') ?? 'Manual' ?></span>
+                                                        <span class="badge bg-body-secondary text-body border"><?= __('manual') ?? 'Manual' ?></span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td class="small text-truncate" style="max-width: 280px;" title="<?= htmlspecialchars($job['content']) ?>">
@@ -1074,9 +1074,9 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                 </div>
 
-                <div class="card shadow-sm border-0 mb-4 border-danger-subtle">
+                <div class="card shadow-sm border mb-4 border-danger-subtle">
                     <div class="card-header bg-danger-subtle fw-bold d-flex justify-content-between align-items-center">
-                        <span class="d-inline-flex align-items-center gap-2 text-danger">
+                        <span class="d-inline-flex align-items-center gap-2 text-danger-emphasis">
                             <i class="bi bi-exclamation-octagon-fill"></i> <?= __('failed_jobs_explanations') ?? 'Failed Jobs & Error Explanations (Top 100)' ?>
                         </span>
                         <span class="badge bg-danger"><?= __('failed_badge', ['count' => count($failedJobs)]) ?: (count($failedJobs) . ' Failed') ?></span>
@@ -1084,7 +1084,7 @@ setTimeout(window.checkAdminHash, 50);
                     <div class="card-body p-0">
                         <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0">
-                                <thead class="table-light sticky-top">
+                                <thead class="sticky-top bg-body-tertiary">
                                     <tr>
                                         <th><?= __('table_id') ?? 'ID' ?></th>
                                         <th><?= __('user_header') ?? 'User' ?></th>
@@ -1107,7 +1107,7 @@ setTimeout(window.checkAdminHash, 50);
                                                 <td class="fw-bold text-danger">#<?= $fJob['id'] ?></td>
                                                 <td class="small"><?= htmlspecialchars($fJob['user_email'] ?? 'ID: ' . $fJob['user_id']) ?></td>
                                                 <td>
-                                                    <span class="badge bg-dark"><?= htmlspecialchars($fJob['platform_name'] ?? $fJob['plugin_id'] ?? 'N/A') ?></span>
+                                                    <span class="badge bg-secondary"><?= htmlspecialchars($fJob['platform_name'] ?? $fJob['plugin_id'] ?? 'N/A') ?></span>
                                                 </td>
                                                 <td class="small font-monospace"><?= $fJob['scheduled_for'] ?></td>
                                                 <td>
@@ -1135,9 +1135,9 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Email / SMTP Tab -->
             <div class="tab-pane fade" id="email" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-envelope-at text-dark"></i> <?= __('mail_server_config') ?>
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-envelope-at text-info"></i> <?= __('mail_server_config') ?>
                     </div>
                     <div class="card-body">
                         <form action="/admin/settings/mail" method="POST">
@@ -1155,7 +1155,7 @@ setTimeout(window.checkAdminHash, 50);
                                 <div class="form-text"><?= __('default_sender_help') ?></div>
                             </div>
 
-                            <div id="smtpFields" class="bg-light p-3 rounded border mb-3">
+                            <div id="smtpFields" class="bg-body-tertiary p-3 rounded border mb-3">
                                 <div class="row g-3">
                                     <div class="col-md-8">
                                         <label class="form-label small"><?= __('smtp_host') ?></label>
@@ -1199,9 +1199,9 @@ setTimeout(window.checkAdminHash, 50);
 
             <!-- Scripts & Ads Tab -->
             <div class="tab-pane fade" id="scripts" role="tabpanel" style="display: none;">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-code-slash" style="color: #6f42c1;"></i> <?= __('custom_scripts_ads') ?>
+                <div class="card shadow-sm border mb-4">
+                    <div class="card-header bg-body-tertiary fw-bold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-code-slash" style="color: #8b5cf6;"></i> <?= __('custom_scripts_ads') ?>
                     </div>
                     <div class="card-body">
                         <form action="/admin/settings/scripts" method="POST">
@@ -1212,21 +1212,21 @@ setTimeout(window.checkAdminHash, 50);
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold"><?= __('header_scripts') ?></label>
-                                <textarea name="custom_header_script" class="form-control font-monospace bg-light" rows="5" placeholder="<script>...</script>"><?= htmlspecialchars($sysSettings['custom_header_script'] ?? '') ?></textarea>
+                                <textarea name="custom_header_script" class="form-control font-monospace bg-body-tertiary" rows="5" placeholder="<script>...</script>"><?= htmlspecialchars($sysSettings['custom_header_script'] ?? '') ?></textarea>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold"><?= __('footer_scripts') ?></label>
-                                <textarea name="custom_footer_script" class="form-control font-monospace bg-light" rows="5" placeholder="<script>...</script>"><?= htmlspecialchars($sysSettings['custom_footer_script'] ?? '') ?></textarea>
+                                <textarea name="custom_footer_script" class="form-control font-monospace bg-body-tertiary" rows="5" placeholder="<script>...</script>"><?= htmlspecialchars($sysSettings['custom_footer_script'] ?? '') ?></textarea>
                             </div>
 
                             <hr class="my-4">
 
-                            <div class="mb-3 border rounded p-3 bg-light">
+                            <div class="mb-3 border rounded p-3 bg-body-tertiary">
                                 <label class="form-label fw-bold text-primary d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-megaphone"></i> <?= __('advertisement_banner_script') ?>
                                 </label>
-                                <textarea name="custom_ads_script" class="form-control font-monospace bg-white" rows="5" placeholder="<!-- AdSense Code / Banner Script -->"><?= htmlspecialchars($sysSettings['custom_ads_script'] ?? '') ?></textarea>
+                                <textarea name="custom_ads_script" class="form-control font-monospace" rows="5" placeholder="<!-- AdSense Code / Banner Script -->"><?= htmlspecialchars($sysSettings['custom_ads_script'] ?? '') ?></textarea>
                                 
                                 <div class="form-check form-switch mt-3">
                                     <input class="form-check-input" type="checkbox" name="ads_free_only" id="adsFreeOnly" value="1" <?= ($sysSettings['ads_free_only'] ?? '0') === '1' ? 'checked' : '' ?>>
@@ -1252,13 +1252,13 @@ setTimeout(window.checkAdminHash, 50);
                 ?>
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card shadow-sm border-0 h-100">
-                            <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+                        <div class="card shadow-sm border h-100">
+                            <div class="card-header bg-body-tertiary fw-bold py-3 d-flex justify-content-between align-items-center">
                                 <span><i class="bi bi-info-circle text-primary me-2"></i><?= __('version_details') ?? 'Version Details' ?></span>
                                 <span class="badge bg-secondary"><?= __('current_version_badge', ['version' => htmlspecialchars($installedVer)]) ?: ('Current: v' . htmlspecialchars($installedVer)) ?></span>
                             </div>
                             <div class="card-body">
-                                <p class="mb-3 text-muted small"><?= __('auto_updates_desc') ?? 'Automatic updates fetch the latest GitHub release, extract files, and run database migrations automatically.' ?></p>
+                                <p class="mb-3 text-body-secondary small"><?= __('auto_updates_desc') ?? 'Automatic updates fetch the latest GitHub release, extract files, and run database migrations automatically.' ?></p>
 
                                 <?php if ($updateCheck === null): ?>
                                     <div class="alert alert-warning small mb-0">
@@ -1266,9 +1266,9 @@ setTimeout(window.checkAdminHash, 50);
                                     </div>
                                 <?php elseif ($updateCheck['has_update']): ?>
                                     <div class="alert alert-info border mb-3">
-                                        <h5 class="fw-bold mb-1 text-primary"><?= __('new_version_available', ['version' => htmlspecialchars($updateCheck['version'])]) ?: ('New Version Available: v' . htmlspecialchars($updateCheck['version'])) ?></h5>
-                                        <small class="text-muted d-block mb-2"><?= __('published_date', ['date' => htmlspecialchars($updateCheck['published_at'] ?? 'N/A')]) ?: ('Published: ' . htmlspecialchars($updateCheck['published_at'] ?? 'N/A')) ?></small>
-                                        <div class="p-2 bg-white rounded small mb-3 border font-monospace" style="max-height: 140px; overflow-y: auto;">
+                                        <h5 class="fw-bold mb-1"><?= __('new_version_available', ['version' => htmlspecialchars($updateCheck['version'])]) ?: ('New Version Available: v' . htmlspecialchars($updateCheck['version'])) ?></h5>
+                                        <small class="d-block mb-2 opacity-75"><?= __('published_date', ['date' => htmlspecialchars($updateCheck['published_at'] ?? 'N/A')]) ?: ('Published: ' . htmlspecialchars($updateCheck['published_at'] ?? 'N/A')) ?></small>
+                                        <div class="p-2 bg-body text-body rounded small mb-3 border font-monospace" style="max-height: 140px; overflow-y: auto;">
                                             <?= nl2br(htmlspecialchars($updateCheck['release_notes'])) ?>
                                         </div>
 
@@ -1285,8 +1285,8 @@ setTimeout(window.checkAdminHash, 50);
                                     </div>
                                 <?php else: ?>
                                     <div class="alert alert-success d-flex align-items-center mb-0">
-                                        <i class="bi bi-check-circle-fill text-success fs-4 me-2"></i>
-                                        <div><strong><?= __('system_up_to_date') ?? 'Your system is up to date!' ?></strong><br><small class="text-muted"><?= __('running_version', ['version' => htmlspecialchars($installedVer)]) ?: ('Running version v' . htmlspecialchars($installedVer)) ?></small></div>
+                                        <i class="bi bi-check-circle-fill fs-4 me-2"></i>
+                                        <div><strong><?= __('system_up_to_date') ?? 'Your system is up to date!' ?></strong><br><small class="opacity-75"><?= __('running_version', ['version' => htmlspecialchars($installedVer)]) ?: ('Running version v' . htmlspecialchars($installedVer)) ?></small></div>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -1294,14 +1294,14 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
 
                     <div class="col-md-6">
-                        <div class="card shadow-sm border-0 h-100">
-                            <div class="card-header bg-white fw-bold py-3">
+                        <div class="card shadow-sm border h-100">
+                            <div class="card-header bg-body-tertiary fw-bold py-3">
                                 <i class="bi bi-shield-check text-success me-2"></i><?= __('directory_permissions') ?? 'Directory Permissions' ?>
                             </div>
                             <div class="card-body">
                                 <?php if ($permCheck['is_ready']): ?>
                                     <div class="alert alert-success d-flex align-items-center mb-0">
-                                        <i class="bi bi-check-circle-fill fs-3 me-3 text-success"></i>
+                                        <i class="bi bi-check-circle-fill fs-3 me-3"></i>
                                         <div><?= __('all_dirs_writable') ?? 'All required directories are writable. The system is ready to receive automated updates.' ?></div>
                                     </div>
                                 <?php else: ?>
@@ -1313,7 +1313,7 @@ setTimeout(window.checkAdminHash, 50);
                                             <?php endforeach; ?>
                                         </ul>
                                     </div>
-                                    <div class="bg-dark text-white p-2 rounded small">
+                                    <div class="bg-dark text-white border p-2 rounded small">
                                         <code>sudo chown -R www-data:www-data <?= htmlspecialchars(dirname(__DIR__, 2)) ?></code>
                                     </div>
                                 <?php endif; ?>
@@ -1330,7 +1330,7 @@ setTimeout(window.checkAdminHash, 50);
 <!-- Modal: Manage User -->
 <div class="modal fade" id="manageUserModal" tabindex="-1" aria-labelledby="manageUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border shadow">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold d-inline-flex align-items-center gap-2" id="manageUserModalLabel">
                     <i class="bi bi-person-gear"></i> <?= __('manage_user') ?? 'Manage User Account' ?>
@@ -1345,11 +1345,11 @@ setTimeout(window.checkAdminHash, 50);
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold"><?= __('table_email') ?? 'Email Address' ?></label>
-                            <input type="email" id="modal_user_email" class="form-control bg-light" readonly>
+                            <input type="email" id="modal_user_email" class="form-control bg-body-secondary text-body" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold"><?= __('registered_at') ?? 'Registered On' ?></label>
-                            <input type="text" id="modal_user_created_at" class="form-control bg-light" readonly>
+                            <input type="text" id="modal_user_created_at" class="form-control bg-body-secondary text-body" readonly>
                         </div>
                     </div>
 
@@ -1395,12 +1395,12 @@ setTimeout(window.checkAdminHash, 50);
                     <hr class="my-4">
 
                     <!-- Password Recovery Action Box -->
-                    <div class="p-3 border rounded bg-light d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="p-3 border rounded bg-body-tertiary d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
-                            <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                            <h6 class="fw-bold mb-1 d-flex align-items-center gap-2">
                                 <i class="bi bi-key-fill text-warning"></i> <?= __('password_recovery_title') ?? 'Password Recovery' ?>
                             </h6>
-                            <p class="text-muted small mb-0">
+                            <p class="text-body-secondary small mb-0">
                                 <?= __('password_recovery_desc') ?? 'Send a secure reset link to the registered email so the user can define a new password.' ?>
                             </p>
                         </div>
@@ -1412,7 +1412,7 @@ setTimeout(window.checkAdminHash, 50);
                     </div>
                 </div>
 
-                <div class="modal-footer bg-light">
+                <div class="modal-footer bg-body-tertiary">
                     <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal"><?= __('cancel') ?? 'Cancel' ?></button>
                     <button type="submit" class="btn btn-primary px-4 fw-bold">
                         <i class="bi bi-floppy me-1"></i> <?= __('save_changes') ?? 'Save Changes' ?>
