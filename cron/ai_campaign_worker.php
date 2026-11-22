@@ -2,7 +2,7 @@
 // cron/ai_campaign_worker.php
 /**
  * AI Campaign Worker - Runs via CLI/Cronjob or Internal CronRunner
- * Processes active campaigns (prompt-only, RSS feeds, or link/topic lists),
+ * Processes active campaigns (prompt-only or custom link/topic lists with per-item instructions),
  * calls AiContentService, and schedules posts.
  */
 
@@ -49,12 +49,11 @@ foreach ($activeCampaigns as $campaign) {
 
     // Source & AI detail configuration
     $sourceMode        = $settings['source_mode'] ?? 'prompt_only';
-    $rssUrl            = trim((string)($settings['rss_url'] ?? ''));
     $linksItems        = $settings['links_items'] ?? [];
     if (empty($linksItems) && !empty($settings['links_list'])) {
         $linksItems = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string)$settings['links_list']))));
     }
-    $selectionMode     = $settings['selection_mode'] ?? 'random';
+    $selectionMode     = $settings['selection_mode'] ?? 'sequential';
     $includeSourceLink = isset($settings['include_source_link']) ? !empty($settings['include_source_link']) : true;
     $detailLevel       = $settings['ai_detail_level'] ?? 'medium';
     $maxTokens         = (int)($settings['ai_max_tokens'] ?? 0);
@@ -105,34 +104,39 @@ foreach ($activeCampaigns as $campaign) {
         continue;
     }
 
-    // Prepare source pool if using RSS feed or custom links/topics list
+    // Prepare source pool if using custom links/topics list
     $sourcePool = [];
-    if ($sourceMode === 'rss_feed') {
-        $sourcePool = AiContentService::fetchRssItems($rssUrl, 100);
-        if (empty($sourcePool)) {
-            echo " - RSS feed returned no items or failed to fetch for Campaign {$campaign['id']}. Skipping.\n";
-            continue;
-        }
-    } elseif ($sourceMode === 'links_list') {
+    if ($sourceMode === 'links_list') {
         foreach ($linksItems as $entry) {
-            $entry = trim((string)$entry);
-            if ($entry === '') {
+            if (is_array($entry)) {
+                $target      = trim((string)($entry['target'] ?? ''));
+                $instruction = trim((string)($entry['instruction'] ?? ''));
+            } else {
+                $target      = trim((string)$entry);
+                $instruction = '';
+            }
+
+            if ($target === '') {
                 continue;
             }
-            if (filter_var($entry, FILTER_VALIDATE_URL)) {
+
+            if (filter_var($target, FILTER_VALIDATE_URL)) {
                 $sourcePool[] = [
                     'title'       => '',
-                    'link'        => $entry,
-                    'description' => ''
+                    'link'        => $target,
+                    'description' => '',
+                    'instruction' => $instruction
                 ];
             } else {
                 $sourcePool[] = [
-                    'title'       => $entry,
+                    'title'       => $target,
                     'link'        => '',
-                    'description' => ''
+                    'description' => '',
+                    'instruction' => $instruction
                 ];
             }
         }
+
         if (empty($sourcePool)) {
             echo " - Links/Topics list is empty for Campaign {$campaign['id']}. Skipping.\n";
             continue;
@@ -189,35 +193,8 @@ foreach ($activeCampaigns as $campaign) {
         $dateObj->setTimezone(new DateTimeZone('UTC'));
         $scheduledDate = $dateObj->format('Y-m-d H:i:s');
 
-        // Build uniqueness instruction if enabled
-        $uniqueInstructions = "";
-        if ($isUniqueContent) {
-            $prevStmt = $db->prepare("
-                SELECT content 
-                FROM posts 
-                WHERE campaign_id = :campaign_id 
-                ORDER BY id DESC 
-                LIMIT 10
-            ");
-            $prevStmt->execute(['campaign_id' => $campaign['id']]);
-            $rawPrevious = $prevStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-            $previousPosts = array_slice(array_unique($rawPrevious), 0, 5);
-
-            $postNumber = $generatedCount + 1;
-            $uniqueInstructions .= "This is post #{$postNumber} of a {$targetTotalPosts}-post series.";
-            $uniqueInstructions .= " Make this post completely UNIQUE and different in style, angle, and hooks.";
-            
-            if (!empty($previousPosts)) {
-                $uniqueInstructions .= "\nDo NOT repeat or copy any of these previous posts from this same campaign:\n";
-                foreach ($previousPosts as $prev) {
-                    $snippet = trim(preg_replace('/\s+/', ' ', substr($prev, 0, 140)));
-                    $uniqueInstructions .= "- " . $snippet . "...\n";
-                }
-            }
-        }
-
-        // Select item when using external RSS or custom links/topics list
-        $selectedItem = ['title' => '', 'link' => '', 'description' => ''];
+        // Select item when using custom links/topics list
+        $selectedItem = ['title' => '', 'link' => '', 'description' => '', 'instruction' => ''];
         if (!empty($sourcePool)) {
             $poolCount = count($sourcePool);
 
@@ -250,6 +227,39 @@ foreach ($activeCampaigns as $campaign) {
             }
         }
 
+        // Build extra instructions combining item-specific note and uniqueness rules
+        $extraInstructionsParts = [];
+
+        if (!empty($selectedItem['instruction'])) {
+            $extraInstructionsParts[] = "SPECIFIC INSTRUCTION FOR THIS ITEM:\n" . $selectedItem['instruction'];
+        }
+
+        if ($isUniqueContent) {
+            $prevStmt = $db->prepare("
+                SELECT content 
+                FROM posts 
+                WHERE campaign_id = :campaign_id 
+                ORDER BY id DESC 
+                LIMIT 10
+            ");
+            $prevStmt->execute(['campaign_id' => $campaign['id']]);
+            $rawPrevious = $prevStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $previousPosts = array_slice(array_unique($rawPrevious), 0, 5);
+
+            $postNumber = $generatedCount + 1;
+            $uniqueText = "This is post #{$postNumber} of a {$targetTotalPosts}-post series. Make this post completely UNIQUE and different in style, angle, and hooks.";
+            
+            if (!empty($previousPosts)) {
+                $uniqueText .= "\nDo NOT repeat or copy any of these previous posts from this same campaign:\n";
+                foreach ($previousPosts as $prev) {
+                    $snippet = trim(preg_replace('/\s+/', ' ', substr($prev, 0, 140)));
+                    $uniqueText .= "- " . $snippet . "...\n";
+                }
+            }
+            $extraInstructionsParts[] = $uniqueText;
+        }
+
+        $combinedExtraInstruction = implode("\n\n", $extraInstructionsParts);
         $itemLink = trim((string)($selectedItem['link'] ?? ''));
         $shouldAppendLink = ($includeSourceLink && $itemLink !== '');
 
@@ -263,7 +273,7 @@ foreach ($activeCampaigns as $campaign) {
             'max_chars'         => $maxChars,
             'include_link'      => $shouldAppendLink,
             'temperature'       => $isUniqueContent ? 0.85 : 0.7,
-            'extra_instruction' => $uniqueInstructions,
+            'extra_instruction' => $combinedExtraInstruction,
             'fetch_web_context' => ($itemLink !== '')
         ]);
 
