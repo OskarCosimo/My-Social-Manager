@@ -9,7 +9,7 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
 
 <style>
 /* ==========================================================================
-   FullCalendar - Minimalist Clean Layout Styles
+   FullCalendar - Adaptive Dark/Light & Minimalist Clean Layout Styles
    ========================================================================== */
 
 /* Prevent scrollbar overflow on event containers in grid views */
@@ -46,11 +46,11 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
     line-height: 1.1 !important;
 }
 
-/* Time display formatting */
+/* Time display formatting (adaptive to Bootstrap 5 theme) */
 .fc-event-time-text {
     font-size: 0.68rem !important;
     font-weight: 700 !important;
-    color: #495057 !important;
+    color: var(--bs-secondary-color) !important;
     margin-right: 2px !important;
     flex-shrink: 0 !important;
 }
@@ -61,6 +61,7 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     font-size: 0.72rem !important;
+    color: var(--bs-body-color) !important;
 }
 
 /* Status icon spacing */
@@ -75,10 +76,33 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
     background-color: transparent !important;
     border: none !important;
 }
+
+/* FullCalendar Dark/Light theme border and popover compatibility */
+.fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid {
+    border-color: var(--bs-border-color) !important;
+}
+.fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number {
+    color: var(--bs-body-color) !important;
+    text-decoration: none !important;
+}
+.fc-theme-standard .fc-popover {
+    background-color: var(--bs-body-bg) !important;
+    border-color: var(--bs-border-color) !important;
+}
+.fc-theme-standard .fc-popover-header {
+    background-color: var(--bs-tertiary-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+.fc-theme-standard .fc-list-day-cushion {
+    background-color: var(--bs-tertiary-bg) !important;
+}
+.fc .fc-list-event:hover td {
+    background-color: var(--bs-secondary-bg) !important;
+}
 </style>
 
 <!-- Main flex wrapper to align sidebar and content side-by-side -->
-<div class="d-flex main-wrapper">
+<div class="d-flex main-wrapper bg-body-tertiary">
     
     <!-- Include sidebar with active calendar item -->
     <?php 
@@ -89,7 +113,7 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
     <!-- Main content area -->
     <main class="content-area w-100 p-4">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="h2 m-0 fw-bold d-inline-flex align-items-center gap-2">
+            <h1 class="h2 m-0 fw-bold text-body d-inline-flex align-items-center gap-2">
                 <i class="bi bi-calendar3 text-primary"></i> <?= __('calendar') ?? 'Calendar' ?>
             </h1>
             <span class="badge bg-secondary d-inline-flex align-items-center gap-1 py-2 px-3 fs-6">
@@ -98,7 +122,7 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
             </span>
         </div>
 
-        <div id="calendar-container" class="card shadow-sm border-0 p-3 bg-white">
+        <div id="calendar-container" class="card shadow-sm border-0 p-3 bg-body">
             <div id="calendar"></div>
         </div>
     </main>
@@ -120,23 +144,23 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
                         <!-- Plugin Name Badge with custom plugin color -->
                         <span class="badge fs-6 text-white px-3 py-2" id="modalPlugin"></span>
                         
-                        <!-- Distinct White Background Status Badge -->
-                        <span class="badge bg-white border fs-6 px-3 py-2 shadow-sm" id="modalStatus"></span>
+                        <!-- Adaptive Background Status Badge -->
+                        <span class="badge bg-body-secondary border fs-6 px-3 py-2 shadow-sm" id="modalStatus"></span>
                     </div>
-                    <small class="text-muted fw-bold" id="modalDateText"></small>
+                    <small class="text-body-secondary fw-bold" id="modalDateText"></small>
                 </div>
 
-                <div id="viewModeBox" class="p-3 bg-light rounded border">
-                    <div id="modalContent"></div>
+                <div id="viewModeBox" class="p-3 bg-body-tertiary rounded border">
+                    <div id="modalContent" class="text-body"></div>
                 </div>
 
                 <div id="editModeBox" class="d-none">
                     <div class="mb-3">
-                        <label class="form-label fw-bold"><?= __('post_content') ?? 'Post Content' ?></label>
+                        <label class="form-label fw-bold text-body"><?= __('post_content') ?? 'Post Content' ?></label>
                         <textarea id="editContent" class="form-control" rows="5"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold"><?= __('scheduled_date_time') ?? 'Scheduled Date & Time' ?></label>
+                        <label class="form-label fw-bold text-body"><?= __('scheduled_date_time') ?? 'Scheduled Date & Time' ?></label>
                         <input type="datetime-local" id="editScheduledFor" class="form-control">
                     </div>
                 </div>
@@ -254,8 +278,8 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
                             <div class="d-flex align-items-center gap-1 text-truncate">
                                 ${statusIconHtml}
                                 ${pluginBadgeHtml}
-                                <span class="fw-bold text-muted small ms-1">${dateStr}</span>
-                                <span class="fw-bold text-truncate ms-1">${arg.event.title}</span>
+                                <span class="fw-bold text-body-secondary small ms-1">${dateStr}</span>
+                                <span class="fw-bold text-body text-truncate ms-1">${arg.event.title}</span>
                             </div>
                         `
                     };
@@ -270,7 +294,7 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
                                 ${pluginBadgeHtml}
                                 ${statusIconHtml}
                                 ${timeStr ? `<span class="fc-event-time-text">${timeStr}</span>` : ''}
-                                <span class="fw-bold fc-event-title-text text-dark">${arg.event.title}</span>
+                                <span class="fw-bold fc-event-title-text">${arg.event.title}</span>
                             </div>
                         `
                     };
@@ -283,7 +307,7 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
                             <span class="plugin-dot" style="background-color: ${pluginColor};" title="${props.pluginName || labelPlugin}"></span>
                             ${statusIconHtml}
                             ${timeStr ? `<span class="fc-event-time-text">${timeStr}</span>` : ''}
-                            <span class="fw-bold fc-event-title-text text-dark">${arg.event.title}</span>
+                            <span class="fw-bold fc-event-title-text">${arg.event.title}</span>
                         </div>
                     `
                 };
@@ -302,13 +326,13 @@ $currentLang = $_COOKIE['lang'] ?? $_SESSION['app_language'] ?? Config::DEFAULT_
                 const statusBadge = document.getElementById('modalStatus');
                 if (props.statusRaw === 'published') {
                     statusBadge.innerHTML = '✅ ' + labelPublished;
-                    statusBadge.className = 'badge bg-white border border-success text-success fs-6 px-3 py-2 shadow-sm';
+                    statusBadge.className = 'badge bg-success-subtle border border-success text-success fs-6 px-3 py-2 shadow-sm';
                 } else if (props.statusRaw === 'failed') {
                     statusBadge.innerHTML = '❌ ' + labelFailed;
-                    statusBadge.className = 'badge bg-white border border-danger text-danger fs-6 px-3 py-2 shadow-sm';
+                    statusBadge.className = 'badge bg-danger-subtle border border-danger text-danger fs-6 px-3 py-2 shadow-sm';
                 } else {
                     statusBadge.innerHTML = '⏳ ' + labelScheduled;
-                    statusBadge.className = 'badge bg-white border border-primary text-primary fs-6 px-3 py-2 shadow-sm';
+                    statusBadge.className = 'badge bg-primary-subtle border border-primary text-primary fs-6 px-3 py-2 shadow-sm';
                 }
 
                 // Render Plugin badge with dynamic background color
