@@ -18,7 +18,7 @@ $platformName = htmlspecialchars(ucfirst($platform));
 
     <main class="content-area w-100 p-4">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="h2 m-0 fw-bold d-inline-flex align-items-center gap-2">
+            <h1 class="h2 m-0 fw-bold text-body-emphasis d-inline-flex align-items-center gap-2">
                 <i class="bi bi-link-45deg text-primary"></i> 
                 <?= __('connect_platform_title', ['platform' => $platformName]) ?: ("Connect " . $platformName) ?>
             </h1>
@@ -43,7 +43,7 @@ $platformName = htmlspecialchars(ucfirst($platform));
             </div>
         <?php endif; ?>
 
-        <div class="card shadow-sm border-0" style="max-width: 600px;">
+        <div class="card shadow-sm border" style="max-width: 600px;">
             <div class="card-body p-4">
                 
                 <form action="/plugin/callback?state=<?= htmlspecialchars($platform) ?>" method="POST">
