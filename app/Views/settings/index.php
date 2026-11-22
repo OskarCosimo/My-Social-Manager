@@ -4,7 +4,7 @@ if (!isset($_SESSION['user_id'])) exit;
 ?>
 <?php require_once __DIR__ . '/../partials/header.php'; ?>
 
-<div class="d-flex main-wrapper bg-light">
+<div class="d-flex main-wrapper bg-body-tertiary min-vh-100">
     
     <?php 
     $activeMenu = 'settings'; 
@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) exit;
     ?>
 
     <main class="content-area w-100 p-4">
-        <h1 class="h2 mb-4 fw-bold text-dark d-inline-flex align-items-center gap-2">
+        <h1 class="h2 mb-4 fw-bold text-body-emphasis d-inline-flex align-items-center gap-2">
             <i class="bi bi-gear-fill text-primary"></i> <?= __('settings') ?>
         </h1>
         
@@ -27,11 +27,11 @@ if (!isset($_SESSION['user_id'])) exit;
         <?php endif; ?>
 
         <!-- Preferences Card -->
-        <div class="card shadow-sm border-0 mb-4 bg-white" style="max-width: 540px;">
+        <div class="card shadow-sm border-0 mb-4 bg-body" style="max-width: 540px;">
             <div class="card-body p-4">
                 <form action="/settings/save" method="POST">
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                        <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                             <i class="bi bi-translate"></i> <?= __('interface_language') ?>
                         </label>
                         <select name="language" class="form-select">
@@ -44,7 +44,7 @@ if (!isset($_SESSION['user_id'])) exit;
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                        <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                             <i class="bi bi-globe"></i> <?= __('timezone') ?>
                         </label>
                         <select name="timezone" class="form-select">
@@ -59,7 +59,7 @@ if (!isset($_SESSION['user_id'])) exit;
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text text-muted small mt-1">
+                        <div class="form-text text-body-secondary small mt-1">
                             <i class="bi bi-info-circle me-1"></i><?= __('timezone_help') ?>
                         </div>
                     </div>
@@ -72,18 +72,18 @@ if (!isset($_SESSION['user_id'])) exit;
         </div>
 
         <!-- Account & Security (Password) Card -->
-        <div class="card shadow-sm border-0 mb-4 bg-white" style="max-width: 540px;">
-            <div class="card-header bg-white fw-bold border-bottom-0 pt-4 pb-0 d-inline-flex align-items-center gap-2">
+        <div class="card shadow-sm border-0 mb-4 bg-body" style="max-width: 540px;">
+            <div class="card-header bg-transparent fw-bold border-bottom-0 pt-4 pb-0 d-inline-flex align-items-center gap-2 text-body-emphasis">
                 <i class="bi bi-shield-lock text-primary"></i> <?= __('account_security') ?>
             </div>
             <div class="card-body p-4">
                 <form action="/settings/password" method="POST">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold"><?= __('current_password') ?></label>
+                        <label class="form-label small fw-bold text-body"><?= __('current_password') ?></label>
                         <input type="password" name="current_password" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold"><?= __('new_password') ?></label>
+                        <label class="form-label small fw-bold text-body"><?= __('new_password') ?></label>
                         <input type="password" name="new_password" class="form-control" required>
                     </div>
                     <button type="submit" class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1">
@@ -94,9 +94,9 @@ if (!isset($_SESSION['user_id'])) exit;
         </div>
 
         <!-- Two-Factor Authentication (2FA) Card -->
-        <div class="card border-0 shadow-sm bg-white" style="max-width: 540px;">
+        <div class="card border-0 shadow-sm bg-body" style="max-width: 540px;">
             <div class="card-body p-4">
-                <h4 class="fw-bold fs-5 mb-3 d-inline-flex align-items-center gap-2">
+                <h4 class="fw-bold fs-5 mb-3 d-inline-flex align-items-center gap-2 text-body-emphasis">
                     <i class="bi bi-shield-check text-success"></i> <?= __('two_factor_authentication') ?>
                 </h4>
 
@@ -111,8 +111,8 @@ if (!isset($_SESSION['user_id'])) exit;
                         </button>
                     </form>
                 <?php else: ?>
-                    <p class="text-muted mb-3 d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-circle text-muted"></i> <?= __('status_label') ?> <strong><?= __('disabled') ?></strong>
+                    <p class="text-body-secondary mb-3 d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-circle"></i> <?= __('status_label') ?> <strong><?= __('disabled') ?></strong>
                     </p>
                     
                     <?php
@@ -127,16 +127,16 @@ if (!isset($_SESSION['user_id'])) exit;
                     $qrAuthUri = "otpauth://totp/MySocialManager:" . urlencode($userEmail) . "?secret=" . $secret . "&issuer=MySocialManager";
                     ?>
                     
-                    <div class="mb-3 bg-light p-3 rounded border">
-                        <p class="small mb-2 text-dark fw-semibold"><?= __('scan_qr_code_instruction') ?></p>
+                    <div class="mb-3 bg-body-tertiary p-3 rounded border">
+                        <p class="small mb-2 text-body fw-semibold"><?= __('scan_qr_code_instruction') ?></p>
                         
-                        <!-- Guaranteed minimum dimensions container for the Canvas/Table generated by qrcode.js -->
-                        <div class="d-flex justify-content-center align-items-center mb-2 bg-white p-3 border rounded shadow-sm" style="min-width: 180px; min-height: 180px; margin: 0 auto;">
+                        <!-- White quiet zone preserved around QR code so scanners can reliably read it in dark mode -->
+                        <div class="d-flex justify-content-center align-items-center mb-2 bg-white p-3 border rounded shadow-sm" style="width: fit-content; min-width: 192px; min-height: 192px; margin: 0 auto;">
                             <div id="qrcode-container"></div>
                         </div>
                         
-                        <p class="small mb-0 text-center text-muted">
-                            <?= __('secret_key') ?>: <code class="fs-6 text-dark"><?= htmlspecialchars($secret) ?></code>
+                        <p class="small mb-0 text-center text-body-secondary">
+                            <?= __('secret_key') ?>: <code class="fs-6 text-body-emphasis fw-bold"><?= htmlspecialchars($secret) ?></code>
                         </p>
                     </div>
                     
