@@ -51,7 +51,7 @@ require_once __DIR__ . '/../partials/header.php';
     .cursor-pointer { cursor: pointer; }
 </style>
 
-<div class="d-flex main-wrapper bg-light">
+<div class="d-flex main-wrapper bg-body-tertiary min-vh-100">
     
     <?php 
     $activeMenu = 'channel_automations'; 
@@ -61,13 +61,13 @@ require_once __DIR__ . '/../partials/header.php';
     <main class="content-area w-100 p-4">
         
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="h2 m-0 fw-bold text-dark d-inline-flex align-items-center gap-2">
+            <h1 class="h2 m-0 fw-bold text-body-emphasis d-inline-flex align-items-center gap-2">
                 <i class="bi bi-broadcast-pin text-primary"></i> <?= __('channel_automations_title') ?? 'Channel & Social Automations' ?>
             </h1>
             
-            <div class="shadow-sm border rounded bg-white px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2">
+            <div class="shadow-sm border rounded bg-body px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2">
                 <span>
-                    <i class="bi bi-tag-fill text-muted me-1"></i>
+                    <i class="bi bi-tag-fill text-body-secondary me-1"></i>
                     <strong><?= htmlspecialchars($limits['plan_name'] ?? 'Free') ?></strong>
                 </span>
                 <span class="text-primary ms-2 border-start ps-3 d-inline-flex align-items-center gap-1">
@@ -90,24 +90,24 @@ require_once __DIR__ . '/../partials/header.php';
         <!-- FULL WIDTH CHANNEL AUTOMATIONS POSTS STAT CARD -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-white">
+                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-body">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="text-uppercase fw-bold text-muted mb-0 small">
+                            <h6 class="text-uppercase fw-bold text-body-secondary mb-0 small">
                                 <?= str_replace('{period}', $postPeriodLabel, __('channel_automation_posts_title') ?? "{$postPeriodLabel} Channel Automation Posts") ?>
                             </h6>
-                            <div class="bg-primary bg-opacity-10 text-primary p-2 rounded d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <div class="bg-primary-subtle text-primary-emphasis p-2 rounded d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                 <i class="bi bi-broadcast fs-5"></i>
                             </div>
                         </div>
                         <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0"><?= $channelPostsUsed ?></h2>
-                            <span class="text-muted ms-2">/ <?= $maxChannelPosts ?></span>
+                            <h2 class="display-6 fw-bold mb-0 text-body-emphasis"><?= $channelPostsUsed ?></h2>
+                            <span class="text-body-secondary ms-2">/ <?= $maxChannelPosts ?></span>
                         </div>
                         <div class="progress mb-2">
                             <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $channelPostsPercent ?>%"></div>
                         </div>
-                        <small class="text-muted">
+                        <small class="text-body-secondary">
                             <?= str_replace(
                                 ['{percent}', '{period}'], 
                                 [$channelPostsPercent, $postPeriodLower], 
@@ -135,22 +135,22 @@ require_once __DIR__ . '/../partials/header.php';
 
         <!-- Collapsible Add New Automation Card -->
         <div class="accordion mb-4 shadow-sm" id="addAutomationAccordion">
-            <div class="accordion-item border-0">
+            <div class="accordion-item border-0 bg-body">
                 <h2 class="accordion-header" id="headingAddAutomation">
                     <button class="accordion-button <?= $isAutomationLimitReached ? 'collapsed' : '' ?> fw-bold d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAddAutomation" aria-expanded="<?= $isAutomationLimitReached ? 'false' : 'true' ?>" aria-controls="collapseAddAutomation">
                         <i class="bi bi-plus-circle text-primary"></i> <?= __('add_new_channel_automation') ?? 'Add New Channel Automation' ?>
                     </button>
                 </h2>
                 <div id="collapseAddAutomation" class="accordion-collapse collapse <?= $isAutomationLimitReached ? '' : 'show' ?>" aria-labelledby="headingAddAutomation" data-bs-parent="#addAutomationAccordion">
-                    <div class="accordion-body bg-white p-4">
+                    <div class="accordion-body bg-body p-4">
                         
                         <form action="/channel-automations/add" method="POST" id="add-automation-form">
                             
                             <!-- Source Selection -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-5">
-                                    <label class="form-label fw-bold text-dark"><?= __('source_type') ?? 'Source Type' ?></label>
-                                    <select name="source_type" id="source_type_select" class="form-select form-select-lg shadow-sm border-secondary-subtle" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <label class="form-label fw-bold text-body"><?= __('source_type') ?? 'Source Type' ?></label>
+                                    <select name="source_type" id="source_type_select" class="form-select form-select-lg shadow-sm" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
                                         <option value="connected_account"><?= __('connected_account_extended') ?? 'Connected Account (FB, IG, YouTube, LinkedIn, Tumblr, WP, Twitch, Medium, MYETV, Threads, Dev.to)' ?></option>
                                         <option value="youtube_url"><?= __('public_youtube_channel') ?? 'Public YouTube Channel (URL or Handle)' ?></option>
                                     </select>
@@ -158,8 +158,8 @@ require_once __DIR__ . '/../partials/header.php';
 
                                 <!-- Option A: Connected Account Dropdown -->
                                 <div class="col-md-7" id="source_account_wrapper">
-                                    <label class="form-label fw-bold text-dark"><?= __('select_source_account') ?? 'Select Source Account to Monitor' ?></label>
-                                    <select name="source_account_id" id="source_account_id" class="form-select form-select-lg shadow-sm border-secondary-subtle" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <label class="form-label fw-bold text-body"><?= __('select_source_account') ?? 'Select Source Account to Monitor' ?></label>
+                                    <select name="source_account_id" id="source_account_id" class="form-select form-select-lg shadow-sm" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
                                         <?php if (empty($sourceAccounts)): ?>
                                             <option value="" data-plugin=""><?= __('no_accounts_available') ?? 'No compatible accounts connected' ?></option>
                                         <?php else: ?>
@@ -170,24 +170,24 @@ require_once __DIR__ . '/../partials/header.php';
                                             <?php endforeach; ?>
                                         <?php endif; ?>
                                     </select>
-                                    <small class="text-muted"><?= __('only_source_platforms_hint') ?? 'Only platforms that allow automatic reading of new posts are shown.' ?></small>
+                                    <small class="text-body-secondary"><?= __('only_source_platforms_hint') ?? 'Only platforms that allow automatic reading of new posts are shown.' ?></small>
                                 </div>
 
                                 <!-- Option B: YouTube URL Input -->
                                 <div class="col-md-7 d-none" id="youtube_url_wrapper">
-                                    <label class="form-label fw-bold text-dark"><?= __('youtube_channel_url') ?? 'YouTube Channel URL or @Handle' ?></label>
-                                    <input type="text" name="youtube_url" id="youtube_url" class="form-control form-control-lg shadow-sm border-secondary-subtle" placeholder="https://www.youtube.com/@ChannelName or Channel ID" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                    <small class="text-muted"><?= __('youtube_url_hint') ?? 'Accepts channel URLs, custom handles, or channel IDs.' ?></small>
+                                    <label class="form-label fw-bold text-body"><?= __('youtube_channel_url') ?? 'YouTube Channel URL or @Handle' ?></label>
+                                    <input type="text" name="youtube_url" id="youtube_url" class="form-control form-control-lg shadow-sm" placeholder="https://www.youtube.com/@ChannelName or Channel ID" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <small class="text-body-secondary"><?= __('youtube_url_hint') ?? 'Accepts channel URLs, custom handles, or channel IDs.' ?></small>
                                 </div>
                             </div>
 
                             <!-- Interval & Content Filters Box -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-4">
-                                    <label for="post_interval_hours" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                    <label for="post_interval_hours" class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-clock"></i> <?= __('check_interval') ?? 'Check Frequency' ?>
                                     </label>
-                                    <select name="post_interval_hours" id="post_interval_hours" class="form-select shadow-sm border-secondary-subtle" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <select name="post_interval_hours" id="post_interval_hours" class="form-select shadow-sm" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
                                         <?php for ($i = 1; $i <= 24; $i++): ?>
                                             <option value="<?= $i ?>">
                                                 <?= $i === 1 ? (__('every_hour') ?? 'Every hour') : str_replace('{count}', $i, __('every_x_hours') ?? "Every {$i} hours") ?>
@@ -198,32 +198,32 @@ require_once __DIR__ . '/../partials/header.php';
 
                                 <!-- Filter Keywords / Tags -->
                                 <div class="col-md-4" id="keywords_wrapper">
-                                    <label for="filter_keywords" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                    <label for="filter_keywords" class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-funnel"></i> <?= __('filter_keywords_label') ?? 'Filter Words or Tags (Optional)' ?>
                                     </label>
-                                    <input type="text" name="filter_keywords" id="filter_keywords" class="form-control shadow-sm border-secondary-subtle" placeholder="e.g. podcast, update, #promo" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                    <small class="text-muted"><?= __('filter_keywords_hint') ?? 'Comma-separated. Broadcasts only posts matching at least one keyword/tag.' ?></small>
+                                    <input type="text" name="filter_keywords" id="filter_keywords" class="form-control shadow-sm" placeholder="e.g. podcast, update, #promo" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <small class="text-body-secondary"><?= __('filter_keywords_hint') ?? 'Comma-separated. Broadcasts only posts matching at least one keyword/tag.' ?></small>
                                 </div>
 
                                 <!-- YouTube Playlist ID Filter -->
                                 <div class="col-md-4 d-none" id="playlist_wrapper">
-                                    <label for="filter_playlist_id" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                    <label for="filter_playlist_id" class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist (Optional)' ?>
                                     </label>
-                                    <input type="text" name="filter_playlist_id" id="filter_playlist_id" class="form-control shadow-sm border-secondary-subtle" placeholder="https://www.youtube.com/playlist?list=PL... or PL ID" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                    <small class="text-muted"><?= __('youtube_playlist_hint') ?? 'Only import videos from this specific YouTube playlist.' ?></small>
+                                    <input type="text" name="filter_playlist_id" id="filter_playlist_id" class="form-control shadow-sm" placeholder="https://www.youtube.com/playlist?list=PL... or PL ID" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                    <small class="text-body-secondary"><?= __('youtube_playlist_hint') ?? 'Only import videos from this specific YouTube playlist.' ?></small>
                                 </div>
                             </div>
 
                             <!-- Rules Box -->
-                            <div class="bg-light p-3 rounded border mb-4">
-                                <h6 class="fw-bold text-secondary mb-3 d-inline-flex align-items-center gap-1">
+                            <div class="bg-body-tertiary p-3 rounded border mb-4">
+                                <h6 class="fw-bold text-body-secondary mb-3 d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-gear-wide-connected"></i> <?= __('automation_rules') ?? 'Automation Rules' ?>
                                 </h6>
                                 
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" name="only_new_items" id="only_new_items" value="1" checked <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                    <label class="form-check-label fw-semibold text-dark" for="only_new_items">
+                                    <label class="form-check-label fw-semibold text-body" for="only_new_items">
                                         <?= __('post_only_new_items_desc') ?>
                                     </label>
                                 </div>
@@ -232,13 +232,13 @@ require_once __DIR__ . '/../partials/header.php';
                                     <div class="col-auto">
                                         <div class="form-check form-switch m-0">
                                             <input class="form-check-input" type="checkbox" name="random_repost_enabled" id="random_repost_enabled" value="1" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                            <label class="form-check-label fw-semibold text-dark d-inline-flex align-items-center gap-1" for="random_repost_enabled">
+                                            <label class="form-check-label fw-semibold text-body d-inline-flex align-items-center gap-1" for="random_repost_enabled">
                                                 <i class="bi bi-shuffle"></i> <?= __('endless_random_repost') ?? 'Random Repost from recent items' ?>
                                             </label>
                                         </div>
                                     </div>
                                     <div class="col-auto">
-                                        <select name="random_repost_limit" id="random_repost_limit" class="form-select form-select-sm border-secondary-subtle fw-bold" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                        <select name="random_repost_limit" id="random_repost_limit" class="form-select form-select-sm fw-bold" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
                                             <?php foreach ([10, 20, 30, 40, 50] as $num): ?>
                                                 <option value="<?= $num ?>"><?= str_replace('{count}', $num, __('pool_of_x_items') ?? "Pool of {$num} items") ?></option>
                                             <?php endforeach; ?>
@@ -248,20 +248,20 @@ require_once __DIR__ . '/../partials/header.php';
                             </div>
 
                             <!-- AI Captioning & Link Explanation Section -->
-                            <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-4">
+                            <div class="p-3 rounded border border-primary-subtle bg-primary-subtle mb-4">
                                 <div class="form-check form-switch mb-0">
                                     <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="ch_ai_enabled" value="1" data-target="#ch_ai_options" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                    <label class="form-check-label fw-bold text-dark cursor-pointer d-inline-flex align-items-center gap-2" for="ch_ai_enabled">
+                                    <label class="form-check-label fw-bold text-body-emphasis cursor-pointer d-inline-flex align-items-center gap-2" for="ch_ai_enabled">
                                         <span>✨</span> <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
                                     </label>
-                                    <div class="form-text text-muted small mt-1">
+                                    <div class="form-text text-body-secondary small mt-1">
                                         <?= __('ai_automation_enable_hint') ?? 'Uses 1 AI credit per generated item. The AI analyzes the video/article link and creates a compelling caption before appending the link.' ?>
                                     </div>
                                 </div>
 
                                 <div id="ch_ai_options" class="mt-3 pt-3 border-top border-primary-subtle d-none">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold text-dark">
+                                        <label class="form-label fw-bold text-body">
                                             <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
                                         </label>
                                         <textarea name="ai_prompt" class="form-control shadow-sm" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Write an engaging hook summarizing this video or post, mention key takeaways, and invite users to watch/read.') ?>" <?= $isAutomationLimitReached ? 'disabled' : '' ?>></textarea>
@@ -269,7 +269,7 @@ require_once __DIR__ . '/../partials/header.php';
 
                                     <div class="row g-3">
                                         <div class="col-md-4">
-                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                            <label class="form-label fw-bold small text-body-secondary text-uppercase">
                                                 <?= __('ai_detail_level_label') ?? 'Detail / Reasoning Level' ?>
                                             </label>
                                             <select name="ai_detail_level" class="form-select shadow-sm ai-detail-select" data-token-input="#ch_ai_max_tokens" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
@@ -279,18 +279,18 @@ require_once __DIR__ . '/../partials/header.php';
                                             </select>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                            <label class="form-label fw-bold small text-body-secondary text-uppercase">
                                                 <?= __('ai_max_tokens_label') ?? 'Max Tokens (Manual)' ?>
                                             </label>
                                             <input type="number" name="ai_max_tokens" id="ch_ai_max_tokens" class="form-control shadow-sm" value="350" min="50" max="4096" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                            <div class="form-text small text-muted"><?= __('ai_max_tokens_hint') ?? 'Suggested: 150 / 350 / 750' ?></div>
+                                            <div class="form-text small text-body-secondary"><?= __('ai_max_tokens_hint') ?? 'Suggested: 150 / 350 / 750' ?></div>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                            <label class="form-label fw-bold small text-body-secondary text-uppercase">
                                                 <?= __('ai_max_chars_label') ?? 'Max Characters (Social Limit)' ?>
                                             </label>
                                             <input type="number" name="ai_max_chars" class="form-control shadow-sm" value="0" min="0" max="10000" placeholder="0 = Unlimited" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
-                                            <div class="form-text small text-muted"><?= __('ai_max_chars_hint') ?? 'e.g. 280 for X, 0 = no cap' ?></div>
+                                            <div class="form-text small text-body-secondary"><?= __('ai_max_chars_hint') ?? 'e.g. 280 for X, 0 = no cap' ?></div>
                                         </div>
                                     </div>
                                 </div>
@@ -299,16 +299,16 @@ require_once __DIR__ . '/../partials/header.php';
                             <!-- Target Social Accounts -->
                             <div class="border-top pt-4">
                                 <div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
-                                    <label class="form-label fw-bold text-secondary small text-uppercase mb-0 d-inline-flex align-items-center gap-1">
+                                    <label class="form-label fw-bold text-body-secondary small text-uppercase mb-0 d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-share"></i> <?= __('target_social_accounts') ?? 'Target Social Accounts' ?>
                                     </label>
                                     
                                     <?php if (!empty($groups)): ?>
                                         <div class="input-group input-group-sm w-auto shadow-sm">
-                                            <span class="input-group-text bg-light fw-bold text-secondary">
+                                            <span class="input-group-text bg-body-tertiary fw-bold text-body-secondary">
                                                 <i class="bi bi-folder2 me-1"></i> <?= __('quick_group') ?? 'Quick Group' ?>
                                             </span>
-                                            <select class="form-select border-secondary-subtle" id="group-select" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                            <select class="form-select" id="group-select" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
                                                 <option value=""><?= __('select_group') ?? 'Select Group' ?></option>
                                                 <?php foreach ($groups as $group): ?>
                                                     <?php 
@@ -327,9 +327,9 @@ require_once __DIR__ . '/../partials/header.php';
                                 </div>
 
                                 <?php if (!empty($connectedAccounts)): ?>
-                                    <div class="table-responsive bg-light border rounded p-2 shadow-sm mb-4">
+                                    <div class="table-responsive bg-body-tertiary border rounded p-2 shadow-sm mb-4">
                                         <table class="table table-hover align-middle mb-0 dt-table w-100" id="automations-accounts-table">
-                                            <thead class="table-light">
+                                            <thead>
                                                 <tr>
                                                     <th style="width: 40px;" class="text-center">✓</th>
                                                     <th><?= __('account_details') ?? 'Account Details' ?></th>
@@ -339,11 +339,11 @@ require_once __DIR__ . '/../partials/header.php';
                                                 <?php foreach ($connectedAccounts as $account): ?>
                                                     <tr>
                                                         <td class="text-center">
-                                                            <input class="form-check-input m-0 border-secondary" type="checkbox" name="target_accounts[]" value="<?= (int)$account['id'] ?>" id="acc_<?= (int)$account['id'] ?>" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
+                                                            <input class="form-check-input m-0" type="checkbox" name="target_accounts[]" value="<?= (int)$account['id'] ?>" id="acc_<?= (int)$account['id'] ?>" <?= $isAutomationLimitReached ? 'disabled' : '' ?>>
                                                         </td>
                                                         <td>
                                                             <label class="form-check-label w-100 cursor-pointer d-flex flex-column" for="acc_<?= (int)$account['id'] ?>">
-                                                                <span class="fw-bold text-dark"><?= htmlspecialchars($account['platform_name'] ?? 'Account') ?></span>
+                                                                <span class="fw-bold text-body"><?= htmlspecialchars($account['platform_name'] ?? 'Account') ?></span>
                                                                 <span class="badge bg-secondary w-auto align-self-start mt-1" style="font-size: 0.7em;">
                                                                     <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $account['plugin_id'] ?? 'Social'))) ?>
                                                                 </span>
@@ -369,22 +369,22 @@ require_once __DIR__ . '/../partials/header.php';
         </div>
 
         <!-- Configured Automations Table -->
-        <div class="card shadow-sm border-0 bg-white">
-            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 fw-bold d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold text-secondary mb-0 d-inline-flex align-items-center gap-2">
+        <div class="card shadow-sm border-0 bg-body">
+            <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 fw-bold d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-body-secondary mb-0 d-inline-flex align-items-center gap-2">
                     <i class="bi bi-list-task text-primary"></i> <?= __('active_automations') ?? 'Configured Automations' ?>
                 </h5>
             </div>
             <div class="card-body">
                 <?php if (empty($automations)): ?>
-                    <div class="p-5 text-center text-muted bg-light rounded border border-dashed">
+                    <div class="p-5 text-center text-body-secondary bg-body-tertiary rounded border">
                         <h4><?= __('no_channel_automations_yet') ?? 'No channel automations configured yet.' ?></h4>
                         <p class="mb-0"><?= __('no_channel_automations_yet_sub') ?? 'Connect a YouTube channel or social page above to automatically broadcast new content.' ?></p>
                     </div>
                 <?php else: ?>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 dt-table w-100">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th style="width: 25%;"><?= __('monitored_source_header') ?? 'Monitored Source' ?></th>
                                     <th style="width: 25%;"><?= __('interval_rules_header') ?? 'Interval & Rules' ?></th>
@@ -400,7 +400,7 @@ require_once __DIR__ . '/../partials/header.php';
                                     ?>
                                     <tr>
                                         <td>
-                                            <span class="fw-bold text-dark d-block">
+                                            <span class="fw-bold text-body d-block">
                                                 <?= htmlspecialchars($auto['source_title']) ?>
                                             </span>
                                             <span class="badge bg-secondary text-uppercase" style="font-size: 0.7em;">
@@ -409,13 +409,13 @@ require_once __DIR__ . '/../partials/header.php';
                                             
                                             <!-- Optional Playlist Badge -->
                                             <?php if (!empty($auto['filter_playlist_id'])): ?>
-                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle d-inline-block mt-1" style="font-size: 0.7em;">
+                                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle d-inline-block mt-1" style="font-size: 0.7em;">
                                                     <i class="bi bi-collection-play me-1"></i>PL: <?= htmlspecialchars($auto['filter_playlist_id']) ?>
                                                 </span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle fw-bold mb-1 d-inline-flex align-items-center gap-1">
+                                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle fw-bold mb-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-clock"></i> <?= str_replace('{count}', (int)$auto['post_interval_hours'], __('every_hours_badge') ?? "Every " . (int)$auto['post_interval_hours'] . "h") ?>
                                             </span>
                                             <div class="d-flex flex-wrap gap-1 mb-1">
@@ -457,7 +457,7 @@ require_once __DIR__ . '/../partials/header.php';
                                                             }
                                                         }
                                                 ?>
-                                                    <span class="badge bg-light text-dark border d-flex align-items-center shadow-sm py-1">
+                                                    <span class="badge bg-body-secondary text-body border d-flex align-items-center shadow-sm py-1">
                                                         <span class="text-truncate d-inline-block" style="max-width: 100px;">
                                                             <?= htmlspecialchars($accName) ?>
                                                         </span>
@@ -466,12 +466,12 @@ require_once __DIR__ . '/../partials/header.php';
                                                         <?php endif; ?>
                                                     </span>
                                                 <?php endforeach; else: ?>
-                                                    <span class="text-muted small"><?= __('no_target_accounts') ?? 'No target accounts' ?></span>
+                                                    <span class="text-body-secondary small"><?= __('no_target_accounts') ?? 'No target accounts' ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
                                         <td>
-                                            <small class="text-muted fw-semibold">
+                                            <small class="text-body-secondary fw-semibold">
                                                 <?= !empty($auto['last_checked']) ? htmlspecialchars($auto['last_checked']) : (__('never') ?? 'Never') ?>
                                             </small>
                                         </td>
@@ -509,15 +509,15 @@ require_once __DIR__ . '/../partials/header.php';
                                                     
                                                     <div class="modal-body">
                                                         <!-- Monitored Source Information -->
-                                                        <div class="alert alert-light border mb-3">
-                                                            <small class="text-muted text-uppercase fw-bold d-block mb-1"><?= __('monitored_source_header') ?? 'Monitored Source' ?></small>
-                                                            <strong class="text-dark fs-6"><?= htmlspecialchars($auto['source_title']) ?></strong>
+                                                        <div class="bg-body-tertiary p-3 rounded border mb-3">
+                                                            <small class="text-body-secondary text-uppercase fw-bold d-block mb-1"><?= __('monitored_source_header') ?? 'Monitored Source' ?></small>
+                                                            <strong class="text-body fs-6"><?= htmlspecialchars($auto['source_title']) ?></strong>
                                                             <span class="badge bg-secondary ms-2 text-uppercase"><?= htmlspecialchars($auto['source_type'] === 'youtube_url' ? (__('youtube_public') ?? 'YouTube Public') : str_replace('_', ' ', $auto['source_plugin_id'] ?? 'Social')) ?></span>
                                                         </div>
 
                                                         <!-- Posting Interval -->
                                                         <div class="mb-3">
-                                                            <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                            <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                                                 <i class="bi bi-clock"></i> <?= __('check_interval') ?? 'Check Frequency' ?>
                                                             </label>
                                                             <select name="post_interval_hours" class="form-select">
@@ -532,33 +532,33 @@ require_once __DIR__ . '/../partials/header.php';
                                                         <!-- Content Filters (Keywords & YouTube Playlist) -->
                                                         <div class="row g-2 mb-3">
                                                             <div class="<?= $isAutoYoutube ? 'col-md-6' : 'col-12' ?>">
-                                                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                                                     <i class="bi bi-funnel"></i> <?= __('filter_keywords_label') ?? 'Filter Words or Tags' ?>
                                                                 </label>
                                                                 <input type="text" name="filter_keywords" class="form-control" value="<?= htmlspecialchars($auto['filter_keywords'] ?? '') ?>" placeholder="e.g. podcast, update, #promo">
-                                                                <small class="text-muted"><?= __('filter_keywords_hint') ?? 'Comma-separated. Leave empty to allow all.' ?></small>
+                                                                <small class="text-body-secondary"><?= __('filter_keywords_hint') ?? 'Comma-separated. Leave empty to allow all.' ?></small>
                                                             </div>
                                                             
                                                             <?php if ($isAutoYoutube): ?>
                                                                 <div class="col-md-6">
-                                                                    <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                    <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                                                         <i class="bi bi-collection-play"></i> <?= __('youtube_playlist_filter') ?? 'YouTube Playlist (Optional)' ?>
                                                                     </label>
                                                                     <input type="text" name="filter_playlist_id" class="form-control" value="<?= htmlspecialchars($auto['filter_playlist_id'] ?? '') ?>" placeholder="https://www.youtube.com/playlist?list=PL... or PL ID">
-                                                                    <small class="text-muted"><?= __('youtube_playlist_hint') ?? 'Import only from this specific playlist.' ?></small>
+                                                                    <small class="text-body-secondary"><?= __('youtube_playlist_hint') ?? 'Import only from this specific playlist.' ?></small>
                                                                 </div>
                                                             <?php endif; ?>
                                                         </div>
 
                                                         <!-- Automation Rules -->
-                                                        <div class="bg-light p-3 rounded border mb-3">
-                                                            <h6 class="fw-bold text-secondary mb-3 d-inline-flex align-items-center gap-1">
+                                                        <div class="bg-body-tertiary p-3 rounded border mb-3">
+                                                            <h6 class="fw-bold text-body-secondary mb-3 d-inline-flex align-items-center gap-1">
                                                                 <i class="bi bi-gear-wide-connected"></i> <?= __('automation_rules') ?? 'Automation Rules' ?>
                                                             </h6>
                                                             
                                                             <div class="form-check form-switch mb-3">
                                                                 <input class="form-check-input" type="checkbox" name="only_new_items" id="edit_only_new_<?= $auto['id'] ?>" value="1" <?= !empty($auto['only_new_items']) ? 'checked' : '' ?>>
-                                                                <label class="form-check-label fw-semibold text-dark" for="edit_only_new_<?= $auto['id'] ?>">
+                                                                <label class="form-check-label fw-semibold text-body" for="edit_only_new_<?= $auto['id'] ?>">
                                                                     <?= __('post_only_new_items_desc') ?>
                                                                 </label>
                                                             </div>
@@ -567,7 +567,7 @@ require_once __DIR__ . '/../partials/header.php';
                                                                 <div class="col-auto">
                                                                     <div class="form-check form-switch m-0">
                                                                         <input class="form-check-input" type="checkbox" name="random_repost_enabled" id="edit_random_repost_<?= $auto['id'] ?>" value="1" <?= !empty($auto['random_repost_enabled']) ? 'checked' : '' ?>>
-                                                                        <label class="form-check-label fw-semibold text-dark d-inline-flex align-items-center gap-1" for="edit_random_repost_<?= $auto['id'] ?>">
+                                                                        <label class="form-check-label fw-semibold text-body d-inline-flex align-items-center gap-1" for="edit_random_repost_<?= $auto['id'] ?>">
                                                                             <i class="bi bi-shuffle"></i> <?= __('endless_random_repost') ?? 'Random Repost from recent items' ?>
                                                                         </label>
                                                                     </div>
@@ -586,17 +586,17 @@ require_once __DIR__ . '/../partials/header.php';
 
                                                         <!-- AI Captioning Options (Edit Modal) -->
                                                         <?php $autoAiActive = !empty($auto['ai_enabled']); ?>
-                                                        <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-3">
+                                                        <div class="p-3 rounded border border-primary-subtle bg-primary-subtle mb-3">
                                                             <div class="form-check form-switch mb-0">
                                                                 <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="edit_ch_ai_enabled_<?= $auto['id'] ?>" value="1" data-target="#edit_ch_ai_options_<?= $auto['id'] ?>" <?= $autoAiActive ? 'checked' : '' ?>>
-                                                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="edit_ch_ai_enabled_<?= $auto['id'] ?>">
+                                                                <label class="form-check-label fw-bold text-body-emphasis cursor-pointer" for="edit_ch_ai_enabled_<?= $auto['id'] ?>">
                                                                     ✨ <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
                                                                 </label>
                                                             </div>
 
                                                             <div id="edit_ch_ai_options_<?= $auto['id'] ?>" class="mt-3 pt-3 border-top border-primary-subtle <?= $autoAiActive ? '' : 'd-none' ?>">
                                                                 <div class="mb-3">
-                                                                    <label class="form-label fw-bold text-dark">
+                                                                    <label class="form-label fw-bold text-body">
                                                                         <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
                                                                     </label>
                                                                     <textarea name="ai_prompt" class="form-control" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Explain this link or video clearly...') ?>"><?= htmlspecialchars($auto['ai_prompt'] ?? '') ?></textarea>
@@ -604,7 +604,7 @@ require_once __DIR__ . '/../partials/header.php';
 
                                                                 <div class="row g-2">
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_detail_level_label') ?? 'Detail Level' ?></label>
+                                                                        <label class="form-label fw-bold small text-uppercase text-body-secondary"><?= __('ai_detail_level_label') ?? 'Detail Level' ?></label>
                                                                         <select name="ai_detail_level" class="form-select ai-detail-select" data-token-input="#edit_ch_ai_tokens_<?= $auto['id'] ?>">
                                                                             <?php $currLvl = $auto['ai_detail_level'] ?? 'medium'; ?>
                                                                             <option value="light" <?= $currLvl === 'light' ? 'selected' : '' ?>><?= __('ai_level_light') ?? 'Light (Brief)' ?></option>
@@ -613,11 +613,11 @@ require_once __DIR__ . '/../partials/header.php';
                                                                         </select>
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_tokens_label') ?? 'Max Tokens' ?></label>
+                                                                        <label class="form-label fw-bold small text-uppercase text-body-secondary"><?= __('ai_max_tokens_label') ?? 'Max Tokens' ?></label>
                                                                         <input type="number" name="ai_max_tokens" id="edit_ch_ai_tokens_<?= $auto['id'] ?>" class="form-control" value="<?= (int)($auto['ai_max_tokens'] ?? 350) ?>" min="50" max="4096">
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_chars_label') ?? 'Max Characters' ?></label>
+                                                                        <label class="form-label fw-bold small text-uppercase text-body-secondary"><?= __('ai_max_chars_label') ?? 'Max Characters' ?></label>
                                                                         <input type="number" name="ai_max_chars" class="form-control" value="<?= (int)($auto['ai_max_chars'] ?? 0) ?>" min="0" max="10000">
                                                                     </div>
                                                                 </div>
@@ -626,10 +626,10 @@ require_once __DIR__ . '/../partials/header.php';
 
                                                         <!-- Target Accounts Selection (Anti-loop excludes source account) -->
                                                         <div class="mb-3">
-                                                            <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                            <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                                                 <i class="bi bi-share"></i> <?= __('target_social_accounts') ?? 'Target Social Accounts' ?>
                                                             </label>
-                                                            <div class="border rounded p-2 bg-light" style="max-height: 220px; overflow-y: auto;">
+                                                            <div class="border rounded p-2 bg-body-tertiary" style="max-height: 220px; overflow-y: auto;">
                                                                 <?php 
                                                                 $selectedTargets = json_decode($auto['target_accounts'], true) ?? [];
                                                                 foreach ($connectedAccounts as $account): 
@@ -638,7 +638,7 @@ require_once __DIR__ . '/../partials/header.php';
                                                                 ?>
                                                                     <div class="form-check mb-1">
                                                                         <input class="form-check-input" type="checkbox" name="target_accounts[]" value="<?= (int)$account['id'] ?>" id="edit_acc_<?= $auto['id'] ?>_<?= $account['id'] ?>" <?= $isChecked ? 'checked' : '' ?>>
-                                                                        <label class="form-check-label cursor-pointer" for="edit_acc_<?= $auto['id'] ?>_<?= $account['id'] ?>">
+                                                                        <label class="form-check-label cursor-pointer text-body" for="edit_acc_<?= $auto['id'] ?>_<?= $account['id'] ?>">
                                                                             <strong><?= htmlspecialchars($account['platform_name']) ?></strong> (<?= htmlspecialchars(ucfirst(str_replace('_', ' ', $account['plugin_id']))) ?>)
                                                                         </label>
                                                                     </div>
