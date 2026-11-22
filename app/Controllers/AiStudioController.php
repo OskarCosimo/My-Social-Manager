@@ -49,28 +49,47 @@ class AiStudioController {
      * Sanitize and build normalized campaign schedule & AI settings from POST input
      */
     private function extractScheduleSettings(array $post, array $fallback = []): array {
-        $allowedModes = ['prompt_only', 'rss_feed', 'links_list'];
+        $allowedModes = ['prompt_only', 'links_list'];
         $sourceMode = $post['source_mode'] ?? ($fallback['source_mode'] ?? 'prompt_only');
         if (!in_array($sourceMode, $allowedModes, true)) {
             $sourceMode = 'prompt_only';
         }
 
-        $rssUrl = trim((string)($post['rss_url'] ?? ($fallback['rss_url'] ?? '')));
-        $rawLinksList = trim((string)($post['links_list'] ?? ($fallback['links_list'] ?? '')));
-        $linksArray = [];
-        if ($rawLinksList !== '') {
-            $lines = preg_split('/\r\n|\r|\n/', $rawLinksList);
-            foreach ($lines as $line) {
-                $line = trim($line);
-                if ($line !== '') {
-                    $linksArray[] = $line;
+        // Build structured items array: [['target' => '...', 'instruction' => '...'], ...]
+        $linksItems = [];
+        if (isset($post['item_targets']) && is_array($post['item_targets'])) {
+            $targets = $post['item_targets'];
+            $instructions = is_array($post['item_instructions'] ?? null) ? $post['item_instructions'] : [];
+            foreach ($targets as $idx => $rawTarget) {
+                $target = trim((string)$rawTarget);
+                if ($target === '') {
+                    continue;
+                }
+                $instruction = trim((string)($instructions[$idx] ?? ''));
+                $linksItems[] = [
+                    'target'      => $target,
+                    'instruction' => $instruction
+                ];
+            }
+        } elseif (!empty($fallback['links_items'])) {
+            foreach ((array)$fallback['links_items'] as $item) {
+                if (is_array($item) && !empty($item['target'])) {
+                    $linksItems[] = [
+                        'target'      => trim((string)$item['target']),
+                        'instruction' => trim((string)($item['instruction'] ?? ''))
+                    ];
+                } elseif (is_string($item) && trim($item) !== '') {
+                    $linksItems[] = [
+                        'target'      => trim($item),
+                        'instruction' => ''
+                    ];
                 }
             }
         }
 
-        $selectionMode = $post['selection_mode'] ?? ($fallback['selection_mode'] ?? 'random');
+        $selectionMode = $post['selection_mode'] ?? ($fallback['selection_mode'] ?? 'sequential');
         if (!in_array($selectionMode, ['random', 'sequential'], true)) {
-            $selectionMode = 'random';
+            $selectionMode = 'sequential';
         }
 
         $detailLevel = $post['ai_detail_level'] ?? ($fallback['ai_detail_level'] ?? 'medium');
@@ -101,9 +120,7 @@ class AiStudioController {
             'unique_posts'         => $uniquePosts,
             'target_mailing_lists' => $targetMailingLists,
             'source_mode'          => $sourceMode,
-            'rss_url'              => $rssUrl,
-            'links_list'           => implode("\n", $linksArray),
-            'links_items'          => $linksArray,
+            'links_items'          => $linksItems,
             'selection_mode'       => $selectionMode,
             'ai_detail_level'      => $detailLevel,
             'ai_max_tokens'        => $maxTokens,
@@ -133,18 +150,10 @@ class AiStudioController {
             exit;
         }
 
-        if ($scheduleSettings['source_mode'] === 'rss_feed') {
-            if (empty($scheduleSettings['rss_url']) || !filter_var($scheduleSettings['rss_url'], FILTER_VALIDATE_URL)) {
-                $_SESSION['error'] = __('ai_studio_invalid_rss_url') ?? 'Please enter a valid external RSS Feed URL.';
-                header('Location: /ai-studio');
-                exit;
-            }
-        } elseif ($scheduleSettings['source_mode'] === 'links_list') {
-            if (empty($scheduleSettings['links_items'])) {
-                $_SESSION['error'] = __('ai_studio_empty_links_list') ?? 'Please enter at least one link or topic in the list (one per line).';
-                header('Location: /ai-studio');
-                exit;
-            }
+        if ($scheduleSettings['source_mode'] === 'links_list' && empty($scheduleSettings['links_items'])) {
+            $_SESSION['error'] = __('ai_studio_empty_links_list') ?? 'Please add at least one link or topic.';
+            header('Location: /ai-studio');
+            exit;
         }
 
         $aiLimits = UsageManager::getAiLimits($userId);
@@ -208,14 +217,8 @@ class AiStudioController {
             exit;
         }
 
-        if ($scheduleSettings['source_mode'] === 'rss_feed' && (empty($scheduleSettings['rss_url']) || !filter_var($scheduleSettings['rss_url'], FILTER_VALIDATE_URL))) {
-            $_SESSION['error'] = __('ai_studio_invalid_rss_url') ?? 'Please enter a valid external RSS Feed URL.';
-            header('Location: /ai-studio');
-            exit;
-        }
-
         if ($scheduleSettings['source_mode'] === 'links_list' && empty($scheduleSettings['links_items'])) {
-            $_SESSION['error'] = __('ai_studio_empty_links_list') ?? 'Please enter at least one link or topic in the list (one per line).';
+            $_SESSION['error'] = __('ai_studio_empty_links_list') ?? 'Please add at least one link or topic.';
             header('Location: /ai-studio');
             exit;
         }
