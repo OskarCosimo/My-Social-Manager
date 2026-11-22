@@ -24,10 +24,11 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
     .stat-card:hover { transform: translateY(-3px); }
     .progress { height: 8px; border-radius: 4px; }
     .stat-icon-badge { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; }
+    .cursor-pointer { cursor: pointer; }
 </style>
 
 <!-- Main flex wrapper to align sidebar and content side-by-side -->
-<div class="d-flex main-wrapper bg-light">
+<div class="d-flex main-wrapper">
     
     <!-- Include the sidebar and set the active menu item -->
     <?php 
@@ -39,7 +40,7 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
     <main class="content-area w-100 p-4">
         
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h2 m-0 fw-bold text-dark d-inline-flex align-items-center gap-2">
+            <h1 class="h2 m-0 fw-bold text-body-emphasis d-inline-flex align-items-center gap-2">
                 <i class="bi bi-pencil-square text-primary"></i> <?= __('compose') ?>
             </h1>
         </div>
@@ -58,10 +59,10 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
             
             <!-- 1. Dynamic Plan Limit -->
             <div class="col">
-                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-white h-100">
+                <div class="card stat-card shadow-sm border position-relative overflow-hidden h-100">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="text-uppercase fw-bold text-muted mb-0 small">
+                            <h6 class="text-uppercase fw-bold text-body-secondary mb-0 small">
                                 <?= str_replace('{period}', $postPeriodLabel, __('posts_period_title')) ?>
                             </h6>
                             <div class="stat-icon-badge bg-primary bg-opacity-10 text-primary">
@@ -69,13 +70,13 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                             </div>
                         </div>
                         <div class="d-flex align-items-end mb-2">
-                            <h2 class="fs-3 fw-bold mb-0 text-dark"><?= $limits['posts_used'] ?? 0 ?></h2>
-                            <span class="text-muted ms-2 small">/ <?= $limits['max_posts'] ?? 10 ?></span>
+                            <h2 class="fs-3 fw-bold mb-0 text-body-emphasis"><?= $limits['posts_used'] ?? 0 ?></h2>
+                            <span class="text-body-secondary ms-2 small">/ <?= $limits['max_posts'] ?? 10 ?></span>
                         </div>
                         <div class="progress mb-2">
                             <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $postsPercent ?>%"></div>
                         </div>
-                        <small class="text-muted" style="font-size: 0.75rem;">
+                        <small class="text-body-secondary" style="font-size: 0.75rem;">
                             <?= str_replace(['{percent}', '{period}'], [$postsPercent, strtolower($postPeriodLabel)], __('posts_stat_limit_used')) ?>
                         </small>
                     </div>
@@ -85,15 +86,15 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
 
             <!-- 2. Published Posts -->
             <div class="col">
-                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-white h-100">
+                <div class="card stat-card shadow-sm border position-relative overflow-hidden h-100">
                     <div class="card-body p-3 d-flex align-items-center gap-3">
                         <div class="stat-icon-badge bg-success bg-opacity-10 text-success">
                             <i class="bi bi-check-circle fs-4"></i>
                         </div>
                         <div>
-                            <div class="text-uppercase fw-bold text-muted small"><?= __('stat_published') ?></div>
+                            <div class="text-uppercase fw-bold text-body-secondary small"><?= __('stat_published') ?></div>
                             <div class="fs-3 fw-bold text-success"><?= (int)($stats['published'] ?? 0) ?></div>
-                            <small class="text-muted" style="font-size: 0.75rem;"><?= __('stat_published_sub') ?></small>
+                            <small class="text-body-secondary" style="font-size: 0.75rem;"><?= __('stat_published_sub') ?></small>
                         </div>
                     </div>
                     <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #198754;"></div>
@@ -102,15 +103,15 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
 
             <!-- 3. Scheduled Posts -->
             <div class="col">
-                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-white h-100">
+                <div class="card stat-card shadow-sm border position-relative overflow-hidden h-100">
                     <div class="card-body p-3 d-flex align-items-center gap-3">
                         <div class="stat-icon-badge bg-warning bg-opacity-10 text-warning">
                             <i class="bi bi-clock-history fs-4"></i>
                         </div>
                         <div>
-                            <div class="text-uppercase fw-bold text-muted small"><?= __('stat_scheduled') ?></div>
+                            <div class="text-uppercase fw-bold text-body-secondary small"><?= __('stat_scheduled') ?></div>
                             <div class="fs-3 fw-bold text-warning"><?= (int)($stats['scheduled'] ?? 0) ?></div>
-                            <small class="text-muted" style="font-size: 0.75rem;"><?= __('stat_scheduled_sub') ?></small>
+                            <small class="text-body-secondary" style="font-size: 0.75rem;"><?= __('stat_scheduled_sub') ?></small>
                         </div>
                     </div>
                     <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #ffc107;"></div>
@@ -119,15 +120,15 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
 
             <!-- 4. Failed Posts -->
             <div class="col">
-                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-white h-100">
+                <div class="card stat-card shadow-sm border position-relative overflow-hidden h-100">
                     <div class="card-body p-3 d-flex align-items-center gap-3">
                         <div class="stat-icon-badge bg-danger bg-opacity-10 text-danger">
                             <i class="bi bi-exclamation-triangle fs-4"></i>
                         </div>
                         <div>
-                            <div class="text-uppercase fw-bold text-muted small"><?= __('stat_failed') ?></div>
+                            <div class="text-uppercase fw-bold text-body-secondary small"><?= __('stat_failed') ?></div>
                             <div class="fs-3 fw-bold text-danger"><?= (int)($stats['failed'] ?? 0) ?></div>
-                            <small class="text-muted" style="font-size: 0.75rem;"><?= __('stat_failed_sub') ?></small>
+                            <small class="text-body-secondary" style="font-size: 0.75rem;"><?= __('stat_failed_sub') ?></small>
                         </div>
                     </div>
                     <div class="position-absolute bottom-0 start-0 w-100" style="height: 4px; background-color: #dc3545;"></div>
@@ -143,15 +144,15 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                 <div class="col-md-8">
                     
                     <!-- Post Content Card -->
-                    <div class="card shadow-sm border-0 mb-4">
-                        <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
-                            <h5 class="fw-bold text-secondary mb-0"><?= __('post_content') ?></h5>
+                    <div class="card shadow-sm border mb-4">
+                        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+                            <h5 class="fw-bold text-body-secondary mb-0"><?= __('post_content') ?></h5>
                         </div>
                         <div class="card-body p-4">
                             
                             <!-- AI Prompt Input Group -->
                             <div class="input-group mb-4 shadow-sm rounded">
-                                <span class="input-group-text bg-white border-end-0 text-primary fs-5">
+                                <span class="input-group-text bg-body border-end-0 text-primary fs-5">
                                     <i class="bi bi-robot"></i>
                                 </span>
                                 <input type="text" id="ai-prompt" class="form-control border-start-0 border-end-0 py-2" placeholder="<?= __('ai_prompt_placeholder') ?>">
@@ -166,18 +167,18 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                             </div>
 
                             <!-- Link Attachment Section -->
-                            <div class="p-3 bg-light border rounded shadow-sm mt-3">
-                                <label class="form-label fw-bold text-dark mb-2 d-inline-flex align-items-center gap-1">
+                            <div class="p-3 bg-body-tertiary border rounded shadow-sm mt-3">
+                                <label class="form-label fw-bold text-body-emphasis mb-2 d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-link-45deg"></i> <?= __('direct_link_optional') ?>
                                 </label>
                                 <input type="url" name="source_link" id="source-link-input" class="form-control" placeholder="https://example.com/article">
-                                <small class="text-muted"><?= __('direct_link_help') ?></small>
+                                <small class="text-body-secondary"><?= __('direct_link_help') ?></small>
                             </div>
 
                             <!-- Media Attachments Section -->
-                            <div class="p-3 bg-light border rounded shadow-sm mt-3">
+                            <div class="p-3 bg-body-tertiary border rounded shadow-sm mt-3">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <label class="form-label fw-bold text-dark mb-0 d-inline-flex align-items-center gap-1">
+                                    <label class="form-label fw-bold text-body-emphasis mb-0 d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-paperclip"></i> <?= __('attached_media') ?>
                                     </label>
                                     <button type="button" class="btn btn-outline-primary btn-sm fw-bold shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#fileManagerModal">
@@ -193,14 +194,14 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                     </div>
 
                     <!-- Account Selection Card -->
-                    <div class="card shadow-sm border-0 bg-white mb-4">
+                    <div class="card shadow-sm border mb-4">
                         <div class="card-body p-4">
-                            <h5 class="fw-bold text-dark mb-4"><?= __('select_accounts') ?></h5>
+                            <h5 class="fw-bold text-body-emphasis mb-4"><?= __('select_accounts') ?></h5>
                             
                             <?php if (!empty($groups)): ?>
                                 <!-- Group Selection Dropdown -->
                                 <div class="mb-4">
-                                    <label class="form-label fw-bold text-secondary small text-uppercase mb-2 d-inline-flex align-items-center gap-1">
+                                    <label class="form-label fw-bold text-body-secondary small text-uppercase mb-2 d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-folder2"></i> <?= __('quick_selection') ?>
                                     </label>
                                     <div class="input-group shadow-sm rounded" style="max-width: 400px;">
@@ -224,7 +225,7 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
 
                             <!-- Social Accounts DataTable -->
                             <div class="d-flex flex-column">
-                                <label class="form-label fw-bold text-secondary small text-uppercase mb-2 d-inline-flex align-items-center gap-1">
+                                <label class="form-label fw-bold text-body-secondary small text-uppercase mb-2 d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-share"></i> <?= __('connected_accounts_title') ?>
                                 </label>
                                 <?php if (empty($connectedAccounts)): ?>
@@ -238,9 +239,9 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                                         </a>
                                     </div>
                                 <?php else: ?>
-                                    <div class="table-responsive bg-light border rounded p-2 shadow-sm">
+                                    <div class="table-responsive bg-body-tertiary border rounded p-2 shadow-sm">
                                         <table class="table table-hover align-middle mb-0 dt-table w-100" id="compose-accounts-table">
-                                            <thead class="table-light">
+                                            <thead>
                                                 <tr>
                                                     <th style="width: 40px;" class="text-center">✓</th>
                                                     <th><?= __('account_details') ?></th>
@@ -254,7 +255,7 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                                                         </td>
                                                         <td>
                                                             <label class="form-check-label w-100 cursor-pointer d-flex flex-row align-items-center gap-2" for="chk_acc_<?= $acc['id'] ?>">
-                                                                <span class="fw-bold text-dark"><?= htmlspecialchars($acc['platform_name']) ?></span>
+                                                                <span class="fw-bold text-body-emphasis"><?= htmlspecialchars($acc['platform_name']) ?></span>
                                                                 <span class="badge bg-secondary" style="font-size: 0.7em;">
                                                                     <?= htmlspecialchars(ucfirst($acc['plugin_id'])) ?>
                                                                 </span>
@@ -268,21 +269,21 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                                 <?php endif; ?>
 
                                 <?php if (!empty($mailingLists)): ?>
-                                    <hr class="text-muted opacity-25">
+                                    <hr class="text-body-secondary opacity-25">
                                     <div class="mt-3">
-                                        <label class="form-label fw-semibold text-secondary d-inline-flex align-items-center gap-1">
+                                        <label class="form-label fw-semibold text-body-secondary d-inline-flex align-items-center gap-1">
                                             <i class="bi bi-envelope-paper"></i> <?= __('mailing_lists') ?>
                                         </label>
                                         <div class="d-flex flex-wrap gap-2">
                                             <?php foreach ($mailingLists as $list): ?>
-                                                <div class="form-check border rounded px-3 py-2 bg-white shadow-sm">
+                                                <div class="form-check border rounded px-3 py-2 bg-body shadow-sm">
                                                     <input class="form-check-input" type="checkbox" 
                                                            name="target_mailing_lists[]" 
                                                            value="<?= $list['id'] ?>" 
                                                            id="ml_<?= $list['id'] ?>">
                                                     <label class="form-check-label d-flex align-items-center gap-2" for="ml_<?= $list['id'] ?>">
                                                         <span class="badge bg-warning text-dark">Mailing List</span>
-                                                        <?= htmlspecialchars($list['name']) ?>
+                                                        <span class="text-body-emphasis"><?= htmlspecialchars($list['name']) ?></span>
                                                     </label>
                                                 </div>
                                             <?php endforeach; ?>
@@ -300,17 +301,17 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                 <!-- Right Column: Publishing & Scheduling -->
                 <div class="col-md-4">
                     
-                    <div class="card shadow-sm border-0 bg-white mb-4 position-sticky" style="top: 1.5rem;">
+                    <div class="card shadow-sm border mb-4 position-sticky" style="top: 1.5rem;">
                         <div class="card-body p-4">
-                            <h5 class="fw-bold text-dark mb-4 d-inline-flex align-items-center gap-2">
+                            <h5 class="fw-bold text-body-emphasis mb-4 d-inline-flex align-items-center gap-2">
                                 <i class="bi bi-send text-primary"></i> <?= __('publish_card_title') ?>
                             </h5>
                             
-                            <label class="form-label fw-bold text-dark mb-2 d-inline-flex align-items-center gap-1">
+                            <label class="form-label fw-bold text-body-emphasis mb-2 d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-clock"></i> <?= __('schedule_optional') ?>
                             </label>
                             <input type="datetime-local" name="scheduled_at" class="form-control form-control-lg shadow-sm mb-2">
-                            <div class="text-muted small text-center mb-4">
+                            <div class="text-body-secondary small text-center mb-4">
                                 <i class="bi bi-geo-alt"></i> <?= __('timezone_label') ?> <strong><?= htmlspecialchars($_SESSION['user_timezone'] ?? 'UTC') ?></strong> 
                                 (<a href="/settings" class="text-decoration-none"><?= __('change') ?></a>)
                             </div>
@@ -338,7 +339,7 @@ $postPeriodLabel = ucfirst(htmlspecialchars($limits['post_period'] ?? $limits['p
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0 h-100 bg-light">
+            <div class="modal-body p-0 h-100 bg-body-tertiary">
                 <iframe src="/filemanager/standalone" style="width:100%; height:100%; border:none;"></iframe>
             </div>
         </div>
