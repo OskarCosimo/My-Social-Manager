@@ -14,6 +14,51 @@ $currentUserId = (int)$_SESSION['user_id'];
     <meta charset="UTF-8">
     <title><?= __('file_manager') ?? 'File Manager' ?></title>
     <link rel="stylesheet" href="/public/assets/My-File-Manager/css/myfilemanager.min.css" />
+    <style>
+        /* Ensure smooth background transition matching the active theme */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #ffffff;
+        }
+        html[data-bs-theme="dark"],
+        html[data-bs-theme="dark"] body {
+            background-color: #212529;
+        }
+    </style>
+    <script>
+        // Resolve the effective theme ('dark' or 'light') from Bootstrap 5 / localStorage / OS preference
+        function getResolvedTheme() {
+            // 1. Check if parent window (when inside iframe) already has data-bs-theme set
+            try {
+                if (window.parent && window.parent !== window && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute('data-bs-theme');
+                    if (parentTheme === 'dark' || parentTheme === 'light') {
+                        return parentTheme;
+                    }
+                }
+            } catch (e) {
+                // Fallback to localStorage if cross-origin access is restricted
+            }
+
+            // 2. Read saved theme preference from localStorage (supports common key names)
+            const storedTheme = localStorage.getItem('theme') 
+                             || localStorage.getItem('bs-theme') 
+                             || localStorage.getItem('app_theme') 
+                             || 'auto';
+
+            if (storedTheme === 'dark' || storedTheme === 'light') {
+                return storedTheme;
+            }
+
+            // 3. Fallback to Operating System preference ('auto')
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        // Apply initial theme to <html> immediately to prevent white flash
+        document.documentElement.setAttribute('data-bs-theme', getResolvedTheme());
+    </script>
 </head>
 <body style="margin: 0; padding: 0;">
 
@@ -25,26 +70,27 @@ $currentUserId = (int)$_SESSION['user_id'];
     <script>
     // Helper function to send the selected file to the Post Composer
     function sendToComposer(fileName) {
-    // Dynamically build base URL from Config::APP_URL and current user session
-    const appBaseUrl = '<?= rtrim(Config::APP_URL, "/") ?>';
-    const userId = '<?= (int)($_SESSION["user_id"] ?? 0) ?>';
-    const fileUrl = appBaseUrl + '/public/assets/My-File-Manager/files/user_' + userId + '/' + fileName;
-    
-    // If running inside modal iframe, dispatch postMessage to parent container
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-            type: 'file_selected',
-            url: fileUrl
-        }, '*');
-    } else {
-        // Direct tab fallback
-        localStorage.setItem('pending_file_url', fileUrl);
-        window.location.href = '/compose';
+        // Dynamically build base URL from Config::APP_URL and current user session
+        const appBaseUrl = '<?= rtrim(Config::APP_URL, "/") ?>';
+        const userId = '<?= (int)($_SESSION["user_id"] ?? 0) ?>';
+        const fileUrl = appBaseUrl + '/public/assets/My-File-Manager/files/user_' + userId + '/' + fileName;
+        
+        // If running inside modal iframe, dispatch postMessage to parent container
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                type: 'file_selected',
+                url: fileUrl
+            }, '*');
+        } else {
+            // Direct tab fallback
+            localStorage.setItem('pending_file_url', fileUrl);
+            window.location.href = '/compose';
+        }
     }
-}
 
     const token_bearer_header = '<?= $validToken ?>';
     const appLanguage = '<?= htmlspecialchars($currentLang) ?>';
+    const initialTheme = getResolvedTheme();
 
     var fm = new MyFileManager('#fm-container', {
         // Backend settings
@@ -53,9 +99,9 @@ $currentUserId = (int)$_SESSION['user_id'];
         autoRefresh: 8000,
         homeLabel: '<?= addslashes(strtoupper(__('home') ?? 'HOME')) ?>',
         
-        // UI settings with localized user language
+        // UI settings with localized user language and synced Bootstrap 5 theme
         lang: appLanguage,
-        theme: 'light',
+        theme: initialTheme,
         viewMode: 'list',
 
         // Hide sensitive and runtime file extensions
@@ -127,7 +173,7 @@ $currentUserId = (int)$_SESSION['user_id'];
         
         // Event listeners
         onInit: function() {
-            console.log('File manager initialized in locale: ' + appLanguage);
+            console.log('File manager initialized in locale: ' + appLanguage + ' | theme: ' + initialTheme);
         },
         onUploadStart: function(data) {
             console.log('Upload started:', data.file.name);
@@ -155,6 +201,46 @@ $currentUserId = (int)$_SESSION['user_id'];
         customFileOpener: function(file) {
             sendToComposer(file.name);
         }
+    });
+
+    // Sync File Manager theme dynamically when Bootstrap theme changes
+    function syncFileManagerTheme() {
+        const newTheme = getResolvedTheme();
+        document.documentElement.setAttribute('data-bs-theme', newTheme);
+        
+        if (fm && fm.options && fm.options.theme !== newTheme) {
+            fm.options.theme = newTheme;
+            if (typeof fm.applyTheme === 'function') {
+                fm.applyTheme();
+            }
+        }
+    }
+
+    // 1. Listen for localStorage changes from parent window / other tabs
+    window.addEventListener('storage', function(e) {
+        if (!e.key || e.key === 'theme' || e.key === 'bs-theme' || e.key === 'app_theme') {
+            syncFileManagerTheme();
+        }
+    });
+
+    // 2. Observe parent <html> data-bs-theme attribute changes in real time (same-window sidebar toggle)
+    try {
+        if (window.parent && window.parent !== window && window.parent.document) {
+            const parentHtml = window.parent.document.documentElement;
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'data-bs-theme') {
+                        syncFileManagerTheme();
+                    }
+                });
+            });
+            observer.observe(parentHtml, { attributes: true, attributeFilter: ['data-bs-theme'] });
+        }
+    } catch (e) {}
+
+    // 3. Listen for OS-level dark/light mode switches when in 'auto' mode
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+        syncFileManagerTheme();
     });
     </script>
 </body>
