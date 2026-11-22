@@ -33,13 +33,13 @@ require_once __DIR__ . '/../partials/header.php';
     <main class="content-area w-100 p-4">
         
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="h2 m-0 fw-bold text-dark d-inline-flex align-items-center gap-2">
+            <h1 class="h2 m-0 fw-bold text-body-emphasis d-inline-flex align-items-center gap-2">
                 <i class="bi bi-share text-primary"></i> <?= __('social_accounts') ?>
             </h1>
             
-            <div class="shadow-sm border rounded bg-white px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2">
-                <span>
-                    <i class="bi bi-tag-fill text-muted me-1"></i>
+            <div class="shadow-sm border rounded bg-body px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2">
+                <span class="text-body-emphasis">
+                    <i class="bi bi-tag-fill text-body-secondary me-1"></i>
                     <strong><?= __('plan_badge_name', ['name' => $planName]) ?></strong>
                 </span>
                 <span class="text-primary ms-2 border-start ps-3 d-inline-flex align-items-center gap-1">
@@ -74,22 +74,22 @@ require_once __DIR__ . '/../partials/header.php';
             </div>
         <?php endif; ?>
 
-        <div class="card stat-card shadow-sm border-0 mb-4 position-relative overflow-hidden">
+        <div class="card stat-card shadow-sm border mb-4 position-relative overflow-hidden">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="text-uppercase fw-bold text-muted mb-0"><?= __('connected_social_accounts') ?></h6>
+                    <h6 class="text-uppercase fw-bold text-body-secondary mb-0"><?= __('connected_social_accounts') ?></h6>
                     <div class="bg-primary bg-opacity-10 text-primary p-2 rounded d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
                         <i class="bi bi-people-fill fs-5"></i>
                     </div>
                 </div>
                 <div class="d-flex align-items-end mb-2">
-                    <h2 class="display-6 fw-bold mb-0"><?= $currentAccounts ?></h2>
-                    <span class="text-muted ms-2">/ <?= $maxAccounts ?></span>
+                    <h2 class="display-6 fw-bold mb-0 text-body-emphasis"><?= $currentAccounts ?></h2>
+                    <span class="text-body-secondary ms-2">/ <?= $maxAccounts ?></span>
                 </div>
                 <div class="progress mb-2" style="height: 8px; border-radius: 4px;">
                     <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $accountsPercent ?>%;"></div>
                 </div>
-                <small class="text-muted">
+                <small class="text-body-secondary">
                     <?= __('plan_limit_reached_percent', ['percent' => $accountsPercent]) ?>
                 </small>
             </div>
@@ -108,17 +108,17 @@ require_once __DIR__ . '/../partials/header.php';
         <div class="row g-4">
             
             <div class="col-md-8">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-white fw-bold d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border h-100">
+                    <div class="card-header bg-transparent fw-bold d-inline-flex align-items-center gap-2 text-body-emphasis">
                         <i class="bi bi-hdd-network text-primary"></i> <?= __('active_connections') ?>
                     </div>
                     <div class="card-body p-3">
                         <?php if (empty($connectedAccounts)): ?>
-                            <p class="text-muted mb-0"><?= __('no_accounts_connected_yet') ?></p>
+                            <p class="text-body-secondary mb-0"><?= __('no_accounts_connected_yet') ?></p>
                         <?php else: ?>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0 dt-table">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
                                             <th><?= __('account_name') ?></th>
                                             <th><?= __('plugin_details') ?></th>
@@ -130,7 +130,7 @@ require_once __DIR__ . '/../partials/header.php';
                                         <?php foreach ($connectedAccounts as $account): ?>
                                             <tr id="account-row-<?= (int)$account['id'] ?>">
                                                 <td>
-                                                    <strong class="d-block"><?= htmlspecialchars($account['platform_name'] ?? '') ?></strong>
+                                                    <strong class="d-block text-body-emphasis"><?= htmlspecialchars($account['platform_name'] ?? '') ?></strong>
                                                     <?php if (!empty($account['default_media'])): ?>
                                                         <span class="badge bg-info-subtle text-info border border-info-subtle mt-1" style="font-size: 0.7rem;" title="<?= htmlspecialchars($account['default_media']) ?>">
                                                             <i class="bi <?= $account['is_video_network'] ? 'bi-camera-video' : 'bi-image' ?>"></i> Custom <?= $account['is_video_network'] ? 'Video' : 'Image' ?> Set
@@ -158,13 +158,13 @@ require_once __DIR__ . '/../partials/header.php';
                                                             <?= __('token_status_valid', ['days' => (int)$account['days_left']]) ?>
                                                         </span>
                                                     <?php else: ?>
-                                                        <span class="badge bg-light text-muted border status-badge d-inline-flex align-items-center gap-1">
+                                                        <span class="badge bg-body-secondary text-body-secondary border status-badge d-inline-flex align-items-center gap-1">
                                                             <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> <?= __('token_status_active') ?>
                                                         </span>
                                                     <?php endif; ?>
 
                                                     <?php if (!empty($account['token_expires_at'])): ?>
-                                                        <small class="text-muted d-block mt-1" style="font-size: 11px;">
+                                                        <small class="text-body-secondary d-block mt-1" style="font-size: 11px;">
                                                             <?= __('token_expires_label', ['date' => date('M d, Y', strtotime($account['token_expires_at']))]) ?: ('Exp: ' . date('M d, Y', strtotime($account['token_expires_at']))) ?>
                                                         </small>
                                                     <?php endif; ?>
@@ -224,13 +224,13 @@ require_once __DIR__ . '/../partials/header.php';
             </div>
 
             <div class="col-md-4">
-                <div class="card shadow-sm border-0 h-100 bg-light">
-                    <div class="card-header bg-transparent border-0 fw-bold pb-0 d-inline-flex align-items-center gap-2">
+                <div class="card shadow-sm border h-100 bg-body-tertiary">
+                    <div class="card-header bg-transparent border-0 fw-bold pb-0 d-inline-flex align-items-center gap-2 text-body-emphasis">
                         <i class="bi bi-plus-circle text-primary"></i> <?= __('connect_new') ?>
                     </div>
                     <div class="card-body">
                         <?php if (empty($availablePlugins)): ?>
-                            <p class="text-muted small"><?= __('no_plugins_installed') ?></p>
+                            <p class="text-body-secondary small"><?= __('no_plugins_installed') ?></p>
                         <?php else: ?>
                             <div class="d-grid gap-2">
                                 <?php foreach ($availablePlugins as $plugin): ?>
@@ -264,13 +264,13 @@ require_once __DIR__ . '/../partials/header.php';
                 </div>
 
                 <div class="modal-body p-4">
-                    <p class="text-muted small mb-3">
-                        Configure a custom fallback media file for <strong id="modal_account_name" class="text-dark"></strong>.
+                    <p class="text-body-secondary small mb-3">
+                        Configure a custom fallback media file for <strong id="modal_account_name" class="text-body-emphasis"></strong>.
                         If specified, this file overrides the system admin default whenever a post or RSS article has no media attached.
                     </p>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold small" id="modal_media_label">Default Media URL / Path</label>
+                        <label class="form-label fw-bold small text-body-emphasis" id="modal_media_label">Default Media URL / Path</label>
                         <div class="input-group">
                             <input type="text" name="default_media" id="modal_default_media" class="form-control" placeholder="https://example.com/file.mp4 or /public/assets/...">
                             <button type="button" class="btn btn-outline-primary fw-bold" id="btn-browse-fm" data-bs-toggle="modal" data-bs-target="#fileManagerModal">
@@ -280,16 +280,16 @@ require_once __DIR__ . '/../partials/header.php';
                         <div class="form-text small" id="modal_media_hint">Enter a direct URL or pick a file from your File Manager.</div>
                     </div>
 
-                    <div class="p-3 bg-light border rounded mb-2">
-                        <span class="small fw-bold text-secondary d-block mb-1">Global Admin Fallback:</span>
+                    <div class="p-3 bg-body-tertiary border rounded mb-2">
+                        <span class="small fw-bold text-body-secondary d-block mb-1">Global Admin Fallback:</span>
                         <div class="text-truncate font-monospace small" id="modal_global_default" style="max-width: 100%;">
-                            <span class="text-muted">None configured in Admin</span>
+                            <span class="text-body-secondary">None configured in Admin</span>
                         </div>
-                        <small class="text-muted d-block mt-1">If the field above is empty, this platform default will be used automatically.</small>
+                        <small class="text-body-secondary d-block mt-1">If the field above is empty, this platform default will be used automatically.</small>
                     </div>
                 </div>
 
-                <div class="modal-footer bg-light">
+                <div class="modal-footer bg-body-tertiary">
                     <button type="button" class="btn btn-outline-danger btn-sm me-auto" id="btn-clear-media">Clear Override</button>
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary fw-bold px-4">Save Changes</button>
@@ -309,7 +309,7 @@ require_once __DIR__ . '/../partials/header.php';
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0 h-100 bg-light">
+            <div class="modal-body p-0 h-100 bg-body-tertiary">
                 <iframe src="/filemanager/standalone" style="width:100%; height:100%; border:none;"></iframe>
             </div>
         </div>
@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (globalDefault) {
                 labelGlobalDefault.innerHTML = '<code class="text-primary">' + globalDefault + '</code>';
             } else {
-                labelGlobalDefault.innerHTML = '<span class="text-muted">None configured in Admin settings</span>';
+                labelGlobalDefault.innerHTML = '<span class="text-body-secondary">None configured in Admin settings</span>';
             }
 
             mediaModal.show();
