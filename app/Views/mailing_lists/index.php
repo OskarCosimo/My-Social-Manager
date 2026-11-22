@@ -22,7 +22,7 @@ require_once __DIR__ . '/../partials/header.php';
 $currentUser = User::findById((int)$_SESSION['user_id']);
 ?>
 
-<div class="d-flex main-wrapper bg-light">
+<div class="d-flex main-wrapper">
     <?php 
     $activeMenu = 'mailinglists'; 
     require __DIR__ . '/../partials/sidebar.php'; 
@@ -32,20 +32,20 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
         
         <!-- Header & Info Badge -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="h2 m-0 fw-bold text-dark d-inline-flex align-items-center gap-2">
+            <h1 class="h2 m-0 fw-bold text-body-emphasis d-inline-flex align-items-center gap-2">
                 <i class="bi bi-envelope-paper text-danger"></i> <?= __('mailing_lists') ?>
             </h1>
             
-            <div class="shadow-sm border rounded bg-white px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2 flex-wrap">
-                <span>
-                    <i class="bi bi-tag-fill text-muted me-1"></i>
+            <div class="shadow-sm border rounded bg-body px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2 flex-wrap">
+                <span class="text-body-emphasis">
+                    <i class="bi bi-tag-fill text-body-secondary me-1"></i>
                     <strong><?= str_replace('{name}', htmlspecialchars($limits['plan_name'] ?? 'Free'), __('plan_badge_name')) ?></strong>
                 </span>
                 <span class="text-primary border-start ps-3 d-inline-flex align-items-center gap-1">
                     <i class="bi bi-card-list"></i>
                     <strong><?= str_replace(['{current}', '{max}'], [$currentListCount, $maxLists], __('mailing_lists_ratio')) ?></strong>
                 </span>
-                <span class="text-secondary border-start ps-3 d-inline-flex align-items-center gap-1">
+                <span class="text-body-secondary border-start ps-3 d-inline-flex align-items-center gap-1">
                     <i class="bi bi-people"></i>
                     <strong><?= str_replace('{count}', number_format($limits['max_subscribers_per_list'] ?? 0), __('max_subs_per_list_ratio')) ?></strong>
                 </span>
@@ -62,22 +62,22 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
         <?php endif; ?>
 
         <!-- Monthly Emails Sent Progress Bar -->
-        <div class="card stat-card shadow-sm border-0 mb-4 position-relative overflow-hidden">
+        <div class="card stat-card shadow-sm border mb-4 position-relative overflow-hidden">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="text-uppercase fw-bold text-muted mb-0"><?= __('monthly_emails_sent_title') ?></h6>
-                    <div class="p-2 rounded d-inline-flex align-items-center justify-content-center" style="background-color: rgba(111, 66, 193, 0.1); color: #6f42c1; width: 38px; height: 38px;">
+                    <h6 class="text-uppercase fw-bold text-body-secondary mb-0"><?= __('monthly_emails_sent_title') ?></h6>
+                    <div class="p-2 rounded d-inline-flex align-items-center justify-content-center" style="background-color: rgba(111, 66, 193, 0.15); color: #8c68cd; width: 38px; height: 38px;">
                         <i class="bi bi-send fs-5"></i>
                     </div>
                 </div>
                 <div class="d-flex align-items-end mb-2">
-                    <h2 class="display-6 fw-bold mb-0"><?= number_format($emailsSent) ?></h2>
-                    <span class="text-muted ms-2">/ <?= number_format($maxEmails) ?></span>
+                    <h2 class="display-6 fw-bold mb-0 text-body-emphasis"><?= number_format($emailsSent) ?></h2>
+                    <span class="text-body-secondary ms-2">/ <?= number_format($maxEmails) ?></span>
                 </div>
                 <div class="progress mb-2" style="height: 8px; border-radius: 4px;">
                     <div class="progress-bar" role="progressbar" style="width: <?= $emailsPercent ?>%; background-color: #6f42c1;"></div>
                 </div>
-                <small class="text-muted">
+                <small class="text-body-secondary">
                     <?= str_replace('{percent}', $emailsPercent, __('monthly_email_limit_used')) ?>
                 </small>
             </div>
@@ -94,21 +94,21 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
         <?php endif; ?>
 
         <!-- Create New List Form Card -->
-        <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card shadow-sm border mb-4">
             <div class="card-body p-4">
-                <h5 class="card-title fw-bold text-dark mb-3 d-inline-flex align-items-center gap-2">
+                <h5 class="card-title fw-bold text-body-emphasis mb-3 d-inline-flex align-items-center gap-2">
                     <i class="bi bi-plus-circle text-primary"></i> <?= __('create_new_list') ?>
                 </h5>
                 <form action="/mailinglists/store" method="POST" id="createListForm">
                     <div class="row g-3 align-items-end mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark"><?= __('list_name_field') ?></label>
+                            <label class="form-label fw-bold text-body-emphasis"><?= __('list_name_field') ?></label>
                             <input type="text" name="name" class="form-control" placeholder="<?= __('list_name_placeholder') ?>" required <?= $isListLimitReached ? 'disabled' : '' ?>>
                         </div>
                         <div class="col-md-6">
                             <div class="form-check mt-md-4">
                                 <input class="form-check-input" type="checkbox" name="require_confirmation" value="1" id="requireConfirmation" <?= $isListLimitReached ? 'disabled' : '' ?>>
-                                <label class="form-check-label small text-dark" for="requireConfirmation">
+                                <label class="form-check-label small text-body-emphasis" for="requireConfirmation">
                                     <?= __('require_double_optin') ?>
                                 </label>
                             </div>
@@ -116,10 +116,10 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                     </div>
 
                     <!-- Payment Options Setup -->
-                    <div class="border p-3 rounded bg-light mb-3">
+                    <div class="border p-3 rounded bg-body-tertiary mb-3">
                         <div class="form-check form-switch mb-2">
                             <input class="form-check-input" type="checkbox" id="is_paid" name="is_paid" value="1" onchange="togglePaymentFields();" <?= $isListLimitReached ? 'disabled' : '' ?>>
-                            <label class="form-check-label fw-bold text-dark" for="is_paid"><?= __('require_paid_access') ?></label>
+                            <label class="form-check-label fw-bold text-body-emphasis" for="is_paid"><?= __('require_paid_access') ?></label>
                         </div>
 
                         <div class="row g-3 mt-1" id="paid_options" style="display: none;">
@@ -180,11 +180,11 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
         </div>
 
         <!-- Existing Mailing Lists Table -->
-        <div class="card shadow-sm border-0 bg-white mb-4">
+        <div class="card shadow-sm border mb-4">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th><?= __('name_header') ?></th>
                                 <th><?= __('access_model_header') ?></th>
@@ -196,7 +196,7 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                         <tbody>
                             <?php if (empty($lists)): ?>
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted py-4"><?= __('no_mailing_lists_yet') ?></td>
+                                    <td colspan="5" class="text-center text-body-secondary py-4"><?= __('no_mailing_lists_yet') ?></td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($lists as $list): 
@@ -270,13 +270,13 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                                 <div class="modal-body p-4">
                                     <div class="row g-3 align-items-end mb-3">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold text-dark"><?= __('list_name_field') ?></label>
+                                            <label class="form-label fw-bold text-body-emphasis"><?= __('list_name_field') ?></label>
                                             <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($list['name']) ?>" required>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-check mt-md-4">
                                                 <input class="form-check-input" type="checkbox" name="require_confirmation" value="1" id="edit_req_confirm_<?= $list['id'] ?>" <?= !empty($list['require_confirmation']) ? 'checked' : '' ?>>
-                                                <label class="form-check-label small text-dark" for="edit_req_confirm_<?= $list['id'] ?>">
+                                                <label class="form-check-label small text-body-emphasis" for="edit_req_confirm_<?= $list['id'] ?>">
                                                     <?= __('require_double_optin') ?>
                                                 </label>
                                             </div>
@@ -284,10 +284,10 @@ $currentUser = User::findById((int)$_SESSION['user_id']);
                                     </div>
 
                                     <!-- Edit Payment Options Setup -->
-                                    <div class="border p-3 rounded bg-light mb-3">
+                                    <div class="border p-3 rounded bg-body-tertiary mb-3">
                                         <div class="form-check form-switch mb-2">
                                             <input class="form-check-input" type="checkbox" id="edit_is_paid_<?= $list['id'] ?>" name="is_paid" value="1" onchange="toggleEditPaymentFields(<?= $list['id'] ?>);" <?= !empty($list['is_paid']) ? 'checked' : '' ?>>
-                                            <label class="form-check-label fw-bold text-dark" for="edit_is_paid_<?= $list['id'] ?>"><?= __('require_paid_access') ?></label>
+                                            <label class="form-check-label fw-bold text-body-emphasis" for="edit_is_paid_<?= $list['id'] ?>"><?= __('require_paid_access') ?></label>
                                         </div>
 
                                         <div class="row g-3 mt-1" id="edit_paid_options_<?= $list['id'] ?>" style="<?= !empty($list['is_paid']) ? 'display: flex;' : 'display: none;' ?>">
