@@ -19,6 +19,8 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
     .cursor-pointer { cursor: pointer; }
     .pack-option-card { border: 2px solid #dee2e6; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
     .pack-option-card:hover, .pack-option-card.selected { border-color: #6f42c1; background-color: rgba(111, 66, 193, 0.04); }
+    .topic-item-row { background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; transition: border-color 0.2s; }
+    .topic-item-row:focus-within { border-color: #0d6efd; }
 </style>
 
 <div class="d-flex main-wrapper bg-light">
@@ -120,60 +122,83 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                     <?= __('ai_source_mode_label') ?? 'Campaign Source Mode' ?>
                                 </label>
                                 <select name="source_mode" id="source_mode" class="form-select form-select-lg border-secondary-subtle shadow-sm">
-                                    <option value="prompt_only"><?= __('ai_source_prompt_only') ?? 'Prompt Only (Generate original posts from instructions)' ?></option>
-                                    <option value="rss_feed"><?= __('ai_source_rss_feed') ?? 'External RSS Feed (Extract links & explain with AI)' ?></option>
-                                    <option value="links_list"><?= __('ai_source_links_list') ?? 'Custom Links / Topics List (1 per line, explain with AI)' ?></option>
+                                    <option value="prompt_only"><?= __('ai_source_prompt_only') ?? 'Prompt Only (Generate original posts from general instructions)' ?></option>
+                                    <option value="links_list"><?= __('ai_source_links_list') ?? 'Custom Links & Topics List (With dedicated per-item AI instructions)' ?></option>
                                 </select>
                                 <div class="form-text text-muted small mt-1">
-                                    <?= __('ai_source_mode_hint') ?? 'Choose whether to generate posts solely from your prompt, or feed external RSS/manual links for the AI to read and explain.' ?>
+                                    <?= __('ai_source_mode_hint_no_rss') ?? 'Choose whether to generate posts from a single general prompt, or provide a curated list of URLs/topics where each item has its own specific instruction.' ?>
                                 </div>
                             </div>
 
-                            <!-- External RSS Feed Box -->
-                            <div id="rss_source_box" class="p-3 bg-light rounded border border-secondary-subtle mb-4 d-none">
-                                <label class="form-label fw-bold text-dark">
-                                    <i class="bi bi-rss text-primary me-1"></i> <?= __('ai_external_rss_url') ?? 'External RSS / Atom Feed URL' ?>
-                                </label>
-                                <input type="url" name="rss_url" id="rss_url" class="form-control shadow-sm mb-3" placeholder="https://example.com/feed.xml">
-                            </div>
-
-                            <!-- Custom Links / Topics List Box -->
+                            <!-- Custom Links / Topics Repeater Box -->
                             <div id="links_list_box" class="p-3 bg-light rounded border border-secondary-subtle mb-4 d-none">
-                                <label class="form-label fw-bold text-dark">
-                                    <i class="bi bi-list-ul text-primary me-1"></i> <?= __('ai_links_list_label') ?? 'External Links or Topics List (One per line)' ?>
-                                </label>
-                                <textarea name="links_list" id="links_list" class="form-control shadow-sm mb-2" rows="5" placeholder="https://www.php.net/manual/en/function.array-map.php&#10;https://www.php.net/manual/en/function.array-filter.php&#10;The Shining (1980) - Horror Movie"></textarea>
-                                <div class="form-text text-muted small">
-                                    <?= __('ai_links_list_hint') ?? 'Enter one URL or topic per line. If a line is a valid URL, the AI worker will read the webpage to explain its content.' ?>
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                    <div>
+                                        <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                            <i class="bi bi-link-45deg text-primary fs-5"></i>
+                                            <span><?= __('ai_links_topics_builder_title') ?? 'Links & Topics with Specific Instructions' ?></span>
+                                        </label>
+                                        <div class="form-text text-muted small mt-0">
+                                            <?= __('ai_links_topics_builder_hint') ?? 'Add a URL (the AI will visit and read the page) or a topic title, and optionally tell the AI what to focus on for that specific item.' ?>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm d-inline-flex align-items-center gap-1" id="add-topic-row-btn">
+                                        <i class="bi bi-plus-lg"></i> <?= __('ai_add_item_btn') ?? 'Add Link / Topic' ?>
+                                    </button>
+                                </div>
+
+                                <div id="topic-rows-container" class="d-flex flex-column gap-2">
+                                    <!-- Initial Row -->
+                                    <div class="topic-item-row shadow-sm">
+                                        <div class="row g-2 align-items-start">
+                                            <div class="col-md-5">
+                                                <label class="form-label small fw-bold text-muted mb-1">
+                                                    <?= __('ai_item_target_label') ?? 'URL or Topic' ?> <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" name="item_targets[]" class="form-control form-control-sm item-target-input" placeholder="https://example.com/article or Topic Name">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold text-muted mb-1">
+                                                    <?= __('ai_item_instruction_label') ?? 'Specific AI Instruction for this item (Optional)' ?>
+                                                </label>
+                                                <input type="text" name="item_instructions[]" class="form-control form-control-sm" placeholder="e.g. Focus on the pricing section and ask a question at the end">
+                                            </div>
+                                            <div class="col-md-1 text-end pt-md-4">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-topic-row-btn" title="<?= __('remove') ?? 'Remove' ?>">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Shared Options for RSS & Links List -->
+                            <!-- Options for Links / Topics List -->
                             <div id="external_source_options" class="row g-3 mb-4 d-none">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-dark small text-uppercase">
                                         <?= __('ai_item_selection_mode') ?? 'Item Selection Order' ?>
                                     </label>
                                     <select name="selection_mode" id="selection_mode" class="form-select shadow-sm">
-                                        <option value="random"><?= __('ai_selection_random') ?? 'Random (Avoid duplicates within campaign)' ?></option>
                                         <option value="sequential"><?= __('ai_selection_sequential') ?? 'Sequential (Top to bottom)' ?></option>
+                                        <option value="random"><?= __('ai_selection_random') ?? 'Random (Avoid duplicates within campaign)' ?></option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 d-flex align-items-end">
                                     <div class="form-check form-switch p-2 border rounded bg-white w-100 ps-5">
                                         <input class="form-check-input" type="checkbox" name="include_source_link" id="include_source_link" value="1" checked>
                                         <label class="form-check-label fw-bold text-dark cursor-pointer" for="include_source_link">
-                                            🔗 <?= __('ai_include_source_link') ?? 'Append extracted link to post' ?>
+                                            🔗 <?= __('ai_include_source_link') ?? 'Append URL to post (when item is a link)' ?>
                                         </label>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Prompt Instructions -->
-                            <label class="form-label fw-bold text-dark">
-                                <?= __('what_ai_talk_about') ?? 'What should the AI talk about / how should it explain the link?' ?>
+                            <!-- General Prompt Instructions -->
+                            <label class="form-label fw-bold text-dark" id="main_prompt_label">
+                                <?= __('what_ai_talk_about') ?? 'General Campaign Instructions (Tone, Style, Audience)' ?>
                             </label>
-                            <textarea name="prompt" class="form-control form-control-lg border-secondary-subtle shadow-sm mb-3" rows="5" placeholder="<?= htmlspecialchars(__('ai_prompt_instructions_placeholder') ?? 'e.g. Explain this PHP function clearly with a practical tip for developers, or review this movie without spoilers specifying which audience will enjoy it.') ?>" required></textarea>
+                            <textarea name="prompt" class="form-control form-control-lg border-secondary-subtle shadow-sm mb-3" rows="4" placeholder="<?= htmlspecialchars(__('ai_prompt_instructions_placeholder') ?? 'e.g. Write in a friendly, professional tone for tech enthusiasts. Include 2 relevant hashtags and a clear call to action.') ?>" required></textarea>
 
                             <!-- Detail Level + Manual Token & Character Limits -->
                             <div class="p-3 bg-light rounded border border-secondary-subtle mb-3">
@@ -431,16 +456,37 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                         if ($camp['status'] === 'paused')    $statusClass = 'bg-warning text-dark';
                                         if ($camp['status'] === 'completed') $statusClass = 'bg-info text-dark';
                                         $isUnique = !empty($campSettings['unique_posts']);
-                                        $sourceMode = $campSettings['source_mode'] ?? 'prompt_only';
+                                        $sourceMode = ($campSettings['source_mode'] ?? 'prompt_only') === 'links_list' ? 'links_list' : 'prompt_only';
                                         $detailLevel = $campSettings['ai_detail_level'] ?? 'medium';
                                         $maxTokens = (int)($campSettings['ai_max_tokens'] ?? 350);
                                         $maxChars = (int)($campSettings['ai_max_chars'] ?? 0);
 
+                                        // Normalize links_items for backward compatibility
+                                        $rawItems = $campSettings['links_items'] ?? [];
+                                        if (empty($rawItems) && !empty($campSettings['links_list'])) {
+                                            $lines = preg_split('/\r\n|\r|\n/', (string)$campSettings['links_list']);
+                                            foreach ($lines as $ln) {
+                                                if (trim($ln) !== '') {
+                                                    $rawItems[] = ['target' => trim($ln), 'instruction' => ''];
+                                                }
+                                            }
+                                        }
+                                        $normalizedItems = [];
+                                        foreach ($rawItems as $it) {
+                                            if (is_array($it)) {
+                                                $normalizedItems[] = [
+                                                    'target'      => (string)($it['target'] ?? ''),
+                                                    'instruction' => (string)($it['instruction'] ?? '')
+                                                ];
+                                            } elseif (is_string($it) && trim($it) !== '') {
+                                                $normalizedItems[] = ['target' => trim($it), 'instruction' => ''];
+                                            }
+                                        }
+
                                         $editConfigPayload = [
                                             'source_mode'         => $sourceMode,
-                                            'rss_url'             => $campSettings['rss_url'] ?? '',
-                                            'links_list'          => $campSettings['links_list'] ?? '',
-                                            'selection_mode'      => $campSettings['selection_mode'] ?? 'random',
+                                            'links_items'         => $normalizedItems,
+                                            'selection_mode'      => $campSettings['selection_mode'] ?? 'sequential',
                                             'include_source_link' => isset($campSettings['include_source_link']) ? (int)$campSettings['include_source_link'] : 1,
                                             'ai_detail_level'     => $detailLevel,
                                             'ai_max_tokens'       => $maxTokens,
@@ -454,13 +500,9 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                                                 <?= htmlspecialchars($camp['prompt']) ?>
                                             </span>
                                             <div class="d-flex flex-wrap gap-1 mt-1">
-                                                <?php if ($sourceMode === 'rss_feed'): ?>
+                                                <?php if ($sourceMode === 'links_list'): ?>
                                                     <span class="badge bg-info text-dark" style="font-size: 0.7em;">
-                                                        <i class="bi bi-rss"></i> RSS + AI
-                                                    </span>
-                                                <?php elseif ($sourceMode === 'links_list'): ?>
-                                                    <span class="badge bg-info text-dark" style="font-size: 0.7em;">
-                                                        <i class="bi bi-list-ul"></i> List + AI
+                                                        <i class="bi bi-list-ul"></i> Links/Topics (<?= count($normalizedItems) ?>)
                                                     </span>
                                                 <?php endif; ?>
                                                 <span class="badge bg-light text-dark border" style="font-size: 0.7em;">
@@ -697,41 +739,40 @@ $aiPacks = !empty($rawPacks) ? json_decode($rawPacks, true) : [
                         <label class="form-label fw-bold"><?= __('ai_source_mode_label') ?? 'Campaign Source Mode' ?></label>
                         <select name="source_mode" id="edit_source_mode" class="form-select">
                             <option value="prompt_only"><?= __('ai_source_prompt_only') ?? 'Prompt Only' ?></option>
-                            <option value="rss_feed"><?= __('ai_source_rss_feed') ?? 'External RSS Feed + AI' ?></option>
-                            <option value="links_list"><?= __('ai_source_links_list') ?? 'Custom Links / Topics List + AI' ?></option>
+                            <option value="links_list"><?= __('ai_source_links_list') ?? 'Custom Links & Topics List + AI' ?></option>
                         </select>
                     </div>
 
-                    <div id="edit_rss_source_box" class="mb-3 d-none">
-                        <label class="form-label fw-bold"><?= __('ai_external_rss_url') ?? 'External RSS Feed URL' ?></label>
-                        <input type="url" name="rss_url" id="edit_rss_url" class="form-control">
-                    </div>
-
-                    <div id="edit_links_list_box" class="mb-3 d-none">
-                        <label class="form-label fw-bold"><?= __('ai_links_list_label') ?? 'External Links / Topics List (One per line)' ?></label>
-                        <textarea name="links_list" id="edit_links_list" rows="4" class="form-control"></textarea>
+                    <div id="edit_links_list_box" class="p-3 bg-light rounded border mb-3 d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0"><?= __('ai_links_topics_builder_title') ?? 'Links & Topics with Specific Instructions' ?></label>
+                            <button type="button" class="btn btn-sm btn-primary fw-bold" id="edit-add-topic-row-btn">
+                                <i class="bi bi-plus-lg"></i> <?= __('ai_add_item_btn') ?? 'Add Link / Topic' ?>
+                            </button>
+                        </div>
+                        <div id="edit-topic-rows-container" class="d-flex flex-column gap-2"></div>
                     </div>
 
                     <div id="edit_external_source_options" class="row g-3 mb-3 d-none">
                         <div class="col-md-6">
                             <label class="form-label fw-bold"><?= __('ai_item_selection_mode') ?? 'Item Selection Order' ?></label>
                             <select name="selection_mode" id="edit_selection_mode" class="form-select">
-                                <option value="random"><?= __('ai_selection_random') ?? 'Random (Avoid duplicates)' ?></option>
                                 <option value="sequential"><?= __('ai_selection_sequential') ?? 'Sequential (Top to bottom)' ?></option>
+                                <option value="random"><?= __('ai_selection_random') ?? 'Random (Avoid duplicates)' ?></option>
                             </select>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
                             <div class="form-check form-switch p-2 border rounded bg-light w-100 ps-5">
                                 <input class="form-check-input" type="checkbox" name="include_source_link" id="edit_include_source_link" value="1">
                                 <label class="form-check-label fw-bold cursor-pointer" for="edit_include_source_link">
-                                    🔗 <?= __('ai_include_source_link') ?? 'Append extracted link to post' ?>
+                                    🔗 <?= __('ai_include_source_link') ?? 'Append URL to post' ?>
                                 </label>
                             </div>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold"><?= __('prompt_instructions') ?? 'Prompt Instructions' ?></label>
+                        <label class="form-label fw-bold"><?= __('what_ai_talk_about') ?? 'General Campaign Instructions' ?></label>
                         <textarea name="prompt" id="edit_prompt" rows="4" class="form-control" required></textarea>
                     </div>
 
@@ -837,34 +878,94 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const detailTokenDefaults = { light: 150, medium: 350, detailed: 750 };
 
+    function escapeAttr(str) {
+        return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
     /**
-     * Toggle visibility of source mode containers (Create or Edit form)
+     * Build a single Link/Topic + Specific Instruction row
      */
-    function syncSourceModeUI(modeSelect, rssBox, linksBox, extOpts, rssInput, linksInput) {
+    function createTopicRowElement(targetVal = '', instructionVal = '', isRequired = false) {
+        const div = document.createElement('div');
+        div.className = 'topic-item-row shadow-sm';
+        div.innerHTML = `
+            <div class="row g-2 align-items-start">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold text-muted mb-1">
+                        <?= addslashes(__('ai_item_target_label') ?? 'URL or Topic') ?> <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="item_targets[]" class="form-control form-control-sm item-target-input" value="${escapeAttr(targetVal)}" placeholder="https://example.com/article or Topic Name" ${isRequired ? 'required' : ''}>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted mb-1">
+                        <?= addslashes(__('ai_item_instruction_label') ?? 'Specific AI Instruction for this item (Optional)') ?>
+                    </label>
+                    <input type="text" name="item_instructions[]" class="form-control form-control-sm" value="${escapeAttr(instructionVal)}" placeholder="e.g. Focus on key takeaways and ask a question">
+                </div>
+                <div class="col-md-1 text-end pt-md-4">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-topic-row-btn" title="<?= addslashes(__('remove') ?? 'Remove') ?>">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+
+    /**
+     * Toggle visibility of Links/Topics builder (Create or Edit form)
+     */
+    function syncSourceModeUI(modeSelect, linksBox, extOpts, containerEl) {
         if (!modeSelect) return;
         const mode = modeSelect.value;
+        const isLinksList = (mode === 'links_list');
 
-        rssBox.classList.toggle('d-none', mode !== 'rss_feed');
-        linksBox.classList.toggle('d-none', mode !== 'links_list');
-        extOpts.classList.toggle('d-none', mode === 'prompt_only');
+        linksBox.classList.toggle('d-none', !isLinksList);
+        extOpts.classList.toggle('d-none', !isLinksList);
 
-        if (rssInput) rssInput.required = (mode === 'rss_feed');
-        if (linksInput) linksInput.required = (mode === 'links_list');
+        if (containerEl) {
+            if (isLinksList && containerEl.children.length === 0) {
+                containerEl.appendChild(createTopicRowElement('', '', true));
+            }
+            containerEl.querySelectorAll('.item-target-input').forEach(inp => {
+                inp.required = isLinksList;
+            });
+        }
     }
 
     const sourceModeEl = document.getElementById('source_mode');
-    const rssBoxEl = document.getElementById('rss_source_box');
     const linksBoxEl = document.getElementById('links_list_box');
     const extOptsEl = document.getElementById('external_source_options');
-    const rssInputEl = document.getElementById('rss_url');
-    const linksInputEl = document.getElementById('links_list');
+    const topicRowsContainer = document.getElementById('topic-rows-container');
+    const addTopicRowBtn = document.getElementById('add-topic-row-btn');
 
     if (sourceModeEl) {
         sourceModeEl.addEventListener('change', function() {
-            syncSourceModeUI(sourceModeEl, rssBoxEl, linksBoxEl, extOptsEl, rssInputEl, linksInputEl);
+            syncSourceModeUI(sourceModeEl, linksBoxEl, extOptsEl, topicRowsContainer);
         });
-        syncSourceModeUI(sourceModeEl, rssBoxEl, linksBoxEl, extOptsEl, rssInputEl, linksInputEl);
+        syncSourceModeUI(sourceModeEl, linksBoxEl, extOptsEl, topicRowsContainer);
     }
+
+    if (addTopicRowBtn && topicRowsContainer) {
+        addTopicRowBtn.addEventListener('click', function() {
+            const isReq = (sourceModeEl && sourceModeEl.value === 'links_list');
+            topicRowsContainer.appendChild(createTopicRowElement('', '', isReq));
+        });
+    }
+
+    // Event delegation for removing rows in both Create and Edit containers
+    document.addEventListener('click', function(e) {
+        const removeBtn = e.target.closest('.remove-topic-row-btn');
+        if (removeBtn) {
+            const row = removeBtn.closest('.topic-item-row');
+            const parent = row ? row.parentElement : null;
+            if (parent && parent.children.length > 1) {
+                row.remove();
+            } else if (row) {
+                row.querySelectorAll('input').forEach(i => i.value = '');
+            }
+        }
+    });
 
     const detailLevelEl = document.getElementById('ai_detail_level');
     const maxTokensEl = document.getElementById('ai_max_tokens');
@@ -875,15 +976,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const editSourceModeEl = document.getElementById('edit_source_mode');
-    const editRssBoxEl = document.getElementById('edit_rss_source_box');
     const editLinksBoxEl = document.getElementById('edit_links_list_box');
     const editExtOptsEl = document.getElementById('edit_external_source_options');
-    const editRssInputEl = document.getElementById('edit_rss_url');
-    const editLinksInputEl = document.getElementById('edit_links_list');
+    const editTopicRowsContainer = document.getElementById('edit-topic-rows-container');
+    const editAddTopicRowBtn = document.getElementById('edit-add-topic-row-btn');
 
     if (editSourceModeEl) {
         editSourceModeEl.addEventListener('change', function() {
-            syncSourceModeUI(editSourceModeEl, editRssBoxEl, editLinksBoxEl, editExtOptsEl, editRssInputEl, editLinksInputEl);
+            syncSourceModeUI(editSourceModeEl, editLinksBoxEl, editExtOptsEl, editTopicRowsContainer);
+        });
+    }
+
+    if (editAddTopicRowBtn && editTopicRowsContainer) {
+        editAddTopicRowBtn.addEventListener('click', function() {
+            const isReq = (editSourceModeEl && editSourceModeEl.value === 'links_list');
+            editTopicRowsContainer.appendChild(createTopicRowElement('', '', isReq));
         });
     }
 
@@ -938,13 +1045,26 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_unique_posts').checked = (this.dataset.unique === '1');
 
             const config = JSON.parse(this.dataset.config || '{}');
+            const mode = config.source_mode === 'links_list' ? 'links_list' : 'prompt_only';
+
             if (editSourceModeEl) {
-                editSourceModeEl.value = config.source_mode || 'prompt_only';
+                editSourceModeEl.value = mode;
             }
-            if (editRssInputEl) editRssInputEl.value = config.rss_url || '';
-            if (editLinksInputEl) editLinksInputEl.value = config.links_list || '';
+            if (editTopicRowsContainer) {
+                editTopicRowsContainer.innerHTML = '';
+                const items = Array.isArray(config.links_items) ? config.links_items : [];
+                if (items.length > 0) {
+                    items.forEach(it => {
+                        editTopicRowsContainer.appendChild(
+                            createTopicRowElement(it.target || '', it.instruction || '', mode === 'links_list')
+                        );
+                    });
+                } else {
+                    editTopicRowsContainer.appendChild(createTopicRowElement('', '', mode === 'links_list'));
+                }
+            }
             if (document.getElementById('edit_selection_mode')) {
-                document.getElementById('edit_selection_mode').value = config.selection_mode || 'random';
+                document.getElementById('edit_selection_mode').value = config.selection_mode || 'sequential';
             }
             if (document.getElementById('edit_include_source_link')) {
                 document.getElementById('edit_include_source_link').checked = (parseInt(config.include_source_link ?? 1, 10) === 1);
@@ -959,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('edit_ai_max_chars').value = config.ai_max_chars || 0;
             }
 
-            syncSourceModeUI(editSourceModeEl, editRssBoxEl, editLinksBoxEl, editExtOptsEl, editRssInputEl, editLinksInputEl);
+            syncSourceModeUI(editSourceModeEl, editLinksBoxEl, editExtOptsEl, editTopicRowsContainer);
 
             // Set mailing lists checkboxes in edit modal
             const selectedMls = JSON.parse(this.dataset.mailinglists || '[]');
