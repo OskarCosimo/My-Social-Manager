@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Otomatik AI Kampanyaları",
     "campaign_queued_success": "Kampanya başarıyla kuyruklandı! AI çalışanı kısa bir süre içinde işlemeyecektir.",
     "ai_step1_title": "Adım 1: Kampanya Talimatlar ve İçerik Kaynağı",
-    "what_ai_talk_about": "AI ne hakkında konuşmalıdır \/ bağlantıyı nasıl açıklayabilmeli?",
+    "what_ai_talk_about": "Genel kampanya talimatları (Tone, Style, seyirci)",
     "ai_prompt_instructions_placeholder": "e.g. bu PHP fonksiyonunu geliştiriciler için pratik bir ipucu ile açık bir şekilde açıklar veya bu filmi seyircilerin hangi seyircinin tadını çıkaracağını belirtmeden gözden geçirin.",
     "ai_prompt_hint": "Descriptive. ton ses, tema, hedef seyirci ve istenen formatlama.",
     "ai_step2_title": "Adım 2: Hedef Hesapları ve Mailing Listeleri",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Kampanya Kaynağı Modu",
     "ai_source_prompt_only": "Prompt Only (Generate original posts from Talimatlar)",
     "ai_source_rss_feed": "Dış RSS Feed (Extract Links & Explain with AI)",
-    "ai_source_links_list": "Özel Linkler \/ Topics Listesi (1 hat başına, AI ile açık)",
+    "ai_source_links_list": "Özel Linkler & Topics Listesi ( per-item AI talimatları ile)",
     "ai_source_mode_hint": "Sadece hızlı mesajları mı üreteceğinizi veya AI için dış RSS\/manual bağlantılarını okumak ve açıklamak için seçin.",
     "ai_external_rss_url": "Dış RSS \/ Atom Feed URL",
     "ai_links_list_label": "Dış bağlantılar veya Topics Listesi (bir per line)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Bağlantı içeriğini analiz etmek ve sosyal altyazıları yazmak için AI kullanın",
     "ai_automation_enable_hint": "Oluşturulan öğe başına 1 AI kredisi kullanın. AI her bağlantının arkasındaki sayfayı okur ve bağlantıyı bağlamadan önce özel bir yazı yazar.",
     "ai_automation_prompt_label": "AI Caption Talimatları",
-    "ai_automation_prompt_placeholder": "e.g. Bu konuyu açık bir şekilde pratik bir örnekle açıklayın veya bu filmi şımartmadan gözden geçirin ve kimin tadını çıkaracağından bahsedin."
+    "ai_automation_prompt_placeholder": "e.g. Bu konuyu açık bir şekilde pratik bir örnekle açıklayın veya bu filmi şımartmadan gözden geçirin ve kimin tadını çıkaracağından bahsedin.",
+    "ai_source_mode_hint_no_rss": "Tek bir genel hızlı mesaj mı üreteceğinizi seçin veya her öğenin kendi özel talimata sahip olduğu URL'lerin\/toplayıcıların bir listesini sağlayın.",
+    "ai_links_topics_builder_title": "Linkler & Topics with specific Talimatlar",
+    "ai_links_topics_builder_hint": "Bir URL ekleyin ( AI sayfayı ziyaret edecek ve okuyacaktır) ya da bir konu başlığı, ve isteğe bağlı olarak AI'ya bu özel öğeye ne odaklanacağını söyleyin.",
+    "ai_add_item_btn": "Add Link \/ Topic",
+    "ai_item_target_label": "URL veya Topic",
+    "ai_item_instruction_label": "Bu öğe için özel AI Öğretimi (Okul)"
 }

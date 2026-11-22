@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "自動化されたAIキャンペーン",
     "campaign_queued_success": "キャンペーンが正常にキュート! AIワーカーが短時間で処理します.",
     "ai_step1_title": "ステップ1:キャンペーンの指示とコンテンツソース",
-    "what_ai_talk_about": "人工知能が話すべきこと\/リンクを説明する方法は?",
+    "what_ai_talk_about": "一般キャンペーン指示(トーン、スタイル、オーディエンス)",
     "ai_prompt_instructions_placeholder": "例えば、この PHP は、開発者にとって実用的なヒントで明確に説明したり、どのオーディエンスがそれを楽しむかを指定することなく、このムービーをレビューします.",
     "ai_prompt_hint": "記述的である。 音声、テーマ、ターゲットオーディエンス、および希望のフォーマットのトーンを指定します.",
     "ai_step2_title": "ステップ2:ターゲットアカウントとメーリングリスト",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "キャンペーンソースモード",
     "ai_source_prompt_only": "プロンプトのみ(指示から元の投稿を生成する)",
     "ai_source_rss_feed": "外部RSSフィード(AIでリンク&説明を抽出)",
-    "ai_source_links_list": "カスタムリンク\/トピック一覧(1行目、AIで説明)",
+    "ai_source_links_list": "カスタムリンク&トピックス一覧(AI専用ガイド付き)",
     "ai_source_mode_hint": "プロンプトから投稿を単独で生成するか、AIの外部RSS\/マニュアルリンクをフィードするか、読み書きします.",
     "ai_external_rss_url": "外部RSS \/ AtomフィードURL",
     "ai_links_list_label": "外部リンクまたはトピックリスト(一行につき)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "リンクコンテンツを分析し、魅力的なソーシャルキャプションを書くためにAIを使ってください",
     "ai_automation_enable_hint": "生成された項目ごとに1つのAIクレジットを使用します。 各リンクの後ろにあるページを読んで、リンクを添付する前にカスタム投稿を書いています.",
     "ai_automation_prompt_label": "AIキャプションの手順",
-    "ai_automation_prompt_placeholder": "例えば、このトピック\/機能を明確に実用的な例で説明したり、スポイラーなしでこの映画をレビューしたり、誰がそれを楽しむかを言及します."
+    "ai_automation_prompt_placeholder": "例えば、このトピック\/機能を明確に実用的な例で説明したり、スポイラーなしでこの映画をレビューしたり、誰がそれを楽しむかを言及します.",
+    "ai_source_mode_hint_no_rss": "単一の一般的なプロンプトから投稿を生成するか、各項目が独自の特定の指示を持っているURL\/トピックのキュレーションリストを提供するかを選択します.",
+    "ai_links_topics_builder_title": "特定の指示とリンクとトピック",
+    "ai_links_topics_builder_hint": "URL(AIがページにアクセスして読みます)またはトピックのタイトルを追加し、その特定の項目に焦点を合わせるAIを任意に伝えます.",
+    "ai_add_item_btn": "リンク\/トピックの追加",
+    "ai_item_target_label": "URLまたはトピック",
+    "ai_item_instruction_label": "この項目のための特定のAIの指示(任意)"
 }

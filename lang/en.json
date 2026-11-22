@@ -487,7 +487,7 @@
   "automated_ai_campaigns": "Automated AI Campaigns",
   "campaign_queued_success": "Campaign successfully queued! The AI worker will process it shortly.",
   "ai_step1_title": "Step 1: Campaign Instructions & Content Source",
-  "what_ai_talk_about": "What should the AI talk about / how should it explain the link?",
+  "what_ai_talk_about": "General Campaign Instructions (Tone, Style, Audience)",
   "ai_prompt_instructions_placeholder": "e.g. Explain this PHP function clearly with a practical tip for developers, or review this movie without spoilers specifying which audience will enjoy it.",
   "ai_prompt_hint": "Be descriptive. Specify tone of voice, theme, target audience, and desired formatting.",
   "ai_step2_title": "Step 2: Target Accounts & Mailing Lists",
@@ -706,7 +706,7 @@
   "ai_source_mode_label": "Campaign Source Mode",
   "ai_source_prompt_only": "Prompt Only (Generate original posts from instructions)",
   "ai_source_rss_feed": "External RSS Feed (Extract links & explain with AI)",
-  "ai_source_links_list": "Custom Links / Topics List (1 per line, explain with AI)",
+  "ai_source_links_list": "Custom Links & Topics List (With dedicated per-item AI instructions)",
   "ai_source_mode_hint": "Choose whether to generate posts solely from your prompt, or feed external RSS/manual links for the AI to read and explain.",
   "ai_external_rss_url": "External RSS / Atom Feed URL",
   "ai_links_list_label": "External Links or Topics List (One per line)",
@@ -729,5 +729,11 @@
   "ai_automation_enable_label": "Use AI to analyze link content and write engaging social captions",
   "ai_automation_enable_hint": "Uses 1 AI credit per generated item. The AI reads the page behind each link and writes a custom post before attaching the link.",
   "ai_automation_prompt_label": "AI Caption Instructions",
-  "ai_automation_prompt_placeholder": "e.g. Explain this topic/function clearly with a practical example, or review this movie without spoilers and mention who will enjoy it."
+  "ai_automation_prompt_placeholder": "e.g. Explain this topic/function clearly with a practical example, or review this movie without spoilers and mention who will enjoy it.",
+  "ai_source_mode_hint_no_rss": "Choose whether to generate posts from a single general prompt, or provide a curated list of URLs/topics where each item has its own specific instruction.",
+  "ai_links_topics_builder_title": "Links & Topics with Specific Instructions",
+  "ai_links_topics_builder_hint": "Add a URL (the AI will visit and read the page) or a topic title, and optionally tell the AI what to focus on for that specific item.",
+  "ai_add_item_btn": "Add Link / Topic",
+  "ai_item_target_label": "URL or Topic",
+  "ai_item_instruction_label": "Specific AI Instruction for this item (Optional)"
 }

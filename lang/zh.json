@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "自动化AI运动",
     "campaign_queued_success": "竞选成功排队! 人工智能工作人员很快会处理的.",
     "ai_step1_title": "步骤1:运动指令和内容来源",
-    "what_ai_talk_about": "AI应该谈论什么\/它应该如何解释联系?",
+    "what_ai_talk_about": "一般运动指导(Tone、样式、观众)",
     "ai_prompt_instructions_placeholder": "例如,用实用提示为开发者清晰解释此 PHP 功能,或者在不指定哪些观众欣赏的情况下审查此电影.",
     "ai_prompt_hint": "作叙事. 指定语音、主题、目标受众和所希望的格式.",
     "ai_step2_title": "步骤2:目标账户和邮件列表",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "运动源模式",
     "ai_source_prompt_only": "只提示( 从指令中输入原始员额)",
     "ai_source_rss_feed": "外部 RSS 种子( 与 AI 的外部链接和解释)",
-    "ai_source_links_list": "自定义链接\/主题列表( 每行1, 用 AI 解释)",
+    "ai_source_links_list": "自定义链接和主题列表( 包含针对项目的 AI 指令)",
     "ai_source_mode_hint": "选择是只从您的快件生成帖子, 还是输入外部的 RSS\/ 手动链接, 让 AI 读取和解释 .",
     "ai_external_rss_url": "外部 RSS \/ 原子种子 URL",
     "ai_links_list_label": "外部链接或主题列表( 每行一个)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "使用 AI 来分析链接内容并撰写涉及社交标题",
     "ai_automation_enable_hint": "每个生成的物品使用1AI信用. AI阅读每个链接后面的页面,并在附上链接之前写一个自定义的帖子.",
     "ai_automation_prompt_label": "AI 说明指令",
-    "ai_automation_prompt_placeholder": "例如,用一个实际的例子来清楚地解释这个主题\/功能,或者在不破坏者参与的情况下审查这部电影,并提到谁将欣赏这部电影."
+    "ai_automation_prompt_placeholder": "例如,用一个实际的例子来清楚地解释这个主题\/功能,或者在不破坏者参与的情况下审查这部电影,并提到谁将欣赏这部电影.",
+    "ai_source_mode_hint_no_rss": "选择是从一个普通提示生成帖子,还是提供每个项目有自己特定指示的URL\/专题的目录.",
+    "ai_links_topics_builder_title": "与特定指令链接主题( T)",
+    "ai_links_topics_builder_hint": "添加一个URL(AI将访问并读取页面)或一个话题标题,并选择告诉AI该特定项目的重点是什么.",
+    "ai_add_item_btn": "添加链接\/主题",
+    "ai_item_target_label": "URL 或主题",
+    "ai_item_instruction_label": "关于此项目的具体大赦国际指示(可选)"
 }

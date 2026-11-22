@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Campanhas automáticas de IA",
     "campaign_queued_success": "A campanha teve sucesso na fila! O trabalhador da IA irá processá-lo em breve.",
     "ai_step1_title": "Etapa 1: Instruções da campanha e fonte de conteúdo",
-    "what_ai_talk_about": "Sobre o que deve a IA falar \/ como deve explicar o link?",
+    "what_ai_talk_about": "Instruções gerais da campanha (Tone, Estilo, Audiência)",
     "ai_prompt_instructions_placeholder": "por exemplo, explique esta função PHP claramente com uma dica prática para os desenvolvedores, ou reveja este filme sem spoilers especificando qual público irá apreciá-lo.",
     "ai_prompt_hint": "Seja descritivo. Especifique tom de voz, tema, público-alvo e formatação desejada.",
     "ai_step2_title": "Passo 2: Contas de destino e listas de correio",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Modo de origem da campanha",
     "ai_source_prompt_only": "Somente Perguntar (Gere mensagens originais de instruções)",
     "ai_source_rss_feed": "Feed RSS Externo (Extrair links e explicar com IA)",
-    "ai_source_links_list": "Links Personalizados \/ Lista de Tópicos (1 por linha, explique com IA)",
+    "ai_source_links_list": "Links personalizados e lista de tópicos (com instruções dedicadas por item IA)",
     "ai_source_mode_hint": "Escolha se gerar mensagens apenas a partir do seu prompt, ou feed links externos RSS\/manual para a IA para ler e explicar.",
     "ai_external_rss_url": "RSS externo \/ URL de alimentação de átomos",
     "ai_links_list_label": "Ligações externas ou Lista de Tópicos (um por linha)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Use IA para analisar conteúdo de link e escrever legendas sociais envolventes",
     "ai_automation_enable_hint": "Utiliza 1 crédito de IA por item gerado. A IA lê a página por trás de cada link e escreve um post personalizado antes de anexar o link.",
     "ai_automation_prompt_label": "Instruções de legenda AI",
-    "ai_automation_prompt_placeholder": "por exemplo, explique este tópico\/função claramente com um exemplo prático, ou reveja este filme sem spoilers e mencione quem vai gostar."
+    "ai_automation_prompt_placeholder": "por exemplo, explique este tópico\/função claramente com um exemplo prático, ou reveja este filme sem spoilers e mencione quem vai gostar.",
+    "ai_source_mode_hint_no_rss": "Escolha se deve gerar mensagens de um único prompt geral ou fornecer uma lista de URLs\/tópicos onde cada item tenha sua própria instrução específica.",
+    "ai_links_topics_builder_title": "Links e Tópicos com Instruções Específicas",
+    "ai_links_topics_builder_hint": "Adicione uma URL (a IA irá visitar e ler a página) ou um título de tópico, e opcionalmente diga à IA em que focar para esse item específico.",
+    "ai_add_item_btn": "Adicionar uma Ligação \/ Tópico",
+    "ai_item_target_label": "URL ou Tópico",
+    "ai_item_instruction_label": "Instrução específica de IA para esta rubrica (Opcional)"
 }

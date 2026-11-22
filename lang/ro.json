@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Campanie AI automată",
     "campaign_queued_success": "Campania a avut succes! Muncitorul AI va procesa în curând.",
     "ai_step1_title": "Pasul 1: Instrucţiuni de campanie şi sursă de conţinut",
-    "what_ai_talk_about": "Ce ar trebui să vorbească AI despre \/ cum ar trebui să explice link-ul?",
+    "what_ai_talk_about": "Instrucţiuni generale de campanie (Tone, Style, Audienţă)",
     "ai_prompt_instructions_placeholder": "explică această funcție PHP clar cu un sfat practic pentru dezvoltatori, sau revizuiește acest film fără spoilere, specificând ce audiență se va bucura.",
     "ai_prompt_hint": "Fii descriptiv. Specificaţi tonul vocii, tema, publicul ţintă şi formatul dorit.",
     "ai_step2_title": "Pasul 2: Conturi țintă și liste de corespondență",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Modul sursă campanie",
     "ai_source_prompt_only": "Doar prompt (Generați mesajele originale din instrucțiuni)",
     "ai_source_rss_feed": "Flux extern RSS (Extract link-uri & explica cu AI)",
-    "ai_source_links_list": "Linkuri personalizate \/ Lista subiectelor (1 pe linie, explica cu AI)",
+    "ai_source_links_list": "Listă de linkuri și teme personalizate (cu instrucțiuni AI dedicate per element)",
     "ai_source_mode_hint": "Alegeți dacă pentru a genera posturi numai din prompt, sau alimentați link-uri externe RSS\/manuale pentru AI pentru a citi și explica.",
     "ai_external_rss_url": "URL extern RSS \/ Atom Feed",
     "ai_links_list_label": "Lista legăturilor externe sau a temelor (Una pe linie)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Utilizați AI pentru a analiza conținutul link-ului și scrie subtitrări sociale angajarea",
     "ai_automation_enable_hint": "Folosește 1 credit AI pe element generat. AI citește pagina din spatele fiecărui link și scrie un post personalizat înainte de a atașa link-ul.",
     "ai_automation_prompt_label": "Instrucţiuni de subtitrare AI",
-    "ai_automation_prompt_placeholder": "explică acest subiect\/funcție clar cu un exemplu practic, sau revizuiește acest film fără spoilere și menționează cine se va bucura de el."
+    "ai_automation_prompt_placeholder": "explică acest subiect\/funcție clar cu un exemplu practic, sau revizuiește acest film fără spoilere și menționează cine se va bucura de el.",
+    "ai_source_mode_hint_no_rss": "Alegeți dacă să generați posturi dintr-o singură promptă generală, sau să furnizați o listă curatată de URL-uri\/topice în cazul în care fiecare element are propria instrucțiuni specifice.",
+    "ai_links_topics_builder_title": "Legături și subiecte cu instrucțiuni specifice",
+    "ai_links_topics_builder_hint": "Adăugați un URL (AI va vizita și citi pagina) sau un titlu de subiect, și spuneți opțional AI pe ce să se concentreze pentru acel articol specific.",
+    "ai_add_item_btn": "Adaugă legătură \/ subiect",
+    "ai_item_target_label": "URL sau subiect",
+    "ai_item_instruction_label": "Instrucțiuni specifice AI pentru acest element (opțional)"
 }

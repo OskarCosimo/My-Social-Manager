@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Automatyczne kampanie AI",
     "campaign_queued_success": "Kampania pomyślnie w kolejce! Pracownik AI wkrótce to przeprowadzi.",
     "ai_step1_title": "Krok 1: Instrukcja kampanii i źródło treści",
-    "what_ai_talk_about": "O czym powinna mówić AI \/ jak wyjaśnić związek?",
+    "what_ai_talk_about": "Ogólne instrukcje dotyczące kampanii (Tone, Style, Publiczność)",
     "ai_prompt_instructions_placeholder": "np. Wyjaśnij tę funkcję PHP z praktyczną wskazówką dla deweloperów lub przeglądaj ten film bez spoilerów określających, która publiczność będzie go cieszyć.",
     "ai_prompt_hint": "Bądź opisowy. Określ ton głosu, tematu, docelowej publiczności i pożądanego formatowania.",
     "ai_step2_title": "Krok 2: Konta docelowe i listy pocztowe",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Tryb źródłowy kampanii",
     "ai_source_prompt_only": "Prompt Only (Generuj oryginalne posty z instrukcji)",
     "ai_source_rss_feed": "Zewnętrzny RSS Feed (Extract links & explain with AI)",
-    "ai_source_links_list": "Custom Links \/ Topics List (1 na linię, wyjaśnić z AI)",
+    "ai_source_links_list": "Custom Links & Topics List (z dedykowanych per- element instrukcji AI)",
     "ai_source_mode_hint": "Wybierz, czy generować posty wyłącznie z Twojego polecenia, czy karmić zewnętrzne łącza RSS \/ manual, aby AI przeczytać i wyjaśnić.",
     "ai_external_rss_url": "Zewnętrzny URL RSS \/ Atom",
     "ai_links_list_label": "Zewnętrzna lista linków lub tematów (jedna linia)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Użyj AI do analizy treści linków i napisz wciągające podpisy społeczne",
     "ai_automation_enable_hint": "Wykorzystuje 1 kredyt AI na wygenerowaną pozycję. AI czyta stronę za każdym linkiem i pisze niestandardowy post przed dołączeniem linka.",
     "ai_automation_prompt_label": "Instrukcja przechwytywania AI",
-    "ai_automation_prompt_placeholder": "np. Wyjaśnij ten temat \/ funkcja wyraźnie za pomocą praktycznego przykładu, lub przeglądaj ten film bez spoilerów i wspomnieć, kto będzie go cieszyć."
+    "ai_automation_prompt_placeholder": "np. Wyjaśnij ten temat \/ funkcja wyraźnie za pomocą praktycznego przykładu, lub przeglądaj ten film bez spoilerów i wspomnieć, kto będzie go cieszyć.",
+    "ai_source_mode_hint_no_rss": "Wybierz, czy generować posty z jednego ogólnego postu, czy też podać listę adresów URL \/ tematów, w których każdy element posiada własną szczegółową instrukcję.",
+    "ai_links_topics_builder_title": "Linki i tematy ze szczegółowymi instrukcjami",
+    "ai_links_topics_builder_hint": "Dodaj adres URL (AI odwiedzi i przeczyta stronę) lub tytuł tematu, i opcjonalnie powiedz AI, na czym się skupić dla tego konkretnego elementu.",
+    "ai_add_item_btn": "Dodaj link \/ Topic",
+    "ai_item_target_label": "URL lub Temat",
+    "ai_item_instruction_label": "Szczegółowe instrukcje dotyczące ptasiej grypy dla tej pozycji (opcjonalne)"
 }

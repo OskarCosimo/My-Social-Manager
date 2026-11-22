@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Geautomatiseerde AI-campagnes",
     "campaign_queued_success": "Campagne succesvol in de wachtrij! De AI werknemer zal het binnenkort verwerken.",
     "ai_step1_title": "Stap 1: Campagneinstructies & Content Bron",
-    "what_ai_talk_about": "Wat moet de AI praten over \/ hoe moet het verklaren van de link?",
+    "what_ai_talk_about": "Algemene instructies voor de campagne (toon, stijl, publiek)",
     "ai_prompt_instructions_placeholder": "leg deze PHP-functie duidelijk uit met een praktische tip voor ontwikkelaars, of bekijk deze film zonder spoilers die aangeven welk publiek ervan zal genieten.",
     "ai_prompt_hint": "Wees beschrijvend. Specificeer toon van stem, thema, doelgroep, en gewenste opmaak.",
     "ai_step2_title": "Stap 2: Doelaccounts en mailinglijsten",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Campagnebronmodus",
     "ai_source_prompt_only": "Prompt alleen (Genereer originele berichten uit instructies)",
     "ai_source_rss_feed": "Externe RSS-feed (links verwijderen en uitleggen met AI)",
-    "ai_source_links_list": "Aangepaste links \/ onderwerpenlijst (1 per regel, uitleg met AI)",
+    "ai_source_links_list": "Aangepaste links & onderwerpenlijst (met speciale AI-instructies per item)",
     "ai_source_mode_hint": "Kies of u alleen berichten wilt genereren vanuit uw prompt of externe RSS\/handleiding links wilt feeden zodat de AI kan lezen en uitleggen.",
     "ai_external_rss_url": "Externe RSS \/ Atom Feed URL",
     "ai_links_list_label": "Externe links of onderwerpenlijst (één per regel)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Gebruik AI om link-inhoud te analyseren en boeiende sociale bijschriften te schrijven",
     "ai_automation_enable_hint": "Gebruikt 1 AI krediet per gegenereerd item. De AI leest de pagina achter elke link en schrijft een aangepaste post alvorens de link aan te sluiten.",
     "ai_automation_prompt_label": "AI bijschrift instructies",
-    "ai_automation_prompt_placeholder": "leg dit onderwerp\/functie duidelijk uit met een praktisch voorbeeld, of bekijk deze film zonder spoilers en vermeld wie ervan zal genieten."
+    "ai_automation_prompt_placeholder": "leg dit onderwerp\/functie duidelijk uit met een praktisch voorbeeld, of bekijk deze film zonder spoilers en vermeld wie ervan zal genieten.",
+    "ai_source_mode_hint_no_rss": "Kies of je berichten wilt genereren uit één algemene prompt, of een gecureerde lijst van URL's\/topics moet geven waar elk item zijn eigen specifieke instructie heeft.",
+    "ai_links_topics_builder_title": "Links & onderwerpen met specifieke instructies",
+    "ai_links_topics_builder_hint": "Voeg een URL (de AI bezoekt en leest de pagina) of een onderwerp titel, en optioneel vertellen de AI waar te concentreren op voor dat specifieke item.",
+    "ai_add_item_btn": "Koppeling toevoegen \/ Onderwerp",
+    "ai_item_target_label": "URL of onderwerp",
+    "ai_item_instruction_label": "Specifieke AI-instructie voor dit item (facultatief)"
 }

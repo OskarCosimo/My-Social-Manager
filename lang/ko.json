@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "자동화된 AI 캠페인",
     "campaign_queued_success": "캠페인은 성공적으로 퀴즈! AI 노동자는 그것을 곧 가공할 것입니다.",
     "ai_step1_title": "1 단계 : 캠페인 지침 및 콘텐츠 소스",
-    "what_ai_talk_about": "AI에 대해 이야기해야 할 일 \/ 어떻게 링크를 설명해야합니까?",
+    "what_ai_talk_about": "일반 캠페인 안내 (Tone, Style, Audience)",
     "ai_prompt_instructions_placeholder": "e.g. 개발자를 위한 실용적인 팁과 함께 이 PHP 함수를 명확하게 설명하거나 청중이 즐길 수 있는 스포일러 없이 이 영화를 검토하십시오.",
     "ai_prompt_hint": "관련 기사 음성, 테마, 대상 관객 및 원하는 형식의 톤을 지정합니다.",
     "ai_step2_title": "단계 2: 목표 계정 & 우편 목록",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "캠페인 소스 모드",
     "ai_source_prompt_only": "Prompt Only (설명서에서 원래 게시물을 표시)",
     "ai_source_rss_feed": "외부 RSS 피드 (Extract 링크 및 AI와 설명)",
-    "ai_source_links_list": "사용자 정의 링크 \/ 토픽 목록 (1 라인 당, AI와 설명)",
+    "ai_source_links_list": "사용자 정의 링크 및 토픽 목록 (각별 AI 지침 포함)",
     "ai_source_mode_hint": "여러분의 프롬프트에서 게시물을 생성하거나, AI를 위한 외부 RSS\/manual 링크를 읽고 설명합니다.",
     "ai_external_rss_url": "외부 RSS \/ 원자 피드 URL",
     "ai_links_list_label": "외부 링크 또는 주제 목록 (선별 1 개)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "AI를 사용하여 링크 컨텐츠를 분석하고 소셜 캡션을 작성",
     "ai_automation_enable_hint": "생성된 항목 당 1 AI 크레딧을 사용합니다. AI는 각 링크 뒤에 페이지를 읽고 연결하기 전에 사용자 정의 게시물을 작성합니다.",
     "ai_automation_prompt_label": "AI 캡션 지침",
-    "ai_automation_prompt_placeholder": "e.g. 이 항목\/기능을 명확하게 설명하거나, 스포일러없이이 영화를 검토하고 즐기는 것을 언급합니다."
+    "ai_automation_prompt_placeholder": "e.g. 이 항목\/기능을 명확하게 설명하거나, 스포일러없이이 영화를 검토하고 즐기는 것을 언급합니다.",
+    "ai_source_mode_hint_no_rss": "단일 일반 프롬프트에서 게시물을 생성하거나 각 항목이 특정 명령을 가지고있는 URL \/ topics의 curated 목록을 제공합니다.",
+    "ai_links_topics_builder_title": "링크 및 특정 지침과 주제",
+    "ai_links_topics_builder_hint": "URL을 추가 (AI는 방문하고 페이지를 읽을 것입니다) 또는 주제 제목, 그리고 선택적으로 AI에게 특정 항목에 초점을 맞추는 것을 말한다.",
+    "ai_add_item_btn": "링크 추가 \/ 주제",
+    "ai_item_target_label": "URL 또는 주제",
+    "ai_item_instruction_label": "이 품목을 위한 특정한 AI 지시 (선택)"
 }

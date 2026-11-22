@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Automatické AI kampaně",
     "campaign_queued_success": "Kampaň úspěšně připravena! Pracovník AI to brzy zpracuje.",
     "ai_step1_title": "Krok 1: Pokyny pro kampaň a zdroj obsahu",
-    "what_ai_talk_about": "O čem by měla AI mluvit \/ jak by to mělo vysvětlovat odkaz?",
+    "what_ai_talk_about": "Pokyny pro obecnou kampaň (tón, styl, publikum)",
     "ai_prompt_instructions_placeholder": "například Vysvětlete tuto PHP funkci jasně s praktickým tipem pro vývojáře, nebo recenzi tohoto filmu bez spoilerů určující, které publikum se bude těšit.",
     "ai_prompt_hint": "Buď popisný. Upřesněte tón hlasu, téma, cílové publikum a požadované formátování.",
     "ai_step2_title": "Krok 2: Cílové účty a poštovní seznamy",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Režim zdroje kampaní",
     "ai_source_prompt_only": "Prompt pouze (Generovat původní příspěvky z pokynů)",
     "ai_source_rss_feed": "Externí RSS kanál (Extract odkazy & vysvětlit s AI)",
-    "ai_source_links_list": "Vlastní odkazy \/ Topics List (1 na řádek, vysvětlete pomocí AI)",
+    "ai_source_links_list": "Vlastní odkazy & Topics List (S vyhrazeným per- položka AI pokyny)",
     "ai_source_mode_hint": "Vyberte si, zda generovat příspěvky výhradně z vašeho příkazu, nebo krmit externí RSS \/ manuální odkazy pro AI číst a vysvětlovat.",
     "ai_external_rss_url": "Externí URL RSS \/ Atom Feed",
     "ai_links_list_label": "Externí odkazy nebo seznam témat (jeden na řádek)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Použít AI pro analýzu obsahu odkazu a psát zapojení sociálních titulků",
     "ai_automation_enable_hint": "Používá 1 AI úvěr na generovanou položku. AI čte stránku za každý odkaz a píše vlastní příspěvek před připojením odkaz.",
     "ai_automation_prompt_label": "Pokyny pro zachycování AI",
-    "ai_automation_prompt_placeholder": "například Vysvětlete toto téma \/ funkce jasně s praktickým příkladem, nebo recenzi tohoto filmu bez spoilerů a zmínit, kdo se bude těšit."
+    "ai_automation_prompt_placeholder": "například Vysvětlete toto téma \/ funkce jasně s praktickým příkladem, nebo recenzi tohoto filmu bez spoilerů a zmínit, kdo se bude těšit.",
+    "ai_source_mode_hint_no_rss": "Zvolte, zda budete generovat příspěvky z jednoho obecného postu, nebo poskytněte zapsaný seznam URL \/ témat, kde každá položka má svůj vlastní konkrétní návod.",
+    "ai_links_topics_builder_title": "Odkazy a témata se specifickými pokyny",
+    "ai_links_topics_builder_hint": "Přidat URL (AI navštíví a přečte si stránku) nebo název tématu, a volitelně říct AI, na co se zaměřit pro tuto konkrétní položku.",
+    "ai_add_item_btn": "Přidat odkaz \/ téma",
+    "ai_item_target_label": "URL nebo Téma",
+    "ai_item_instruction_label": "Specifické pokyny AI pro tuto položku (nepovinné)"
 }

@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Automatizált AI kampányok",
     "campaign_queued_success": "Kampány sikeresen sorban! A MI dolgozó hamarosan feldolgozza.",
     "ai_step1_title": "Lépés: Kampány utasítások és tartalomforrás",
-    "what_ai_talk_about": "Mit kell az MI beszélni \/ hogyan kell megmagyarázni a linket?",
+    "what_ai_talk_about": "Általános kampányutasítások (Tone, Style, Közönség)",
     "ai_prompt_instructions_placeholder": "pl. Magyarázza meg ezt a PHP funkciót világosan egy gyakorlati tipp a fejlesztők, vagy vizsgálja felül ezt a filmet nélkül spoilers meghatározza, hogy melyik közönség élvezni fogja.",
     "ai_prompt_hint": "Légy leíró. Adja meg a hang tónusa, téma, célközönség, és kívánt formázás.",
     "ai_step2_title": "2. lépés: Célszámlák és levelezési listák",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Kampány forrásmód",
     "ai_source_prompt_only": "Azonnali csak (Eredeti bejegyzések létrehozása utasításokból)",
     "ai_source_rss_feed": "Külső RSS feed (Extract links & explain with AI)",
-    "ai_source_links_list": "Egyedi linkek \/ témakörök listája (1 vonalanként, MI-vel magyarázva)",
+    "ai_source_links_list": "Egyéni linkek és témakörök listája (erre a célra meghatározott AI utasítások)",
     "ai_source_mode_hint": "Válassza ki, hogy kizárólag az Ön azonnali, vagy etetni külső RSS \/ kézi linkek a AI olvasni és megmagyarázni.",
     "ai_external_rss_url": "Külső RSS \/ Atom takarmány URL",
     "ai_links_list_label": "Külső linkek vagy témakörök listája (vonalanként egy)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Az MI segítségével elemezzük a linket és írjuk a társadalmi feliratokat",
     "ai_automation_enable_hint": "1 AI hitel generált tételenként. Az MI elolvassa az egyes linkek mögötti oldalt, és egyedi bejegyzést ír, mielőtt a linket csatolja.",
     "ai_automation_prompt_label": "AI-címkeszöveg",
-    "ai_automation_prompt_placeholder": "például magyarázd meg ezt a témát \/ funkciót egy gyakorlati példával, vagy nézd át a filmet spoiler nélkül, és említsd meg, hogy ki fogja élvezni."
+    "ai_automation_prompt_placeholder": "például magyarázd meg ezt a témát \/ funkciót egy gyakorlati példával, vagy nézd át a filmet spoiler nélkül, és említsd meg, hogy ki fogja élvezni.",
+    "ai_source_mode_hint_no_rss": "Válassza ki, hogy generál-e hozzászólásokat egyetlen általános azonnali, vagy ad egy korszerű listát URL \/ témák, ahol minden egyes elem saját egyedi utasítást.",
+    "ai_links_topics_builder_title": "Linkek és témakörök speciális utasításokkal",
+    "ai_links_topics_builder_hint": "Adjon hozzá egy URL-t (a MI meglátogatja és elolvassa az oldalt) vagy egy témacímet, és opcionálisan mondja meg az MI-nek, hogy mire összpontosítson erre a konkrét elemre.",
+    "ai_add_item_btn": "Link \/ Téma hozzáadása",
+    "ai_item_target_label": "URL vagy Téma",
+    "ai_item_instruction_label": "Különleges MI utasítás erre a tételre (nem kötelező)"
 }

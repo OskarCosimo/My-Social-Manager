@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Automatiserade AI-kampanjer",
     "campaign_queued_success": "Kampanjen lyckades köa! AI-arbetaren kommer att behandla den inom kort.",
     "ai_step1_title": "Steg 1: Kampanjinstruktioner och innehållskälla",
-    "what_ai_talk_about": "Vad ska AI prata om \/ hur ska det förklara länken?",
+    "what_ai_talk_about": "Allmänna kampanjinstruktioner (Tone, Style, Audience)",
     "ai_prompt_instructions_placeholder": "förklara denna PHP-funktion tydligt med ett praktiskt tips för utvecklare, eller granska den här filmen utan spoilers som anger vilken publik som kommer att njuta av den.",
     "ai_prompt_hint": "Var beskrivande. Ange ton av röst, tema, målgrupp och önskad formatering.",
     "ai_step2_title": "Steg 2: Målkonton och postlistor",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Kampanj Källa läge",
     "ai_source_prompt_only": "Prompt Only (Generera originalinlägg från instruktioner)",
     "ai_source_rss_feed": "Extern RSS Feed (Extrahera länkar och förklara med AI)",
-    "ai_source_links_list": "Anpassade länkar \/ Ämneslista (1 per rad, förklara med AI)",
+    "ai_source_links_list": "Custom Links & Topics List (med dedikerade AI-instruktioner per item)",
     "ai_source_mode_hint": "Välj om du vill generera inlägg enbart från din prompt eller mata externa RSS \/ manuella länkar för AI att läsa och förklara.",
     "ai_external_rss_url": "Extern RSS \/ Atom Feed URL",
     "ai_links_list_label": "Externa länkar eller ämneslista (en per rad)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Använd AI för att analysera länkinnehåll och skriva engagerande sociala bildtexter",
     "ai_automation_enable_hint": "Använder 1 AI-kredit per genererat objekt. AI läser sidan bakom varje länk och skriver ett anpassat inlägg innan du bifogar länken.",
     "ai_automation_prompt_label": "AI Caption Instructions",
-    "ai_automation_prompt_placeholder": "förklara detta ämne \/ funktion tydligt med ett praktiskt exempel, eller granska den här filmen utan spoilers och nämna vem som kommer att njuta av det."
+    "ai_automation_prompt_placeholder": "förklara detta ämne \/ funktion tydligt med ett praktiskt exempel, eller granska den här filmen utan spoilers och nämna vem som kommer att njuta av det.",
+    "ai_source_mode_hint_no_rss": "Välj om du vill generera inlägg från en enda allmän prompt, eller ge en kurerad lista över webbadresser \/ ämnen där varje objekt har sin egen specifika instruktion.",
+    "ai_links_topics_builder_title": "Länkar och ämnen med specifika instruktioner",
+    "ai_links_topics_builder_hint": "Lägg till en URL (AI kommer att besöka och läsa sidan) eller ett ämne titel, och valfritt berätta AI vad du ska fokusera på för det specifika objektet.",
+    "ai_add_item_btn": "Lägg till länk \/ ämne",
+    "ai_item_target_label": "URL eller ämne",
+    "ai_item_instruction_label": "Specifik AI Instruktion för detta objekt (Optional)"
 }

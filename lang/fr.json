@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Campagnes automatisées d'IA",
     "campaign_queued_success": "Campagne en attente! Le travailleur de l'IA le traitera sous peu.",
     "ai_step1_title": "Étape 1: Instructions de campagne et source de contenu",
-    "what_ai_talk_about": "De quoi l'IA devrait-elle parler \/ comment devrait-elle expliquer le lien?",
+    "what_ai_talk_about": "Instructions générales de campagne (Tone, Style, Public)",
     "ai_prompt_instructions_placeholder": "par exemple, expliquez clairement cette fonction PHP avec un conseil pratique pour les développeurs, ou examinez ce film sans spoilers précisant quel public l'appréciera.",
     "ai_prompt_hint": "Soyez descriptif. Précisez le ton de la voix, le thème, le public cible et le formatage souhaité.",
     "ai_step2_title": "Étape 2 : Comptes cibles et listes d'envoi",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "Mode source de la campagne",
     "ai_source_prompt_only": "Prompt seulement (générer les messages originaux à partir des instructions)",
     "ai_source_rss_feed": "Flux RSS externe (Extrait des liens et expliquer avec l'IA)",
-    "ai_source_links_list": "Liens personnalisés \/ Liste des sujets (1 par ligne, expliquer avec AI)",
+    "ai_source_links_list": "Liste de liens et de sujets personnalisés (avec des instructions d'IA dédiées par article)",
     "ai_source_mode_hint": "Choisissez s'il faut générer des messages uniquement à partir de votre prompt, ou alimenter des liens externes RSS\/manuels pour que l'IA puisse lire et expliquer.",
     "ai_external_rss_url": "RSS externe \/ URL de flux d'atomes",
     "ai_links_list_label": "Liste des liens ou sujets externes (un par ligne)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Utilisez l'IA pour analyser le contenu des liens et écrire des légendes sociales engageantes",
     "ai_automation_enable_hint": "Utilise 1 crédit d'IA par article généré. L'IA lit la page derrière chaque lien et écrit un post personnalisé avant d'attacher le lien.",
     "ai_automation_prompt_label": "Instructions de capture d'IA",
-    "ai_automation_prompt_placeholder": "par exemple, expliquez clairement ce sujet\/fonction avec un exemple pratique, ou examinez ce film sans spoilers et mentionnez qui en profitera."
+    "ai_automation_prompt_placeholder": "par exemple, expliquez clairement ce sujet\/fonction avec un exemple pratique, ou examinez ce film sans spoilers et mentionnez qui en profitera.",
+    "ai_source_mode_hint_no_rss": "Choisissez s'il faut générer des messages à partir d'une seule invite générale, ou fournir une liste curated d'URL\/topics où chaque élément a sa propre instruction spécifique.",
+    "ai_links_topics_builder_title": "Liens et sujets avec des instructions spécifiques",
+    "ai_links_topics_builder_hint": "Ajouter une URL (l'IA visitera et lira la page) ou un titre de sujet, et éventuellement dire à l'IA sur quoi se concentrer pour ce point spécifique.",
+    "ai_add_item_btn": "Ajouter un lien \/ sujet",
+    "ai_item_target_label": "URL ou sujet",
+    "ai_item_instruction_label": "Instruction spécifique de l'IA pour ce point (facultatif)"
 }

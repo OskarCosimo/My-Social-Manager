@@ -487,7 +487,7 @@
     "automated_ai_campaigns": "Automated AI campaigns",
     "campaign_queued_success": "الحملة نجحت سيعالجها العامل قريباً.",
     "ai_step1_title": "الخطوة 1: تعليمات الحملات",
-    "what_ai_talk_about": "ماذا يجب أن تتحدث منظمة العفو الدولية عن \/ كيف يجب أن تشرح الصلة؟?",
+    "what_ai_talk_about": "General Campaign Instructions (Tone, Style, Audience)",
     "ai_prompt_instructions_placeholder": "e.g. Explain this PHP function clearly with a practical tip for developers, or review this movie without corrupters specifying which audience will enjoy it.",
     "ai_prompt_hint": "كن وصفياً تحديد النبرة من الصوت والموضوع والجمهور المستهدف والتشكيل المرغوب.",
     "ai_step2_title": "الخطوة 2: قوائم الحسابات المستهدفة",
@@ -706,7 +706,7 @@
     "ai_source_mode_label": "حملة المصدر",
     "ai_source_prompt_only": "Prompt Only (Generate original posts from instructions)",
     "ai_source_rss_feed": "الخدمات الخارجية (الوصلات الاستخراجية)",
-    "ai_source_links_list": "قائمة المواضيع )١ لكل خط، شرح مع المرفق الأول(",
+    "ai_source_links_list": "قائمة المواضيع المشتركة (بتوجيهات مكرسة لكل بند من بنود المرفق الأول)",
     "ai_source_mode_hint": "اختر ما إذا كان لتوليد وظائف فقط من سرعتك، أو تغذية وصلات خارجية لشبكة الخدمات الإدارية\/الرسمية لقراءة وشرح.",
     "ai_external_rss_url": "الخدمات الخارجية\/التغذية الذرة",
     "ai_links_list_label": "External Links or Topics List (One per line)",
@@ -729,5 +729,11 @@
     "ai_automation_enable_label": "Use AI to analyze link content and write engaging social captions",
     "ai_automation_enable_hint": "1 AI credit per generated item. The AI reads the page behind each link and writes a custom post before attaching the link.",
     "ai_automation_prompt_label": "AI Caption Instructions",
-    "ai_automation_prompt_placeholder": "وعلى سبيل المثال، شرح هذا الموضوع\/الوظيفة بوضوح بمثال عملي، أو استعراض هذا الفيلم بدون مفسدين، وذكر من سيستمتع به."
+    "ai_automation_prompt_placeholder": "وعلى سبيل المثال، شرح هذا الموضوع\/الوظيفة بوضوح بمثال عملي، أو استعراض هذا الفيلم بدون مفسدين، وذكر من سيستمتع به.",
+    "ai_source_mode_hint_no_rss": "(ب) اختيار ما إذا كان ينبغي توليد وظائف من حافز عام واحد، أو تقديم قائمة مشفَّرة بالأرقام القياسية\/الحواسيب حيثما يكون لكل بند تعليمه الخاص.",
+    "ai_links_topics_builder_title": "Links \" Topics with Specific Instructions",
+    "ai_links_topics_builder_hint": "(أ) يُضاف عنوان \" يورو \" (سيزور ويقرأ الصفحة) أو عنوان موضوعي، ويُرجى من منظمة العفو الدولية التركيز على هذا البند المحدد.",
+    "ai_add_item_btn": "Add Link\/ Topic",
+    "ai_item_target_label": "URL or Topic",
+    "ai_item_instruction_label": "تعليمات محددة بشأن هذا البند (اختياري)"
 }
