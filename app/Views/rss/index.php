@@ -31,7 +31,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
     .cursor-pointer { cursor: pointer; }
 </style>
 
-<div class="d-flex main-wrapper bg-light">
+<div class="d-flex main-wrapper bg-body-tertiary min-vh-100">
     
     <?php 
     $activeMenu = 'rss'; 
@@ -41,13 +41,13 @@ $postPeriodLower     = strtolower($postPeriodLabel);
     <main class="content-area w-100 p-4">
         
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="h2 m-0 fw-bold text-dark d-inline-flex align-items-center gap-2">
+            <h1 class="h2 m-0 fw-bold text-body-emphasis d-inline-flex align-items-center gap-2">
                 <i class="bi bi-rss text-primary"></i> <?= __('rss_automations_title') ?>
             </h1>
             
-            <div class="shadow-sm border rounded bg-white px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2">
+            <div class="shadow-sm border rounded bg-body px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2">
                 <span>
-                    <i class="bi bi-tag-fill text-muted me-1"></i>
+                    <i class="bi bi-tag-fill text-body-secondary me-1"></i>
                     <strong><?= str_replace('{name}', htmlspecialchars($limits['plan_name'] ?? 'Free'), __('plan_badge_name')) ?></strong>
                 </span>
                 <span class="text-primary ms-2 border-start ps-3 d-inline-flex align-items-center gap-1">
@@ -70,24 +70,24 @@ $postPeriodLower     = strtolower($postPeriodLabel);
         <!-- FULL WIDTH RSS POSTS STAT CARD -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-white">
+                <div class="card stat-card shadow-sm border-0 position-relative overflow-hidden bg-body">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="text-uppercase fw-bold text-muted mb-0 small">
+                            <h6 class="text-uppercase fw-bold text-body-secondary mb-0 small">
                                 <?= str_replace('{period}', $postPeriodLabel, __('posts_period_title')) ?>
                             </h6>
-                            <div class="bg-info bg-opacity-10 text-info p-2 rounded d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <div class="bg-info-subtle text-info-emphasis p-2 rounded d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                 <i class="bi bi-robot fs-5"></i>
                             </div>
                         </div>
                         <div class="d-flex align-items-end mb-2">
-                            <h2 class="display-6 fw-bold mb-0"><?= $rssPostsUsed ?></h2>
-                            <span class="text-muted ms-2">/ <?= $maxRssPosts ?></span>
+                            <h2 class="display-6 fw-bold mb-0 text-body-emphasis"><?= $rssPostsUsed ?></h2>
+                            <span class="text-body-secondary ms-2">/ <?= $maxRssPosts ?></span>
                         </div>
                         <div class="progress mb-2">
                             <div class="progress-bar bg-info" role="progressbar" style="width: <?= $rssPostsPercent ?>%"></div>
                         </div>
-                        <small class="text-muted">
+                        <small class="text-body-secondary">
                             <?= str_replace(['{percent}', '{period}'], [$rssPostsPercent, $postPeriodLower], __('rss_limit_reached_percent')) ?>
                         </small>
                     </div>
@@ -107,27 +107,27 @@ $postPeriodLower     = strtolower($postPeriodLabel);
 
         <!-- Collapsible Add New Feed Section -->
         <div class="accordion mb-4 shadow-sm" id="addFeedAccordion">
-            <div class="accordion-item border-0">
+            <div class="accordion-item border-0 bg-body">
                 <h2 class="accordion-header" id="headingAddFeed">
                     <button class="accordion-button <?= $isFeedLimitReached ? 'collapsed' : '' ?> fw-bold d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAddFeed" aria-expanded="<?= $isFeedLimitReached ? 'false' : 'true' ?>" aria-controls="collapseAddFeed">
                         <i class="bi bi-plus-circle text-primary"></i> <?= __('add_new_rss_automation') ?>
                     </button>
                 </h2>
                 <div id="collapseAddFeed" class="accordion-collapse collapse <?= $isFeedLimitReached ? '' : 'show' ?>" aria-labelledby="headingAddFeed" data-bs-parent="#addFeedAccordion">
-                    <div class="accordion-body bg-white p-4">
+                    <div class="accordion-body bg-body p-4">
                         
                         <form action="/rss/add" method="POST" id="add-rss-form">
                             
                             <div class="row g-3 mb-3">
                                 <div class="col-md-8">
-                                    <label for="feed_url" class="form-label fw-bold text-dark"><?= __('rss_feed_url') ?></label>
-                                    <input type="url" name="feed_url" id="feed_url" class="form-control form-control-lg shadow-sm border-secondary-subtle" placeholder="https://example.com/feed" required <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                    <label for="feed_url" class="form-label fw-bold text-body"><?= __('rss_feed_url') ?></label>
+                                    <input type="url" name="feed_url" id="feed_url" class="form-control form-control-lg shadow-sm" placeholder="https://example.com/feed" required <?= $isFeedLimitReached ? 'disabled' : '' ?>>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="post_interval_hours" class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                    <label for="post_interval_hours" class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-clock"></i> <?= __('posting_interval') ?>
                                     </label>
-                                    <select name="post_interval_hours" id="post_interval_hours" class="form-select form-select-lg shadow-sm border-secondary-subtle" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                    <select name="post_interval_hours" id="post_interval_hours" class="form-select form-select-lg shadow-sm" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
                                         <?php for ($i = 1; $i <= 24; $i++): ?>
                                             <option value="<?= $i ?>">
                                                 <?= $i === 1 ? __('hour_between_posts') : str_replace('{count}', $i, __('hours_between_posts')) ?>
@@ -138,14 +138,14 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                             </div>
 
                             <!-- Advanced Feed Processing Rules -->
-                            <div class="bg-light p-3 rounded border mb-4">
-                                <h6 class="fw-bold text-secondary mb-3 d-inline-flex align-items-center gap-1">
+                            <div class="bg-body-tertiary p-3 rounded border mb-4">
+                                <h6 class="fw-bold text-body-secondary mb-3 d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-gear-wide-connected"></i> <?= __('automation_rules') ?>
                                 </h6>
                                 
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" name="only_new_items" id="only_new_items" value="1" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
-                                    <label class="form-check-label fw-semibold text-dark" for="only_new_items">
+                                    <label class="form-check-label fw-semibold text-body" for="only_new_items">
                                         <?= __('post_only_new_items_desc') ?>
                                     </label>
                                 </div>
@@ -154,13 +154,13 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                     <div class="col-auto">
                                         <div class="form-check form-switch m-0">
                                             <input class="form-check-input" type="checkbox" name="random_repost_enabled" id="random_repost_enabled" value="1" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
-                                            <label class="form-check-label fw-semibold text-dark d-inline-flex align-items-center gap-1" for="random_repost_enabled">
+                                            <label class="form-check-label fw-semibold text-body d-inline-flex align-items-center gap-1" for="random_repost_enabled">
                                                 <i class="bi bi-shuffle"></i> <?= __('endless_random_repost') ?>
                                             </label>
                                         </div>
                                     </div>
                                     <div class="col-auto">
-                                        <select name="random_repost_limit" id="random_repost_limit" class="form-select form-select-sm border-secondary-subtle fw-bold" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                        <select name="random_repost_limit" id="random_repost_limit" class="form-select form-select-sm fw-bold" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
                                             <?php foreach ([10, 20, 30, 40, 50] as $num): ?>
                                                 <option value="<?= $num ?>"><?= str_replace('{count}', $num, __('items_count')) ?></option>
                                             <?php endforeach; ?>
@@ -170,20 +170,20 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                             </div>
 
                             <!-- AI Captioning & Link Explanation Section -->
-                            <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-4">
+                            <div class="p-3 rounded border border-primary-subtle bg-primary-subtle mb-4">
                                 <div class="form-check form-switch mb-0">
                                     <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="rss_ai_enabled" value="1" data-target="#rss_ai_options" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
-                                    <label class="form-check-label fw-bold text-dark cursor-pointer d-inline-flex align-items-center gap-2" for="rss_ai_enabled">
+                                    <label class="form-check-label fw-bold text-body-emphasis cursor-pointer d-inline-flex align-items-center gap-2" for="rss_ai_enabled">
                                         <span>✨</span> <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
                                     </label>
-                                    <div class="form-text text-muted small mt-1">
+                                    <div class="form-text text-body-secondary small mt-1">
                                         <?= __('ai_automation_enable_hint') ?? 'Uses 1 AI credit per generated item. The AI reads the article/page behind each feed link and writes a custom post before attaching the link.' ?>
                                     </div>
                                 </div>
 
                                 <div id="rss_ai_options" class="mt-3 pt-3 border-top border-primary-subtle d-none">
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold text-dark">
+                                        <label class="form-label fw-bold text-body">
                                             <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
                                         </label>
                                         <textarea name="ai_prompt" class="form-control shadow-sm" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Explain this topic/function clearly with a practical example, or review this movie without spoilers and mention who will enjoy it.') ?>" <?= $isFeedLimitReached ? 'disabled' : '' ?>></textarea>
@@ -191,7 +191,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
 
                                     <div class="row g-3">
                                         <div class="col-md-4">
-                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                            <label class="form-label fw-bold small text-body-secondary text-uppercase">
                                                 <?= __('ai_detail_level_label') ?? 'Detail / Reasoning Level' ?>
                                             </label>
                                             <select name="ai_detail_level" class="form-select shadow-sm ai-detail-select" data-token-input="#rss_ai_max_tokens" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
@@ -201,18 +201,18 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                             </select>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                            <label class="form-label fw-bold small text-body-secondary text-uppercase">
                                                 <?= __('ai_max_tokens_label') ?? 'Max Tokens (Manual)' ?>
                                             </label>
                                             <input type="number" name="ai_max_tokens" id="rss_ai_max_tokens" class="form-control shadow-sm" value="350" min="50" max="4096" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
-                                            <div class="form-text small text-muted"><?= __('ai_max_tokens_hint') ?? 'Suggested: 150 / 350 / 750' ?></div>
+                                            <div class="form-text small text-body-secondary"><?= __('ai_max_tokens_hint') ?? 'Suggested: 150 / 350 / 750' ?></div>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-bold small text-muted text-uppercase">
+                                            <label class="form-label fw-bold small text-body-secondary text-uppercase">
                                                 <?= __('ai_max_chars_label') ?? 'Max Characters (Social Limit)' ?>
                                             </label>
                                             <input type="number" name="ai_max_chars" class="form-control shadow-sm" value="0" min="0" max="10000" placeholder="0 = Unlimited" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
-                                            <div class="form-text small text-muted"><?= __('ai_max_chars_hint') ?? 'e.g. 280 for X, 0 = no cap' ?></div>
+                                            <div class="form-text small text-body-secondary"><?= __('ai_max_chars_hint') ?? 'e.g. 280 for X, 0 = no cap' ?></div>
                                         </div>
                                     </div>
                                 </div>
@@ -220,16 +220,16 @@ $postPeriodLower     = strtolower($postPeriodLabel);
 
                             <div class="border-top pt-4">
                                 <div class="d-flex justify-content-between align-items-end mb-3 flex-wrap gap-2">
-                                    <label class="form-label fw-bold text-secondary small text-uppercase mb-0 d-inline-flex align-items-center gap-1">
+                                    <label class="form-label fw-bold text-body-secondary small text-uppercase mb-0 d-inline-flex align-items-center gap-1">
                                         <i class="bi bi-share"></i> <?= __('target_social_accounts') ?>
                                     </label>
                                     
                                     <?php if (!empty($groups)): ?>
                                         <div class="input-group input-group-sm w-auto shadow-sm">
-                                            <span class="input-group-text bg-light fw-bold text-secondary d-inline-flex align-items-center gap-1">
+                                            <span class="input-group-text bg-body-tertiary fw-bold text-body-secondary d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-folder2"></i> <?= __('quick_selection') ?>
                                             </span>
-                                            <select class="form-select border-secondary-subtle" id="group-select" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                            <select class="form-select" id="group-select" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
                                                 <option value=""><?= __('choose_group') ?></option>
                                                 <?php foreach ($groups as $group): ?>
                                                     <?php 
@@ -248,9 +248,9 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                 </div>
 
                                 <?php if (!empty($connectedAccounts)): ?>
-                                    <div class="table-responsive bg-light border rounded p-2 shadow-sm mb-3">
+                                    <div class="table-responsive bg-body-tertiary border rounded p-2 shadow-sm mb-3">
                                         <table class="table table-hover align-middle mb-0 dt-table w-100" id="rss-accounts-table">
-                                            <thead class="table-light">
+                                            <thead>
                                                 <tr>
                                                     <th style="width: 40px;" class="text-center">✓</th>
                                                     <th><?= __('account_details') ?></th>
@@ -260,11 +260,11 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                 <?php foreach ($connectedAccounts as $account): ?>
                                                     <tr>
                                                         <td class="text-center">
-                                                            <input class="form-check-input m-0 border-secondary" type="checkbox" name="target_accounts[]" value="<?= (int)$account['id'] ?>" id="acc_<?= (int)$account['id'] ?>" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
+                                                            <input class="form-check-input m-0" type="checkbox" name="target_accounts[]" value="<?= (int)$account['id'] ?>" id="acc_<?= (int)$account['id'] ?>" <?= $isFeedLimitReached ? 'disabled' : '' ?>>
                                                         </td>
                                                         <td>
                                                             <label class="form-check-label w-100 cursor-pointer d-flex flex-column" for="acc_<?= (int)$account['id'] ?>">
-                                                                <span class="fw-bold text-dark"><?= htmlspecialchars($account['platform_name'] ?? 'Account') ?></span>
+                                                                <span class="fw-bold text-body"><?= htmlspecialchars($account['platform_name'] ?? 'Account') ?></span>
                                                                 <span class="badge bg-secondary w-auto align-self-start mt-1" style="font-size: 0.7em;">
                                                                     <?= htmlspecialchars(ucfirst($account['plugin_id'] ?? 'Social')) ?>
                                                                 </span>
@@ -278,20 +278,20 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                 <?php endif; ?>
 
                                 <?php if (!empty($mailingLists)): ?>
-                                    <hr class="text-muted opacity-25">
+                                    <hr class="opacity-25">
                                     <div class="mt-3 mb-4">
-                                        <label class="form-label fw-semibold text-secondary d-inline-flex align-items-center gap-1">
+                                        <label class="form-label fw-semibold text-body-secondary d-inline-flex align-items-center gap-1">
                                             <i class="bi bi-envelope-paper"></i> <?= __('mailing_lists') ?>
                                         </label>
                                         <div class="d-flex flex-wrap gap-2">
                                             <?php foreach ($mailingLists as $list): ?>
-                                                <div class="form-check border rounded px-3 py-2 bg-white shadow-sm">
+                                                <div class="form-check border rounded px-3 py-2 bg-body-tertiary shadow-sm">
                                                     <input class="form-check-input" type="checkbox" 
                                                            name="target_mailing_lists[]" 
                                                            value="<?= $list['id'] ?>" 
                                                            id="rss_ml_<?= $list['id'] ?>"
                                                            <?= $isFeedLimitReached ? 'disabled' : '' ?>>
-                                                    <label class="form-check-label d-flex align-items-center gap-2" for="rss_ml_<?= $list['id'] ?>">
+                                                    <label class="form-check-label d-flex align-items-center gap-2 text-body" for="rss_ml_<?= $list['id'] ?>">
                                                         <span class="badge bg-warning text-dark">Mailing List</span>
                                                         <?= htmlspecialchars($list['name']) ?>
                                                     </label>
@@ -313,22 +313,22 @@ $postPeriodLower     = strtolower($postPeriodLabel);
         </div>
 
         <!-- Configured Feeds Table -->
-        <div class="card shadow-sm border-0 bg-white">
-            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 fw-bold d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold text-secondary mb-0 d-inline-flex align-items-center gap-2">
+        <div class="card shadow-sm border-0 bg-body">
+            <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 fw-bold d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-body-secondary mb-0 d-inline-flex align-items-center gap-2">
                     <i class="bi bi-list-task text-primary"></i> <?= __('configured_rss_feeds') ?>
                 </h5>
             </div>
             <div class="card-body">
                 <?php if (empty($feeds)): ?>
-                    <div class="p-5 text-center text-muted bg-light rounded border border-dashed">
+                    <div class="p-5 text-center text-body-secondary bg-body-tertiary rounded border">
                         <h4><?= __('no_rss_feeds_yet') ?></h4>
                         <p class="mb-0"><?= __('no_rss_feeds_yet_sub') ?></p>
                     </div>
                 <?php else: ?>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 dt-table w-100">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th style="width: 25%;"><?= __('feed_url_header') ?></th>
                                     <th style="width: 20%;"><?= __('interval_rules_header') ?></th>
@@ -346,7 +346,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                             </a>
                                         </td>
                                         <td>
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle fw-bold mb-1 d-inline-flex align-items-center gap-1">
+                                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle fw-bold mb-1 d-inline-flex align-items-center gap-1">
                                                 <i class="bi bi-clock"></i> <?= str_replace('{count}', (int)($feed['post_interval_hours'] ?? 1), __('every_hours_badge')) ?>
                                             </span>
                                             <div class="d-flex flex-wrap gap-1">
@@ -403,7 +403,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                                 }
                                                             }
                                                 ?>
-                                                            <span class="badge bg-light text-dark border d-flex align-items-center shadow-sm py-1">
+                                                            <span class="badge bg-body-secondary text-body border d-flex align-items-center shadow-sm py-1">
                                                                 <span class="text-truncate d-inline-block" style="max-width: 100px;" title="<?= htmlspecialchars($accName) ?>">
                                                                     <?= htmlspecialchars($accName) ?>
                                                                 </span>
@@ -416,12 +416,12 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                     endforeach;
                                                 else: 
                                                 ?>
-                                                    <span class="text-muted small"><?= __('no_accounts') ?></span>
+                                                    <span class="text-body-secondary small"><?= __('no_accounts') ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
                                         <td>
-                                            <small class="text-muted fw-semibold">
+                                            <small class="text-body-secondary fw-semibold">
                                                 <?= !empty($feed['last_checked']) ? htmlspecialchars($feed['last_checked']) : __('never') ?>
                                             </small>
                                         </td>
@@ -457,11 +457,11 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                     <div class="modal-body">
                                                         <div class="row g-3 mb-3">
                                                             <div class="col-md-8">
-                                                                <label class="form-label fw-bold text-dark"><?= __('rss_feed_url') ?></label>
+                                                                <label class="form-label fw-bold text-body"><?= __('rss_feed_url') ?></label>
                                                                 <input type="url" name="feed_url" class="form-control" value="<?= htmlspecialchars($feed['feed_url']) ?>" required>
                                                             </div>
                                                             <div class="col-md-4">
-                                                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                                                     <i class="bi bi-clock"></i> <?= __('posting_interval') ?>
                                                                 </label>
                                                                 <select name="post_interval_hours" class="form-select">
@@ -474,14 +474,14 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                             </div>
                                                         </div>
 
-                                                        <div class="bg-light p-3 rounded border mb-3">
-                                                            <h6 class="fw-bold text-secondary mb-3 d-inline-flex align-items-center gap-1">
+                                                        <div class="bg-body-tertiary p-3 rounded border mb-3">
+                                                            <h6 class="fw-bold text-body-secondary mb-3 d-inline-flex align-items-center gap-1">
                                                                 <i class="bi bi-gear-wide-connected"></i> <?= __('automation_rules') ?>
                                                             </h6>
                                                             
                                                             <div class="form-check form-switch mb-3">
                                                                 <input class="form-check-input" type="checkbox" name="only_new_items" id="edit_only_new_<?= $feed['id'] ?>" value="1" <?= !empty($feed['only_new_items']) ? 'checked' : '' ?>>
-                                                                <label class="form-check-label fw-semibold text-dark" for="edit_only_new_<?= $feed['id'] ?>">
+                                                                <label class="form-check-label fw-semibold text-body" for="edit_only_new_<?= $feed['id'] ?>">
                                                                     <?= __('post_only_new_items_short') ?>
                                                                 </label>
                                                             </div>
@@ -490,7 +490,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                                 <div class="col-auto">
                                                                     <div class="form-check form-switch m-0">
                                                                         <input class="form-check-input" type="checkbox" name="random_repost_enabled" id="edit_random_repost_<?= $feed['id'] ?>" value="1" <?= !empty($feed['random_repost_enabled']) ? 'checked' : '' ?>>
-                                                                        <label class="form-check-label fw-semibold text-dark d-inline-flex align-items-center gap-1" for="edit_random_repost_<?= $feed['id'] ?>">
+                                                                        <label class="form-check-label fw-semibold text-body d-inline-flex align-items-center gap-1" for="edit_random_repost_<?= $feed['id'] ?>">
                                                                             <i class="bi bi-shuffle"></i> <?= __('endless_random_repost') ?>
                                                                         </label>
                                                                     </div>
@@ -507,17 +507,17 @@ $postPeriodLower     = strtolower($postPeriodLabel);
 
                                                         <!-- AI Captioning Options (Edit Modal) -->
                                                         <?php $feedAiActive = !empty($feed['ai_enabled']); ?>
-                                                        <div class="p-3 rounded border border-primary-subtle bg-primary bg-opacity-10 mb-3">
+                                                        <div class="p-3 rounded border border-primary-subtle bg-primary-subtle mb-3">
                                                             <div class="form-check form-switch mb-0">
                                                                 <input class="form-check-input ai-toggle-switch" type="checkbox" name="ai_enabled" id="edit_rss_ai_enabled_<?= $feed['id'] ?>" value="1" data-target="#edit_rss_ai_options_<?= $feed['id'] ?>" <?= $feedAiActive ? 'checked' : '' ?>>
-                                                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="edit_rss_ai_enabled_<?= $feed['id'] ?>">
+                                                                <label class="form-check-label fw-bold text-body-emphasis cursor-pointer" for="edit_rss_ai_enabled_<?= $feed['id'] ?>">
                                                                     ✨ <?= __('ai_automation_enable_label') ?? 'Use AI to analyze link content and write engaging social captions' ?>
                                                                 </label>
                                                             </div>
 
                                                             <div id="edit_rss_ai_options_<?= $feed['id'] ?>" class="mt-3 pt-3 border-top border-primary-subtle <?= $feedAiActive ? '' : 'd-none' ?>">
                                                                 <div class="mb-3">
-                                                                    <label class="form-label fw-bold text-dark">
+                                                                    <label class="form-label fw-bold text-body">
                                                                         <?= __('ai_automation_prompt_label') ?? 'AI Caption Instructions' ?>
                                                                     </label>
                                                                     <textarea name="ai_prompt" class="form-control" rows="3" placeholder="<?= htmlspecialchars(__('ai_automation_prompt_placeholder') ?? 'e.g. Explain this topic/link clearly...') ?>"><?= htmlspecialchars($feed['ai_prompt'] ?? '') ?></textarea>
@@ -525,7 +525,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
 
                                                                 <div class="row g-2">
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_detail_level_label') ?? 'Detail Level' ?></label>
+                                                                        <label class="form-label fw-bold small text-uppercase text-body-secondary"><?= __('ai_detail_level_label') ?? 'Detail Level' ?></label>
                                                                         <select name="ai_detail_level" class="form-select ai-detail-select" data-token-input="#edit_rss_ai_tokens_<?= $feed['id'] ?>">
                                                                             <?php $currLvl = $feed['ai_detail_level'] ?? 'medium'; ?>
                                                                             <option value="light" <?= $currLvl === 'light' ? 'selected' : '' ?>><?= __('ai_level_light') ?? 'Light (Brief)' ?></option>
@@ -534,11 +534,11 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                                         </select>
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_tokens_label') ?? 'Max Tokens' ?></label>
+                                                                        <label class="form-label fw-bold small text-uppercase text-body-secondary"><?= __('ai_max_tokens_label') ?? 'Max Tokens' ?></label>
                                                                         <input type="number" name="ai_max_tokens" id="edit_rss_ai_tokens_<?= $feed['id'] ?>" class="form-control" value="<?= (int)($feed['ai_max_tokens'] ?? 350) ?>" min="50" max="4096">
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label fw-bold small text-uppercase"><?= __('ai_max_chars_label') ?? 'Max Characters' ?></label>
+                                                                        <label class="form-label fw-bold small text-uppercase text-body-secondary"><?= __('ai_max_chars_label') ?? 'Max Characters' ?></label>
                                                                         <input type="number" name="ai_max_chars" class="form-control" value="<?= (int)($feed['ai_max_chars'] ?? 0) ?>" min="0" max="10000">
                                                                     </div>
                                                                 </div>
@@ -547,10 +547,10 @@ $postPeriodLower     = strtolower($postPeriodLabel);
 
                                                         <!-- Target Social Accounts (Edit Modal) -->
                                                         <div class="mb-3">
-                                                            <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                            <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                                                 <i class="bi bi-share"></i> <?= __('target_social_accounts') ?>
                                                             </label>
-                                                            <div class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                                            <div class="border rounded p-2 bg-body-tertiary" style="max-height: 180px; overflow-y: auto;">
                                                                 <?php 
                                                                 $selectedTargets = json_decode($feed['target_accounts'], true) ?? [];
                                                                 foreach ($connectedAccounts as $account): 
@@ -558,7 +558,7 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                                 ?>
                                                                     <div class="form-check">
                                                                         <input class="form-check-input" type="checkbox" name="target_accounts[]" value="<?= (int)$account['id'] ?>" id="edit_acc_<?= $feed['id'] ?>_<?= $account['id'] ?>" <?= $isChecked ? 'checked' : '' ?>>
-                                                                        <label class="form-check-label" for="edit_acc_<?= $feed['id'] ?>_<?= $account['id'] ?>">
+                                                                        <label class="form-check-label text-body" for="edit_acc_<?= $feed['id'] ?>_<?= $account['id'] ?>">
                                                                             <strong><?= htmlspecialchars($account['platform_name']) ?></strong> (<?= htmlspecialchars(ucfirst($account['plugin_id'])) ?>)
                                                                         </label>
                                                                     </div>
@@ -569,17 +569,17 @@ $postPeriodLower     = strtolower($postPeriodLabel);
                                                         <!-- Target Mailing Lists (Edit Modal) -->
                                                         <?php if (!empty($mailingLists)): ?>
                                                             <div class="mb-3">
-                                                                <label class="form-label fw-bold text-dark d-inline-flex align-items-center gap-1">
+                                                                <label class="form-label fw-bold text-body d-inline-flex align-items-center gap-1">
                                                                     <i class="bi bi-envelope-paper"></i> <?= __('mailing_lists') ?>
                                                                 </label>
-                                                                <div class="border rounded p-2 bg-light d-flex flex-wrap gap-2" style="max-height: 150px; overflow-y: auto;">
+                                                                <div class="border rounded p-2 bg-body-tertiary d-flex flex-wrap gap-2" style="max-height: 150px; overflow-y: auto;">
                                                                     <?php 
                                                                     foreach ($mailingLists as $list): 
                                                                         $isMlChecked = in_array('ml_' . $list['id'], $selectedTargets, true);
                                                                     ?>
-                                                                        <div class="form-check border rounded px-2 py-1 bg-white shadow-sm">
+                                                                        <div class="form-check border rounded px-2 py-1 bg-body shadow-sm">
                                                                             <input class="form-check-input" type="checkbox" name="target_mailing_lists[]" value="<?= (int)$list['id'] ?>" id="edit_ml_<?= $feed['id'] ?>_<?= $list['id'] ?>" <?= $isMlChecked ? 'checked' : '' ?>>
-                                                                            <label class="form-check-label" for="edit_ml_<?= $feed['id'] ?>_<?= $list['id'] ?>">
+                                                                            <label class="form-check-label text-body" for="edit_ml_<?= $feed['id'] ?>_<?= $list['id'] ?>">
                                                                                 <span class="badge bg-warning text-dark" style="font-size: 0.65em;">Mailing List</span>
                                                                                 <strong><?= htmlspecialchars($list['name']) ?></strong>
                                                                             </label>
