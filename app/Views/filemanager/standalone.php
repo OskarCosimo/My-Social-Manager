@@ -15,22 +15,145 @@ $currentUserId = (int)$_SESSION['user_id'];
     <title><?= __('file_manager') ?? 'File Manager' ?></title>
     <link rel="stylesheet" href="/public/assets/My-File-Manager/css/myfilemanager.min.css" />
     <style>
-        /* Ensure smooth background transition matching the active theme */
+        * {
+            box-sizing: border-box;
+        }
         html, body {
             margin: 0;
             padding: 0;
+            width: 100%;
             height: 100%;
+            overflow: hidden;
             background-color: #ffffff;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         }
         html[data-bs-theme="dark"],
         html[data-bs-theme="dark"] body {
             background-color: #212529;
         }
+        /* Fullscreen container without extra outer scrollbars */
+        #fm-container {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        /* Media Preview Modal Styles (Light & Dark theme aware) */
+        .fm-preview-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(3px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .fm-preview-backdrop.open {
+            display: flex;
+        }
+        .fm-preview-dialog {
+            background: #ffffff;
+            color: #212529;
+            border-radius: 10px;
+            max-width: 90vw;
+            max-height: 90vh;
+            width: 820px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
+        html[data-bs-theme="dark"] .fm-preview-dialog {
+            background: #212529;
+            color: #f8f9fa;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .fm-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 18px;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+        }
+        .fm-preview-title {
+            font-weight: 600;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 12px;
+        }
+        .fm-preview-close {
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            opacity: 0.75;
+            padding: 2px 6px;
+        }
+        .fm-preview-close:hover {
+            opacity: 1;
+        }
+        .fm-preview-body {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: #f1f3f5;
+            overflow: auto;
+            min-height: 260px;
+        }
+        html[data-bs-theme="dark"] .fm-preview-body {
+            background: #16181b;
+        }
+        .fm-preview-body img,
+        .fm-preview-body video {
+            max-width: 100%;
+            max-height: 68vh;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+        .fm-preview-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 12px 18px;
+            border-top: 1px solid rgba(128, 128, 128, 0.25);
+        }
+        .fm-btn {
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .fm-btn-secondary {
+            background: #6c757d;
+            color: #fff;
+        }
+        .fm-btn-secondary:hover {
+            background: #5c636a;
+        }
+        .fm-btn-primary {
+            background: #0d6efd;
+            color: #fff;
+        }
+        .fm-btn-primary:hover {
+            background: #0b5ed7;
+        }
     </style>
     <script>
         // Resolve the effective theme ('dark' or 'light') from Bootstrap 5 / localStorage / OS preference
         function getResolvedTheme() {
-            // 1. Check if parent window (when inside iframe) already has data-bs-theme set
             try {
                 if (window.parent && window.parent !== window && window.parent.document) {
                     const parentTheme = window.parent.document.documentElement.getAttribute('data-bs-theme');
@@ -38,11 +161,8 @@ $currentUserId = (int)$_SESSION['user_id'];
                         return parentTheme;
                     }
                 }
-            } catch (e) {
-                // Fallback to localStorage if cross-origin access is restricted
-            }
+            } catch (e) {}
 
-            // 2. Read saved theme preference from localStorage (supports common key names)
             const storedTheme = localStorage.getItem('theme') 
                              || localStorage.getItem('bs-theme') 
                              || localStorage.getItem('app_theme') 
@@ -52,7 +172,6 @@ $currentUserId = (int)$_SESSION['user_id'];
                 return storedTheme;
             }
 
-            // 3. Fallback to Operating System preference ('auto')
             return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
 
@@ -60,20 +179,45 @@ $currentUserId = (int)$_SESSION['user_id'];
         document.documentElement.setAttribute('data-bs-theme', getResolvedTheme());
     </script>
 </head>
-<body style="margin: 0; padding: 0;">
+<body>
 
-    <div id="fm-container" name="fm-container" style="text-align:left;" align="left"></div>
+    <div id="fm-container" name="fm-container"></div>
+
+    <!-- Media Preview Modal -->
+    <div id="mediaPreviewModal" class="fm-preview-backdrop" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+        <div class="fm-preview-dialog">
+            <div class="fm-preview-header">
+                <div id="previewModalTitle" class="fm-preview-title">Preview</div>
+                <button type="button" class="fm-preview-close" id="btnClosePreviewTop" aria-label="Close">&times;</button>
+            </div>
+            <div class="fm-preview-body" id="previewModalBody"></div>
+            <div class="fm-preview-footer">
+                <button type="button" class="fm-btn fm-btn-secondary" id="btnClosePreviewBottom"><?= __('close') ?? 'Close' ?></button>
+                <button type="button" class="fm-btn fm-btn-primary" id="btnUseInPostPreview"><?= __('use_in_post') ?? 'Use in Post' ?></button>
+            </div>
+        </div>
+    </div>
 
     <script src="/public/assets/My-File-Manager/js/myfilemanager.min.js"></script>
     <script src="/public/assets/My-File-Manager/js/i18n.min.js"></script>
 
     <script>
+    const appBaseUrl = '<?= rtrim(Config::APP_URL, "/") ?>';
+    const currentUserId = '<?= $currentUserId ?>';
+    let currentPreviewFile = null;
+
+    // Build public file URL including current subdirectory path if present
+    function getPublicFileUrl(file) {
+        const relativePath = file.path ? file.path.replace(/^\/+/, '') : file.name;
+        const encodedPath = relativePath.split('/').map(encodeURIComponent).join('/');
+        return appBaseUrl + '/public/assets/My-File-Manager/files/user_' + currentUserId + '/' + encodedPath;
+    }
+
     // Helper function to send the selected file to the Post Composer
-    function sendToComposer(fileName) {
-        // Dynamically build base URL from Config::APP_URL and current user session
-        const appBaseUrl = '<?= rtrim(Config::APP_URL, "/") ?>';
-        const userId = '<?= (int)($_SESSION["user_id"] ?? 0) ?>';
-        const fileUrl = appBaseUrl + '/public/assets/My-File-Manager/files/user_' + userId + '/' + fileName;
+    function sendToComposer(fileOrName) {
+        const fileUrl = (typeof fileOrName === 'object' && fileOrName !== null)
+            ? getPublicFileUrl(fileOrName)
+            : appBaseUrl + '/public/assets/My-File-Manager/files/user_' + currentUserId + '/' + encodeURIComponent(fileOrName);
         
         // If running inside modal iframe, dispatch postMessage to parent container
         if (window.parent && window.parent !== window) {
@@ -87,6 +231,74 @@ $currentUserId = (int)$_SESSION['user_id'];
             window.location.href = '/compose';
         }
     }
+
+    // Open image or video preview modal
+    function openMediaPreview(file) {
+        const modal = document.getElementById('mediaPreviewModal');
+        const titleEl = document.getElementById('previewModalTitle');
+        const bodyEl = document.getElementById('previewModalBody');
+        const fileUrl = getPublicFileUrl(file);
+        const mime = (file.mime || '').toLowerCase();
+        const ext = (file.name || '').split('.').pop().toLowerCase();
+
+        const isImage = mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+        const isVideo = mime.startsWith('video/') || ['mp4', 'webm', 'ogg', 'mov', 'm4v'].includes(ext);
+
+        currentPreviewFile = file;
+        titleEl.textContent = file.name;
+        bodyEl.innerHTML = '';
+
+        if (isImage) {
+            const img = document.createElement('img');
+            img.src = fileUrl;
+            img.alt = file.name;
+            bodyEl.appendChild(img);
+        } else if (isVideo) {
+            const video = document.createElement('video');
+            video.src = fileUrl;
+            video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            bodyEl.appendChild(video);
+        }
+
+        modal.classList.add('open');
+    }
+
+    // Close preview modal and stop any playing video
+    function closeMediaPreview() {
+        const modal = document.getElementById('mediaPreviewModal');
+        const bodyEl = document.getElementById('previewModalBody');
+        const video = bodyEl.querySelector('video');
+        if (video) {
+            video.pause();
+            video.src = '';
+        }
+        bodyEl.innerHTML = '';
+        currentPreviewFile = null;
+        modal.classList.remove('open');
+    }
+
+    // Modal event listeners
+    document.getElementById('btnClosePreviewTop').addEventListener('click', closeMediaPreview);
+    document.getElementById('btnClosePreviewBottom').addEventListener('click', closeMediaPreview);
+    document.getElementById('mediaPreviewModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeMediaPreview();
+        }
+    });
+    document.getElementById('btnUseInPostPreview').addEventListener('click', function() {
+        if (currentPreviewFile) {
+            const fileToSend = currentPreviewFile;
+            closeMediaPreview();
+            sendToComposer(fileToSend);
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('mediaPreviewModal').classList.contains('open')) {
+            closeMediaPreview();
+        }
+    });
 
     const token_bearer_header = '<?= $validToken ?>';
     const appLanguage = '<?= htmlspecialchars($currentLang) ?>';
@@ -193,13 +405,22 @@ $currentUserId = (int)$_SESSION['user_id'];
         onContextMenuAction: function(data) {
             const file = data.files[0];
             if (data.action === 'custom-edit') {
-                sendToComposer(file.name);
+                sendToComposer(file);
             }
         },
         
         // Custom file opener (double-click handler)
         customFileOpener: function(file) {
-            sendToComposer(file.name);
+            const mime = (file.mime || '').toLowerCase();
+            const ext = (file.name || '').split('.').pop().toLowerCase();
+            const isImage = mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+            const isVideo = mime.startsWith('video/') || ['mp4', 'webm', 'ogg', 'mov', 'm4v'].includes(ext);
+
+            if (isImage || isVideo) {
+                openMediaPreview(file);
+            } else {
+                sendToComposer(file);
+            }
         }
     });
 
@@ -216,14 +437,12 @@ $currentUserId = (int)$_SESSION['user_id'];
         }
     }
 
-    // 1. Listen for localStorage changes from parent window / other tabs
     window.addEventListener('storage', function(e) {
         if (!e.key || e.key === 'theme' || e.key === 'bs-theme' || e.key === 'app_theme') {
             syncFileManagerTheme();
         }
     });
 
-    // 2. Observe parent <html> data-bs-theme attribute changes in real time (same-window sidebar toggle)
     try {
         if (window.parent && window.parent !== window && window.parent.document) {
             const parentHtml = window.parent.document.documentElement;
@@ -238,7 +457,6 @@ $currentUserId = (int)$_SESSION['user_id'];
         }
     } catch (e) {}
 
-    // 3. Listen for OS-level dark/light mode switches when in 'auto' mode
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
         syncFileManagerTheme();
     });
